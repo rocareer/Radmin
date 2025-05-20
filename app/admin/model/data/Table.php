@@ -1,0 +1,29 @@
+<?php
+
+namespace app\admin\model\data;
+
+use app\common\model\BaseModel;
+
+/**
+ * TableUtil
+ */
+class Table extends BaseModel
+{
+    // 表名
+    protected $name = 'data_table';
+
+    // 自动写入时间戳字段
+    protected $autoWriteTimestamp = true;
+    protected $updateTime = false;
+    protected $json = ['columns'];
+
+
+    protected $jsonAssoc = true;
+
+    public function getName():string
+    {
+        return $this->name;
+    }
+
+
+}

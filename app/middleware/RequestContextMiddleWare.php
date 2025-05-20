@@ -1,0 +1,27 @@
+<?php
+/** @noinspection PhpUndefinedFieldInspection */
+
+/** @noinspection PhpPossiblePolymorphicInvocationInspection */
+
+namespace app\middleware;
+
+use Exception;
+use Radmin\Container;
+use Webman\Http\Request;
+use Webman\Http\Response;
+use Webman\MiddlewareInterface;
+
+class RequestContextMiddleWare implements MiddlewareInterface
+{
+    /**
+     * @throws Exception
+     */
+    public function process(Request $request, callable $handler): Response
+    {
+        $context=Container::get('member.context');
+        $response = $handler($request);
+        $context->clear();
+        return $response;
+    }
+
+}
