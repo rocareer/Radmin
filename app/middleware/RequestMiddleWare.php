@@ -6,7 +6,6 @@
 namespace app\middleware;
 
 use Exception;
-use support\Response;
 use support\Request;
 
 class RequestMiddleWare implements MiddlewareInterface
