@@ -25,7 +25,7 @@ class Module extends Backend
         parent::initialize();
     }
 
-    public function index(): \Radmin\Response
+    public function index():Response
     {
      return $this->success('', [
             'sysVersion' =>  config('buildadmin.version'),
@@ -33,7 +33,7 @@ class Module extends Backend
         ]);
     }
 
-    public function state(): \Radmin\Response
+    public function state():Response
     {
         $uid = $this->request->get("uid/s", '');
         if (!$uid) {
@@ -44,7 +44,7 @@ class Module extends Backend
         ]);
     }
 
-    public function install(): \Radmin\Response
+    public function install():Response
     {
         AdminLog::instance()->setTitle(__('Install module'));
         $uid     = $this->request->get("uid/s", '');
@@ -66,7 +66,7 @@ class Module extends Backend
         ]);
     }
 
-    public function dependentInstallComplete(): \Radmin\Response
+    public function dependentInstallComplete():Response
     {
         $uid = $this->request->get("uid/s", '');
         if (!$uid) {
@@ -82,7 +82,7 @@ class Module extends Backend
      return $this->success();
     }
 
-    public function changeState(): \Radmin\Response
+    public function changeState():Response
     {
         AdminLog::instance()->setTitle(__('Change module state'));
         $uid   = $this->request->post("uid/s", '');
@@ -103,7 +103,7 @@ class Module extends Backend
         ]);
     }
 
-    public function uninstall(): \Radmin\Response
+    public function uninstall():Response
     {
         AdminLog::instance()->setTitle(__('Unload module'));
         $uid = $this->request->get("uid/s", '');
@@ -120,7 +120,7 @@ class Module extends Backend
      return $this->success();
     }
 
-    public function update(): \Radmin\Response
+    public function update():Response
     {
         AdminLog::instance()->setTitle(__('Update module'));
         $uid     = $this->request->get("uid/s", '');
@@ -139,7 +139,7 @@ class Module extends Backend
      return $this->success();
     }
 
-    public function upload(): \Radmin\Response
+    public function upload():Response
     {
         AdminLog::instance()->setTitle(__('Upload install module'));
         $file  = $this->request->get("file/s", '');

@@ -79,7 +79,7 @@ class Rule extends Backend
     /**
      * 添加
      */
-    public function add(): \Radmin\Response
+    public function add():Response
     {
         if ($this->request->isPost()) {
             $data = $this->request->post();
@@ -137,7 +137,7 @@ class Rule extends Backend
      * 编辑
      * @throws Throwable
      */
-    public function edit(): \Radmin\Response
+    public function edit():Response
     {
         $id  = $this->request->input($this->model->getPk());
         $row = $this->model->find($id);
@@ -200,7 +200,7 @@ class Rule extends Backend
      * 删除
      * @throws Throwable
      */
-    public function del(): \Radmin\Response
+    public function del():Response
     {
         $ids = $this->request->input('ids', []);
 
