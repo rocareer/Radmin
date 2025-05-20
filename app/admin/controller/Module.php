@@ -1,11 +1,5 @@
 <?php
-/** @noinspection PhpPossiblePolymorphicInvocationInspection */
-/** @noinspection PhpPossiblePolymorphicInvocationInspection */
-/** @noinspection PhpPossiblePolymorphicInvocationInspection */
-/** @noinspection PhpPossiblePolymorphicInvocationInspection */
-/** @noinspection PhpPossiblePolymorphicInvocationInspection */
 
-/** @noinspection PhpPossiblePolymorphicInvocationInspection */
 
 namespace app\admin\controller;
 
@@ -14,6 +8,7 @@ use app\admin\library\module\Server;
 use app\admin\model\AdminLog;
 use app\common\controller\Backend;
 use exception;
+use support\Response;
 use Throwable;
 
 class Module extends Backend
@@ -35,7 +30,7 @@ class Module extends Backend
 
     public function state():Response
     {
-        $uid = $this->request->get("uid/s", '');
+        $uid = $this->request->input("uid/s", '');
         if (!$uid) {
          return $this->error(__('Parameter error'));
         }

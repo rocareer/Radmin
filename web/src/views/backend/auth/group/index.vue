@@ -55,7 +55,7 @@ const baTable: baTableClass = new baTableClass(
         column: [
             { type: 'selection', align: 'center' },
             { label: t('auth.group.Group name'), prop: 'name', align: 'left', width: '200' },
-            { label: t('auth.group.jurisdiction'), prop: 'rules', align: 'center' },
+            { label: t('auth.group.jurisdiction'), prop: 'rules', align: 'left' },
             {
                 label: t('State'),
                 prop: 'status',

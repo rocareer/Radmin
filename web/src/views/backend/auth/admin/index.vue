@@ -46,12 +46,12 @@ const baTable = new baTableClass(
         column: [
             { type: 'selection', align: 'center', operator: false },
             { label: t('Id'), prop: 'id', align: 'center', operator: '=', operatorPlaceholder: t('Id'), width: 70 },
-            { label: t('auth.admin.username'), prop: 'username', align: 'center', operator: 'LIKE', operatorPlaceholder: t('Fuzzy query') },
-            { label: t('auth.admin.nickname'), prop: 'nickname', align: 'center', operator: 'LIKE', operatorPlaceholder: t('Fuzzy query') },
-            { label: t('auth.admin.group'), prop: 'group_name_arr', align: 'center', operator: false, render: 'tags' },
+            { label: t('auth.admin.username'),width:120, prop: 'username', align: 'left', operator: 'LIKE', operatorPlaceholder: t('Fuzzy query') },
+            { label: t('auth.admin.nickname'),width:120, prop: 'nickname', align: 'left', operator: 'LIKE', operatorPlaceholder: t('Fuzzy query') },
+            { label: t('auth.admin.group'), width:160, prop: 'group_name_arr', align: 'left', operator: false, render: 'tags' },
             { label: t('auth.admin.avatar'), prop: 'avatar', align: 'center', render: 'image', operator: false },
-            { label: t('auth.admin.email'), prop: 'email', align: 'center', operator: 'LIKE', operatorPlaceholder: t('Fuzzy query') },
-            { label: t('auth.admin.mobile'), prop: 'mobile', align: 'center', operator: 'LIKE', operatorPlaceholder: t('Fuzzy query') },
+            { label: t('auth.admin.email'), width:180, prop: 'email', align: 'left', operator: 'LIKE', operatorPlaceholder: t('Fuzzy query') },
+            { label: t('auth.admin.mobile'), width:160, prop: 'mobile', align: 'left', operator: 'LIKE', operatorPlaceholder: t('Fuzzy query') },
             {
                 label: t('auth.admin.Last login'),
                 prop: 'last_login_time',
@@ -77,6 +77,7 @@ const baTable = new baTableClass(
                 render: 'buttons',
                 buttons: optButtons,
                 operator: false,
+                fixed:'right'
             },
         ],
         dblClickNotEditColumn: [undefined, 'status'],

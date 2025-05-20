@@ -81,7 +81,7 @@ return [
     // 版本号
     'version'               => 'v1.0.0',
     // 中心接口地址（用于请求模块市场的数据等用途）
-    'api_url'               => 'https://rocareer.com',
+    'api_url'               => 'https://buildadmin.com',
     
     //设置http缓存 在控制器基类 Api中查看
     'http_cache_ttl'=> 600,

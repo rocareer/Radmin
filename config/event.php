@@ -25,21 +25,5 @@ return [
     ],
 
 
-    //数据日志事件
-    'log.data.backup'    => [
-        [BackupLog::class, 'record'],
-    ],
-    'log.data.restore'   => [
-        [RestoreLog::class, 'record'],
-    ],
-    //管理员日志事件
-    'log.authentication.admin.*'   => [
-        [Admin::class, 'record'],
-    ],
-
-    //数据备份事件
-    'data.backup.record' => [
-        [Backup::class, 'record'],
-    ],
 
 ];

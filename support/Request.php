@@ -19,7 +19,11 @@ use Exception;
  */
 class Request extends \Webman\Http\Request
 {
-    public mixed    $member = null;
+    public mixed $member = null;
+    /**
+     * @var mixed|string|null
+     */
+    public mixed    $role   = null; // 角色
     protected mixed $filter = null;
     /**
      * @var mixed|string|null
@@ -70,7 +74,7 @@ class Request extends \Webman\Http\Request
             // 替换 . 为 /
             $newPath = str_replace('.', '/', $path);
             // 转小写
-            $newPath=strtolower($newPath);
+            $newPath = strtolower($newPath);
         }
         $this->data['path'] = $newPath ?? $path;
         return $this->data['path'];
