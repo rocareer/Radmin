@@ -175,7 +175,7 @@ class DataRestore extends Command
         
         try {
             return (bool)Rdb::table('information_schema.tables')
-                ->where('table_schema', config('plugin.radmin.think-orm.connections.mysql.database'))
+                ->where('table_schema', config('think-orm.connections.mysql.database'))
                 ->where('table_name', $tableName)
                 ->find();
         } catch (\Exception $e) {

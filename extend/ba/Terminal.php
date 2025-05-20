@@ -151,7 +151,7 @@ class Terminal
         }
 
 
-        $commands =  config('plugin.radmin.terminal.commands');
+        $commands =  config('terminal.commands');
         if (radminInstalled()){
             $customCommands=get_sys_config('','terminal');
             foreach ($customCommands as $k=>$customCommand){
@@ -476,7 +476,7 @@ class Terminal
     public static function changeTerminalConfig($config = []): bool
     {
         // 不保存在数据库中，因为切换包管理器时，数据库资料可能还未配置
-        $oldPackageManager =  config('plugin.radmin.terminal.npm_package_manager');
+        $oldPackageManager =  config('terminal.npm_package_manager');
         $newPackageManager = request()->post('manager', $config['manager'] ?? $oldPackageManager);
 
         if ($oldPackageManager == $newPackageManager) {

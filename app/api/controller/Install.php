@@ -108,7 +108,7 @@ class Install
             return;
         }
 
-        $newPackageManager = request()->post('manager', config('plugin.radmin.terminal.npm_package_manager'));
+        $newPackageManager = request()->post('manager', config('terminal.npm_package_manager'));
         if (Terminal::changeTerminalConfig()) {
             return $this->success('', [
                 'manager' => $newPackageManager
@@ -541,7 +541,7 @@ class Install
         }
 
         // 设置新的Token随机密钥key
-        $oldTokenKey        = config('plugin.radmin.buildadmin.token.key');
+        $oldTokenKey        = config('buildadmin.token.key');
         $newTokenKey        = Random::build('alnum', 32);
         $buildConfigFile    = base_path() . '/plugin/radmin/config/' . self::$buildConfigFileName;
         $buildConfigContent = @file_get_contents($buildConfigFile);
@@ -641,7 +641,7 @@ class Install
      */
     private function commandExecutionCheck(): bool
     {
-        $pm = config('plugin.radmin.terminal.npm_package_manager');
+        $pm = config('terminal.npm_package_manager');
         if ($pm == 'none') {
             return false;
         }
@@ -704,7 +704,7 @@ class Install
     {
 
         try {
-            $dbConfig                         = config('plugin.radmin.think-orm');
+            $dbConfig                         = config('think-orm');
             $dbConfig['connections']['mysql'] = array_merge($dbConfig['connections']['mysql'], $database);
 
             Rdb::setConfig($dbConfig);

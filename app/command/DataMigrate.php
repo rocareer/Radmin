@@ -398,7 +398,7 @@ class DataMigrate extends Command
     private function ensureMigrationsTableExists(): void
     {
         $tableName     = self::MIGRATIONS_TABLE;
-        $prefix        = config('plugin.radmin.think-orm.connections.mysql.prefix');
+        $prefix        = config('think-orm.connections.mysql.prefix');
         $fullTableName = $prefix . $tableName;
 
         // todo 没有fetch 方法
@@ -457,7 +457,7 @@ class DataMigrate extends Command
         
         // 如果指定了表名，生成更智能的表结构
         if ($table) {
-            $tableName = str_replace(config('plugin.radmin.think-orm.connections.mysql.prefix'), '', $table);
+            $tableName = str_replace(config('think-orm.connections.mysql.prefix'), '', $table);
             
             // 检查表是否已存在
             $tableExists = Rdb::query("SHOW TABLES LIKE '{$table}'")->fetch();
@@ -562,7 +562,7 @@ PHP;
      */
     private function getAppliedMigrations(): array
     {
-        $prefix    = config('plugin.radmin.think-orm.connections.mysql.prefix');
+        $prefix    = config('think-orm.connections.mysql.prefix');
         $tableName = $prefix . self::MIGRATIONS_TABLE;
 
         $result = Rdb::query("SELECT migration FROM `{$tableName}` ORDER BY id ASC")->fetchAll();
@@ -591,7 +591,7 @@ PHP;
      */
     private function recordMigration(string $migration): void
     {
-        $prefix    = config('plugin.radmin.think-orm.connections.mysql.prefix');
+        $prefix    = config('think-orm.connections.mysql.prefix');
         $tableName = $prefix . self::MIGRATIONS_TABLE;
 
         // 获取当前最大批次号
@@ -610,7 +610,7 @@ PHP;
      */
     private function removeMigration(string $migration): void
     {
-        $prefix    = config('plugin.radmin.think-orm.connections.mysql.prefix');
+        $prefix    = config('think-orm.connections.mysql.prefix');
         $tableName = $prefix . self::MIGRATIONS_TABLE;
 
         Rdb::execute("DELETE FROM `{$tableName}` WHERE migration = ?", [$migration]);
@@ -621,7 +621,7 @@ PHP;
      */
     private function getMigrationExecutedTime(string $migration): string
     {
-        $prefix    = config('plugin.radmin.think-orm.connections.mysql.prefix');
+        $prefix    = config('think-orm.connections.mysql.prefix');
         $tableName = $prefix . self::MIGRATIONS_TABLE;
 
         $result = Rdb::query(

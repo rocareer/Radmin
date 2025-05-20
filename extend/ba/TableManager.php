@@ -133,7 +133,7 @@ class TableManager
     public static function getConnection(?string $source = null): string
     {
         if (!$source || $source === 'default') {
-            return config('plugin.radmin.think-orm.default');
+            return config('think-orm.default');
         }
         return $source;
     }
@@ -178,7 +178,7 @@ class TableManager
         // 数据库为懒连接，执行 sql 命令为 $db 实例连接数据库
         $db->query('SELECT 1');
 
-        $table = config('plugin.radmin.think-orm.migration_table', 'migrations');
+        $table = config('think-orm.migration_table', 'migrations');
         return [
             'adapter'         => $config['type'],
             'connection'      => $db->getPdo(),

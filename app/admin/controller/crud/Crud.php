@@ -294,7 +294,7 @@ class Crud extends Backend
                 'id'     => $crudLogId ?? 0,
                 'status' => 'error',
             ]);
-            if (config('plugin.radmin.app_debug', false)) throw $e;
+            if (config('app_debug', false)) throw $e;
          return $this->error($e->getMessage());
         }
 
@@ -488,7 +488,7 @@ class Crud extends Backend
     {
         $table      = $this->request->get('table');
         $connection = $this->request->get('connection');
-        $connection = $connection ?: config('plugin.radmin.think-orm.default');
+        $connection = $connection ?: config('think-orm.default');
 
         $crudLog = Rdb::name('crud_log')
             ->where('table_name', $table)

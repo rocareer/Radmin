@@ -45,7 +45,7 @@ abstract class Authenticator implements InterfaceAuthenticator
      */
     public function __construct()
     {
-        $this->config      = config('plugin.radmin.auth.login.' . $this->role);
+        $this->config      = config('auth.login.' . $this->role);
         $this->memberModel =Container::get('member.model');
     }
 

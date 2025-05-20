@@ -135,7 +135,7 @@ if (!function_exists('full_url')) {
         //		Event::trigger('uploadConfigInit', App::getInstance());
 
 
-        $cdnUrl = config('plugin.radmin.buildadmin.cdn_url');
+        $cdnUrl = config('buildadmin.cdn_url');
         if (!$cdnUrl) {
             if (request()) {
                 $cdnUrl = request()->upload['cdn'] ?? '//' . request()->host();
@@ -162,7 +162,7 @@ if (!function_exists('full_url')) {
         }
 
         $url          = $domain . $relativeUrl;
-        $cdnUrlParams = config('plugin.radmin.buildadmin.cdn_url_params');
+        $cdnUrlParams = config('buildadmin.cdn_url_params');
         if ($domain === $cdnUrl && $cdnUrlParams) {
             $separator = str_contains($url, '?') ? '&' : '?';
             $url       .= $separator . $cdnUrlParams;
@@ -183,7 +183,7 @@ if (!function_exists('set_timezone')) {
     function set_timezone($timezone = null): void
     {
 
-        $defaultTimezone = config('plugin.radmin.radmin.default_timezone');
+        $defaultTimezone = config('radmin.default_timezone');
 
         $timezone = is_null($timezone) ? get_sys_config('time_zone') : $timezone;
         if ($timezone && $defaultTimezone != $timezone) {
@@ -196,7 +196,7 @@ function get_upload_config(): array
 {
     //	Event::dispatch('uploadConfigInit', []);
 
-    $uploadConfig = config('plugin.radmin.upload', []);
+    $uploadConfig = config('upload', []);
 
     // 确保有默认配置
     if (empty($uploadConfig)) {
@@ -557,7 +557,7 @@ if (!function_exists('get_ba_client')) {
     function get_ba_client(): string
     {
         // return new Client([
-        //     'base_uri'        =>  config('plugin.radmin.buildadmin.api_url'),
+        //     'base_uri'        =>  config('buildadmin.api_url'),
         //     'timeout'         => 30,
         //     'connect_timeout' => 30,
         //     'verify'          => false,

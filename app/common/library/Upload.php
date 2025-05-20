@@ -93,7 +93,7 @@ class Upload
 	{
 		// 1. 使用 null 合并运算符提供默认配置
 		$this->config = array_merge(
-			 config('plugin.radmin.upload', []), // 确保总是返回数组
+			 config('upload', []), // 确保总是返回数组
 			$config
 		);
 		

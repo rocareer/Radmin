@@ -25,7 +25,7 @@ class RequestMiddleWare implements MiddlewareInterface
         /**
          * 全局请求日志
          */
-        // if (config('plugin.radmin.app.request.log.enable')) {
+        // if (config('app.request.log.enable')) {
         //     //生成全局 requestID
         //     $request->requestID = uniqid('R-', true);
         //     $logContent         = [
@@ -35,7 +35,7 @@ class RequestMiddleWare implements MiddlewareInterface
         //         'IP'        => $request->getRealIp(),
         //         'time'      => time()
         //     ];
-        //     Log::channel(config('plugin.radmin.app.request.log.channel'))->info('Request', $logContent);
+        //     Log::channel(config('app.request.log.channel'))->info('Request', $logContent);
         // }
 
 

@@ -28,7 +28,7 @@ class Module extends Backend
     public function index(): \Radmin\Response
     {
      return $this->success('', [
-            'sysVersion' =>  config('plugin.radmin.buildadmin.version'),
+            'sysVersion' =>  config('buildadmin.version'),
             'installed'  => Server::installedList(root_path() . 'modules' . DIRECTORY_SEPARATOR),
         ]);
     }

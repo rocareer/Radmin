@@ -83,7 +83,7 @@ class ClickCaptcha
      */
     public function __construct(array $config = [])
     {
-        $clickConfig  =  config('plugin.radmin.buildadmin.click_captcha');
+        $clickConfig  =  config('buildadmin.click_captcha');
         $this->config = array_merge($clickConfig, $this->config, $config);
 
         // 清理过期的验证码

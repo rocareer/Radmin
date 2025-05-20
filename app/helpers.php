@@ -180,7 +180,7 @@ if (!function_exists('getDbPrefix')) {
      */
     function getDbPrefix()
     {
-        return env('MYSQL_PREFIX') ?? config('plugin.radmin.database.connections.mysql.prefix');
+        return env('MYSQL_PREFIX') ?? config('database.connections.mysql.prefix');
     }
 }
 
@@ -240,7 +240,7 @@ if (!function_exists('shouldExclude')) {
     function shouldExclude(?string $path = null): bool
     {
         $path          = $path ?? request()->path();
-        $excludeRoutes = config('plugin.radmin.auth.exclude', []);
+        $excludeRoutes = config('auth.exclude', []);
 
         foreach ($excludeRoutes as $route) {
             if (strpos($route, '*') !== false) {

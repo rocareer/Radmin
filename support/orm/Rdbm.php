@@ -97,7 +97,7 @@ class Rdbm extends DbManager
     }
     public function setConfig($config): void
     {
-        // $config=config('plugin.radmin.think-orm.connections.mysql');
+        // $config=config('think-orm.connections.mysql');
         $this->config = $config;
     }
 }

@@ -130,8 +130,8 @@ abstract class Model extends ThinkModel implements InterfaceModel
         }
 
         // 检查登录失败次数
-        $maxFailures = config('plugin.radmin.auth.max_login_failures', 10);
-        $lockTime    = config('plugin.radmin.auth.login_lock_time', 900);
+        $maxFailures = config('auth.max_login_failures', 10);
+        $lockTime    = config('auth.login_lock_time', 900);
 
         if (($this->login_failure ?? 0) >= $maxFailures) {
             $lastLoginTime = $this->last_login_time ?? 0;

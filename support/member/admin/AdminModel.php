@@ -92,7 +92,7 @@ class AdminModel extends Model
      */
     public function getAvatarAttr($value): string
     {
-        return full_url($value, false, config('plugin.radmin.buildadmin.default_avatar'));
+        return full_url($value, false, config('buildadmin.default_avatar'));
     }
 
     /**
@@ -102,7 +102,7 @@ class AdminModel extends Model
      */
     public function setAvatarAttr($value): string
     {
-        return $value == full_url('', false, config('plugin.radmin.buildadmin.default_avatar')) ? '' : $value;
+        return $value == full_url('', false, config('buildadmin.default_avatar')) ? '' : $value;
     }
 
     /**

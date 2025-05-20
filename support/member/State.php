@@ -51,7 +51,7 @@ class State implements InterfaceState
     {
         $this->context     = Container::get('member.context');
         $this->memberModel = $this->context->get('model');
-        $this->config      = config('plugin.radmin.auth');
+        $this->config      = config('auth');
     }
 
 

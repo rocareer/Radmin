@@ -75,7 +75,7 @@ class Ajax extends Backend
     public function getDatabaseConnectionList(): Response
     {
         $quickSearch     = $this->request->input("quickSearch", '');
-        $connections     = config('plugin.radmin.think-orm.connections');
+        $connections     = config('think-orm.connections');
         $desensitization = [];
         foreach ($connections as $key => $connection) {
             $connection        = TableManager::getConnectionConfig($key);

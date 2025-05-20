@@ -84,7 +84,7 @@ class Index extends Frontend
                     'allowed_mime_types',
                 ]),
             ],
-            'openMemberCenter' => config('plugin.radmin.buildadmin.open_member_center'),
+            'openMemberCenter' => config('buildadmin.open_member_center'),
             'userInfo'         => $this->request->member,
             'menus'            => $menus,
             'rules'            => array_values($rules),
