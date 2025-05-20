@@ -437,8 +437,8 @@ class Crud extends Backend
         }
 
         // 模型和控制器文件和文件列表
-        $adminModelFiles      = FileUtil::getDirFiles(base_path(). DIRECTORY_SEPARATOR . 'plugin/radmin/app/admin' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR);
-        $commonModelFiles     = FileUtil::getDirFiles(base_path() . DIRECTORY_SEPARATOR . 'plugin/radmin/app/common' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR);
+        $adminModelFiles      = FileUtil::getDirFiles(base_path(). DIRECTORY_SEPARATOR . 'app/admin' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR);
+        $commonModelFiles     = FileUtil::getDirFiles(base_path() . DIRECTORY_SEPARATOR . 'app/common' . DIRECTORY_SEPARATOR . 'model' . DIRECTORY_SEPARATOR);
         $adminControllerFiles = get_controller_list();
 
         $modelFileList   = [];

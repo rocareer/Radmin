@@ -272,7 +272,7 @@ class Upload
             throw new Exception(__('No files have been uploaded or the file size exceeds the upload limit of the server'));
         }
 
-        $size   = FileUtil::fileUnitToByte($this->config['max_size']);
+        $size   = unitToByte($this->config['max_size']);
         $mime   = $this->checkConfig($this->config['allowed_mime_types']);
         $suffix = $this->checkConfig($this->config['allowed_suffixes']);
 

@@ -608,7 +608,7 @@ class Helper
             throw new Exception('Unable to use internal variable:' . $lastName);
         }
 
-        $appDir       = base_path() . DIRECTORY_SEPARATOR . 'plugin/radmin/app/' . $app . DIRECTORY_SEPARATOR;
+        $appDir       = base_path() . DIRECTORY_SEPARATOR . 'app/' . $app . DIRECTORY_SEPARATOR;
         $namespace    = "app\\$app\\$type" . ($pathArr ? '\\' . implode('\\', $pathArr) : '');
         $parseFile    = $appDir . $type . DIRECTORY_SEPARATOR . ($pathArr ? implode(DIRECTORY_SEPARATOR, $pathArr) . DIRECTORY_SEPARATOR : '') . $lastName . '.php';
         $rootFileName = $namespace . "/$lastName" . '.php';

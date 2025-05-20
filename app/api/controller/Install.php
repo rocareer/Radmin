@@ -114,7 +114,7 @@ class Install
                 'manager' => $newPackageManager
             ]);
         } else {
-            return $this->error(__('Failed to switch package manager. Please modify the configuration file manually:%s', ['plugin/radmin/config/buildadmin.php']));
+            return $this->error(__('Failed to switch package manager. Please modify the configuration file manually:%s', ['config/buildadmin.php']));
         }
     }
 
@@ -124,7 +124,7 @@ class Install
     public function envBaseCheck()
     {
         if ($this->isInstallComplete()) {
-            return $this->error(__('The system has completed installation. If you need to reinstall, please delete the %s file first', ['plugin/radmin/public/' . self::$lockFileName]), []);
+            return $this->error(__('The system has completed installation. If you need to reinstall, please delete the %s file first', ['public/' . self::$lockFileName]), []);
         }
         if (env('MYSQL_PASSWORD')) {
             return $this->error(__('检测到带有数据库配置的 .env 文件。请清理后再试一次!'));
@@ -556,7 +556,7 @@ class Install
         // 建立安装锁文件
         // $result = @file_put_contents(base_path().'/public/' . self::$lockFileName, date('Y-m-d H:i:s'));
         // if (!$result) {
-        //     return $this->error(__('File has no write permission:%s', ['plugin/radmin/public/' . self::$lockFileName]));
+        //     return $this->error(__('File has no write permission:%s', ['public/' . self::$lockFileName]));
         // }
 
 
@@ -592,7 +592,7 @@ class Install
             if ($param['type'] == 'web') {
                 $result = @file_put_contents(base_path() . '/public/' . self::$lockFileName, self::$InstallationCompletionMark);
                 if (!$result) {
-                    return $this->error(__('File has no write permission:%s', ['plugin/radmin/public/' . self::$lockFileName]));
+                    return $this->error(__('File has no write permission:%s', ['public/' . self::$lockFileName]));
                 }
             } else {
                 // 管理员配置入库

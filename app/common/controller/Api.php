@@ -1,5 +1,13 @@
 <?php
-
+/**
+ * File:        Api.php
+ * Author:      albert <albert@rocareer.com>
+ * Created:     2025/5/21 01:37
+ * Description:
+ *
+ * Copyright [2014-2026] [https://rocareer.com]
+ * Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+ */
 namespace app\common\controller;
 
 use app\controller\BaseController;
@@ -62,21 +70,17 @@ class Api extends BaseController
     protected function loadControllerLang(): void
     {
         $langSet        = Lang::getLangSet();
-        $controllerPath = str_replace('\\', '/', static::class);
+        $controllerPath = strtolower(str_replace('\\', '/', static::class));
         $controllerPath=explode('controller/',$controllerPath);
         $langPath=$controllerPath[0]."lang";
         $controllerName=$controllerPath[1];
         $langFile       = $langPath.'/'.$langSet.'/'.$controllerName.'.php';
-
+        $commonLangFile = base_path('app/admin/lang/').$langSet.'.php';
+        if(is_file($commonLangFile)) {
+            Lang::load($commonLangFile);
+        }
         if(is_file($langFile)) {
             Lang::load($langFile);
-        }
-        else {
-            // 默认加载中文公共语言文件
-            $commonLangFile = base_path('plugin/radmin/admin/lang/').$langSet.'.php';
-            if(is_file($commonLangFile)) {
-                Lang::load($commonLangFile);
-            }
         }
     }
 

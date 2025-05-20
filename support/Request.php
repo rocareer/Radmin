@@ -69,6 +69,8 @@ class Request extends \Webman\Http\Request
         if (preg_match('#^/admin/.*\..+#', $path)) {
             // 替换 . 为 /
             $newPath = str_replace('.', '/', $path);
+            // 转小写
+            $newPath=strtolower($newPath);
         }
         $this->data['path'] = $newPath ?? $path;
         return $this->data['path'];
