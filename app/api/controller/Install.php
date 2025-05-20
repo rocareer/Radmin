@@ -20,12 +20,12 @@ use extend\ba\Random;
 use extend\ba\Terminal;
 use extend\ba\Version;
 use PDOException;
-use plugin\radmin\support\member\admin\AdminModel;
 use Radmin\exception\BusinessException;
 use Radmin\Http;
 use Radmin\orm\Rdb;
 use Radmin\Response;
 use Radmin\util\FileUtil;
+use support\member\admin\AdminModel;
 use think\db\exception\DbException;
 use Throwable;
 
@@ -108,7 +108,7 @@ class Install
             return;
         }
 
-        $newPackageManager = Http::request()->post('manager', config('plugin.radmin.terminal.npm_package_manager'));
+        $newPackageManager = request()->post('manager', config('plugin.radmin.terminal.npm_package_manager'));
         if (Terminal::changeTerminalConfig()) {
             return $this->success('', [
                 'manager' => $newPackageManager
@@ -286,7 +286,7 @@ class Install
             return $this->error('', [], 2);
         }
 
-        $packageManager = Http::request()->post('manager', 'none');
+        $packageManager = request()->post('manager', 'none');
 
         // npm
         $npmVersion        = Version::getVersion('npm');
@@ -431,14 +431,14 @@ class Install
 
         $envOk    = $this->commandExecutionCheck();
         $rootPath = str_replace('\\', '/', base_path());
-        if (Http::request()->isGet()) {
+        if (request()->isGet()) {
             return $this->success('', [
                 'rootPath'            => $rootPath,
                 'executionWebCommand' => $envOk
             ]);
         }
 
-        $connectData = $databaseParam = Http::request()->only(['hostname', 'username', 'password', 'hostport', 'database', 'prefix']);
+        $connectData = $databaseParam = request()->only(['hostname', 'username', 'password', 'hostport', 'database', 'prefix']);
 
         // 数据库配置测试
         $connectData['database'] = '';

@@ -12,8 +12,123 @@
 
 
 use Radmin\util\FileUtil;
-use Radmin\Http;
 use think\helper\Str;
+
+if (!function_exists('env')) {
+    /**
+     * 获取环境变量
+     * @param $key
+     * @param $default
+     * @return   array|false|mixed|string|null
+     * Author:   albert <albert@rocareer.com>
+     * Time:     2025/5/19 06:45
+     */
+    function env($key, $default = null): mixed
+    {
+        if (getenv($key)) {
+            return getenv($key);
+        }
+        return $default;
+    }
+}
+
+if (!function_exists('var_export_short')) {
+    /**
+     * // 自定义函数将 array() 替换为 []
+     * @param      $content
+     * @param bool $return
+     * @param bool $format
+     * @return   array|string|string[]|null
+     * Author:   albert <albert@rocareer.com>
+     * Time:     2025/5/20 03:35
+     */
+    function var_export_short($content, bool $return = true, bool $format = true): array|string|null
+    {
+        // 使用 var_export 生成数组内容
+        $exported = var_export($content, true);
+
+        // 替换 array() 为短数组语法 []
+        $exported = str_replace(["array (", ")"], ["[", "]"], $exported);
+
+        // 使用正则表达式将 `=>` 和 `[` 放到同一行
+        if ($format) $exported = preg_replace('/=>\s+\[/', '=> [', $exported);
+
+        return $exported;
+    }
+}
+
+
+if (!function_exists('modify_config')) {
+    /**
+     * 修改配置文件
+     *
+     * @param string $configFile 配置文件路径（相对于config目录）
+     * @param array  $newConfig  要修改或添加的配置项
+     * @return bool 是否修改成功
+     */
+    function modify_config(string $configFile, array $newConfig, ?string $plugin = null, bool $replace = false, bool $convertToClass = true): bool
+    {
+        $configPath = config_path();
+        if ($plugin) {
+            $configPath = base_path() . DIRECTORY_SEPARATOR . 'plugin' . DIRECTORY_SEPARATOR . $plugin . DIRECTORY_SEPARATOR . 'config';
+        }
+        $configPath = $configPath . DIRECTORY_SEPARATOR . $configFile;
+
+        // 检查文件是否存在
+        if (!file_exists($configPath)) {
+            throw new InvalidArgumentException("配置文件 {$configFile} 不存在");
+        }
+
+        // 获取当前配置
+        $currentConfig = include $configPath;
+        if (!is_array($currentConfig)) {
+            throw new RuntimeException("配置文件 {$configFile} 必须返回数组");
+        }
+
+        // 处理配置
+        if ($replace) {
+            $mergedConfig = $newConfig;
+        } else {
+            if (array_keys($currentConfig) === range(0, count($currentConfig) - 1)) {
+                // 简单数组处理
+                $mergedConfig = array_unique(array_merge($currentConfig, $newConfig));
+
+                // 格式转换
+                if ($convertToClass) {
+                    $mergedConfig = array_map(function ($item) {
+                        if (is_string($item) && strpos($item, '\\') !== false && !str_ends_with($item, '::class')) {
+                            return '\\' . trim(str_replace("'", "", $item), '\\') . '::class';
+                        }
+                        return $item;
+                    }, $mergedConfig);
+                }
+            } else {
+                // 关联数组处理
+                $mergedConfig = array_merge_recursive($currentConfig, $newConfig);
+            }
+        }
+
+        // 保留注释
+        $originalContent = file_get_contents($configPath);
+        preg_match('/<\?php(.*?)\nreturn\s*\[/s', $originalContent, $matches);
+        $headerComment = $matches[1] ?? '';
+
+        // 生成新的配置内容
+        $newContent = "<?php{$headerComment}\nreturn " . var_export($mergedConfig, true) . ";\n";
+
+        // 格式化数组缩进
+        $newContent = preg_replace('/\s+array\s*\(/', ' [', $newContent);
+        $newContent = preg_replace('/\s+\)/', ' ]', $newContent);
+        $newContent = preg_replace('/array\s*\(/', '[', $newContent);
+        $newContent = preg_replace('/\)/', ']', $newContent);
+        $newContent = str_replace('  ', '    ', $newContent); // 统一缩进为4个空格
+
+        // 写入文件
+        return file_put_contents($configPath, $newContent) !== false;
+    }
+
+}
+
 
 if (!function_exists('formatBytes')) {
     /**
@@ -41,8 +156,8 @@ if (!function_exists('unitToByte')) {
      * 单位转为字节
      * @param string $unit 将b、kb、m、mb、g、gb的单位转为 byte
      * @return   int
-     * Author:   albert <albert@rocareer.com>
-     * Time:     2025/5/18 22:42
+     *                     Author:   albert <albert@rocareer.com>
+     *                     Time:     2025/5/18 22:42
      */
     function unitToByte(string $unit): int
     {
@@ -56,31 +171,6 @@ if (!function_exists('unitToByte')) {
     }
 }
 
-if (!function_exists('radmin_path')) {
-    /**
-     * @return   string
-     * Author:   albert <albert@rocareer.com>
-     * Time:     2025/5/19 01:41
-     */
-    function radmin_path(): string
-    {
-       return base_path() . DIRECTORY_SEPARATOR . 'plugin' . DIRECTORY_SEPARATOR . 'radmin';
-    }
-}
-if (!function_exists('radmin_config')) {
-    /**
-     * @param $name
-     * @param $default
-     * @return   mixed
-     * Author:   albert <albert@rocareer.com>
-     * Time:     2025/5/19 01:41
-     */
-    function radmin_config($name, $default = null): mixed
-    {
-        return config("plugin.radmin.$name", $default);
-    }
-}
-
 if (!function_exists('getDbPrefix')) {
     /**
      * 获取数据库表前缀
@@ -90,7 +180,7 @@ if (!function_exists('getDbPrefix')) {
      */
     function getDbPrefix()
     {
-        return getenv('THINKORM_DEFAULT_PREFIX')??config('plugin.radmin.think-orm.connections.mysql.prefix');
+        return env('MYSQL_PREFIX') ?? config('plugin.radmin.database.connections.mysql.prefix');
     }
 }
 
@@ -110,7 +200,7 @@ if (!function_exists('parseClass')) {
         $class = Str::studly(array_pop($array));
         $path  = $array ? implode('\\', $array) . '\\' : '';
 
-        return 'plugin\\radmin\\app\\' . Http::request()->app . '\\' . $layer . '\\' . $path . $class;
+        return 'app\\' . request()->app . '\\' . $layer . '\\' . $path . $class;
     }
 }
 if (!function_exists('arrayStrictFilter')) {
@@ -140,28 +230,6 @@ if (!function_exists('arrayStrictFilter')) {
     }
 }
 
-if (!function_exists('radminInstalled')) {
-
-    function radminInstalled(): bool
-    {
-        $lockedFile=base_path().'/plugin/radmin/public/install.lock';
-        if (file_exists($lockedFile)) {
-            return true;
-        }
-        return false;
-    }
-}
-if (!function_exists('radminOrmInstalled')) {
-
-    function radminOrmInstalled(): bool
-    {
-        if (getenv('THINKORM_DEFAULT_PASSWORD')) {
-            return true;
-        }
-        return false;
-    }
-}
-
 /**
  * 检查路径是否需要跳过认证
  * @param string|null $path
@@ -171,7 +239,7 @@ if (!function_exists('radminOrmInstalled')) {
 if (!function_exists('shouldExclude')) {
     function shouldExclude(?string $path = null): bool
     {
-        $path          = $path ?? Http::request()->path();
+        $path          = $path ?? request()->path();
         $excludeRoutes = config('plugin.radmin.auth.exclude', []);
 
         foreach ($excludeRoutes as $route) {
@@ -231,7 +299,7 @@ if (!function_exists('getTokenFromRequest')) {
             return extractBearerToken($token);
         }
 
-        $type=$request->role??$request->app;
+        $type = $request->role ?? $request->app;
         // 从配置的 headers 中获取 Token
         $headers = config("plugin.radmin.auth.headers.{$type}", []);
         foreach ($headers as $header) {
@@ -242,13 +310,12 @@ if (!function_exists('getTokenFromRequest')) {
         }
 
 
-
         /**
          * api-token 给前端 下载等用
          * 从 query 参数或 body 获取 Token
          */
 
-        return $request->input('api-token') ??$request->input('batoken');
+        return $request->input('api-token') ?? $request->input('batoken');
     }
 
     /**
@@ -423,7 +490,7 @@ if (!function_exists('get_controller_list')) {
     {
         // todo
         // $controllerDir = app_path() . DIRECTORY_SEPARATOR . $app . DIRECTORY_SEPARATOR . 'controller' . DIRECTORY_SEPARATOR;
-        $controllerDir = base_path().'/plugin/radmin/app' . DIRECTORY_SEPARATOR . $app . DIRECTORY_SEPARATOR . 'controller' . DIRECTORY_SEPARATOR;
+        $controllerDir = base_path() . '/plugin/radmin/app' . DIRECTORY_SEPARATOR . $app . DIRECTORY_SEPARATOR . 'controller' . DIRECTORY_SEPARATOR;
         return Filesystem::getDirFiles($controllerDir);
     }
 }

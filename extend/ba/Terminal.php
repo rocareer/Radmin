@@ -15,8 +15,8 @@ use app\admin\library\module\Manage;
 use plugin\radmin\extend\ba\FileUtil;
 use plugin\radmin\extend\ba\HttpResponseException;
 use plugin\radmin\extend\ba\Response;
-use plugin\radmin\support\member\Member;
 use Radmin\Http;
+use support\member\Member;
 use Throwable;
 use Workerman\Protocols\Http\ServerSentEvents;
 
@@ -120,9 +120,9 @@ class Terminal
      */
     public function __construct()
     {
-        $this->connection=Http::request()->connection;
-        $this->uuid   = Http::request()->input('uuid', '');
-        $this->extend = Http::request()->input('extend', '');
+        $this->connection=request()->connection;
+        $this->uuid   = request()->input('uuid', '');
+        $this->extend = request()->input('extend', '');
 
         // 初始化日志文件
         $outputDir        = runtime_path() . DIRECTORY_SEPARATOR . 'terminal';
@@ -183,7 +183,7 @@ class Terminal
         }
 
         if (str_contains($command['command'], '%')) {
-            $args = Http::request()->input('extend', '');
+            $args = request()->input('extend', '');
             $args = explode('~~', $args);
 
             array_unshift($args, $command['command']);
@@ -209,7 +209,7 @@ class Terminal
         }
         if (!ob_get_level()) ob_start();
 
-        $this->commandKey = $commandkey??Http::request()->input('command');
+        $this->commandKey = $commandkey??request()->input('command');
         $command = self::getCommand($this->commandKey);
         if (!$command) {
             $this->execError('The command was not allowed to be executed', true);
@@ -477,7 +477,7 @@ class Terminal
     {
         // 不保存在数据库中，因为切换包管理器时，数据库资料可能还未配置
         $oldPackageManager =  config('plugin.radmin.terminal.npm_package_manager');
-        $newPackageManager = Http::request()->post('manager', $config['manager'] ?? $oldPackageManager);
+        $newPackageManager = request()->post('manager', $config['manager'] ?? $oldPackageManager);
 
         if ($oldPackageManager == $newPackageManager) {
             return true;

@@ -609,7 +609,7 @@ class Helper
         }
 
         $appDir       = base_path() . DIRECTORY_SEPARATOR . 'plugin/radmin/app/' . $app . DIRECTORY_SEPARATOR;
-        $namespace    = "plugin\\radmin\\app\\$app\\$type" . ($pathArr ? '\\' . implode('\\', $pathArr) : '');
+        $namespace    = "app\\$app\\$type" . ($pathArr ? '\\' . implode('\\', $pathArr) : '');
         $parseFile    = $appDir . $type . DIRECTORY_SEPARATOR . ($pathArr ? implode(DIRECTORY_SEPARATOR, $pathArr) . DIRECTORY_SEPARATOR : '') . $lastName . '.php';
         $rootFileName = $namespace . "/$lastName" . '.php';
         return [

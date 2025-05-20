@@ -26,8 +26,8 @@ class Admin extends BaseModel
     {
         try {
             $this->startTrans();
-            $saveData['name'] = $data->username??Http::request()->input('username')??"未知";
-            $saveData['ip']       = $data->last_login_ip??HTTP::request()->getRealIp()??'';
+            $saveData['name'] = $data->username??request()->input('username')??"未知";
+            $saveData['ip']       = $data->last_login_ip??request()->getRealIp()??'';
             // 行为 1登录 2退出
             if (strpos($event, 'login')) {
                 $saveData['action'] = 1;

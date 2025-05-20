@@ -46,8 +46,8 @@ class SystemUtil
 
     public static function get_route_remark(): string
     {
-        $controllerName = Http::request()->controller;
-        $actionName     = Http::request()->action;
+        $controllerName = request()->controller;
+        $actionName     = request()->action;
         $path           = str_replace('.', '/', $controllerName);
         $path           = str_replace('plugin\radmin\app\admin\controller\\', '', $path);
         $remark         = Rdb::name('admin_rule')

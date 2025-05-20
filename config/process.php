@@ -19,10 +19,10 @@ use app\process\Http;
 global $argv;
 
 return [
-    'webman' => [
+    'Radmin' => [
         'handler' => Http::class,
-        'listen' => 'http://0.0.0.0:8787',
-        'count' => cpu_count() * 4,
+        'listen' => 'http://0.0.0.0:9696',
+        'count' => 4,
         'user' => '',
         'group' => '',
         'reusePort' => false,

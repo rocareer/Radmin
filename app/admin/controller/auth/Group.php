@@ -6,10 +6,10 @@ use app\admin\model\AdminGroup;
 use app\admin\model\AdminRule;
 use app\common\controller\Backend;
 use extend\ba\Tree;
-use plugin\radmin\support\member\Member;
 use Radmin\orm\Rdb;
 use Radmin\Response;
 use Radmin\util\SystemUtil;
+use support\member\Member;
 use Throwable;
 
 class Group extends Backend

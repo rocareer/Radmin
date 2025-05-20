@@ -88,7 +88,7 @@ class Local extends Driver
 		$saveName = $this->clearRootPath($saveName);
 		
 		if ($domain === true) {
-			$domain = '//' . Http::request()->host();
+			$domain = '//' . request()->host();
 		} elseif ($domain === false) {
 			$domain = '';
 		}

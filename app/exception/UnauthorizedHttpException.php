@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace Radmin\exception;
 
-use plugin\radmin\support\StatusCode;
+use support\StatusCode;
 use Throwable;
 
 class UnauthorizedHttpException extends Exception

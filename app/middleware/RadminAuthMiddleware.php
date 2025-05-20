@@ -11,8 +11,6 @@
 
 namespace app\middleware;
 
-use plugin\radmin\support\member\Member;
-use plugin\radmin\support\StatusCode;
 use Radmin\Container;
 use Radmin\exception\TokenException;
 use Radmin\exception\TokenExpiredException;
@@ -20,6 +18,8 @@ use Radmin\exception\UnauthorizedHttpException;
 use Radmin\Request;
 use Radmin\Response;
 use Radmin\token\Token;
+use support\member\Member;
+use support\StatusCode;
 use Throwable;
 
 class RadminAuthMiddleware implements MiddlewareInterface

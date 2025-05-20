@@ -138,7 +138,7 @@ if (!function_exists('full_url')) {
         $cdnUrl = config('plugin.radmin.buildadmin.cdn_url');
         if (!$cdnUrl) {
             if (request()) {
-                $cdnUrl = Http::request()->upload['cdn'] ?? '//' . Http::request()->host();
+                $cdnUrl = request()->upload['cdn'] ?? '//' . request()->host();
             } else {
                 $cdnUrl = SystemUtil::get_sys_config('host');
             }
@@ -215,7 +215,7 @@ function get_upload_config(): array
 
     $uploadConfig['max_size'] = unitToByte($uploadConfig['max_size']);
 
-    $upload = Http::request()->upload;
+    $upload = request()->upload;
     if (!$upload) {
         $uploadConfig['mode'] = 'local';
         return $uploadConfig;
@@ -279,7 +279,7 @@ if (!function_exists('action_in_arr')) {
             return false;
         }
         $arr           = array_map('strtolower', $arr);
-        $currentAction = Http::request()->action ?? '';
+        $currentAction = request()->action ?? '';
         if (in_array(strtolower($currentAction), $arr) || in_array('*', $arr)) {
             return true;
         }
@@ -333,8 +333,8 @@ if (!function_exists('get_area')) {
      */
     function get_area(?int $cacheTime = 86400): array
     {
-        $province = Http::request()->get('province', '');
-        $city     = Http::request()->get('city', '');
+        $province = request()->get('province', '');
+        $city     = request()->get('city', '');
 
         $where = [
             'pid'   => 0,
@@ -434,7 +434,7 @@ if (!function_exists('ip_check')) {
         // 确保总是返回数组
         $no_access_ip = is_array($no_access_ip) ? $no_access_ip : [];
 
-        $ip = Http::request()->getRealIp()??'';
+        $ip = request()->getRealIp()??'';
         if (in_array($ip, $no_access_ip)) {
             throw new Exception('IP not allowed');
         }
@@ -564,7 +564,7 @@ if (!function_exists('get_ba_client')) {
         //     'http_errors'     => false,
         //     'headers'         => [
         //         'X-REQUESTED-WITH' => 'XMLHttpRequest',
-        //         'Referer'          => dirname(Http::request()->root(true)),
+        //         'Referer'          => dirname(request()->root(true)),
         //         'User-Agent'       => 'BuildAdminClient',
         //     ]
         // ]);

@@ -19,11 +19,11 @@ use app\api\validate\User as UserValidate;
 use app\common\controller\Frontend;
 use extend\ba\Captcha;
 use extend\ba\ClickCaptcha;
-use plugin\radmin\support\member\Member;
-use plugin\radmin\support\StatusCode;
 use Radmin\exception\UnauthorizedHttpException;
 use Radmin\Response;
 use Radmin\token\Token;
+use support\member\Member;
+use support\StatusCode;
 use Throwable;
 
 class Index extends Frontend

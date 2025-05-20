@@ -15,12 +15,26 @@
 use support\Request;
 
 return [
-    'debug' => true,
-    'error_reporting' => E_ALL,
-    'default_timezone' => 'Asia/Shanghai',
-    'request_class' => Request::class,
-    'public_path' => base_path() . DIRECTORY_SEPARATOR . 'public',
-    'runtime_path' => base_path(false) . DIRECTORY_SEPARATOR . 'runtime',
-    'controller_suffix' => 'Controller',
-    'controller_reuse' => false,
+    'debug'             => env('APP_DEBUG', true),
+    'error_reporting'   => E_ALL,
+    'default_timezone'  => env('DEFAULT_TIMEZONE', 'Asia/Shanghai'),
+    'controller_suffix' => '',
+    'controller_reuse'  => false,
+
+    'request_class'  => Request::class,
+    'public_path'    => base_path() . DIRECTORY_SEPARATOR . 'public',
+    'runtime_path'   => base_path() . DIRECTORY_SEPARATOR . 'runtime',
+    'app_path'       => base_path() . DIRECTORY_SEPARATOR . 'app',
+
+    // http cache 实验功能
+    'http_cache'     => env('HTTP_CACHE', false),
+    'http_cache_ttl' => env('HTTP_CACHE_TTL', 0),
+
+    // request log 实验功能
+    'request'    => [
+        'log' => [
+            'enable'  => true,
+            'channel' => 'R-request'
+        ]
+    ]
 ];

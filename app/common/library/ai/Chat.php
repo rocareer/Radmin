@@ -79,7 +79,7 @@ class Chat
 	    
 	    
 	    try {
-		    $this->connection=Http::request()->connection;
+		    $this->connection=request()->connection;
 		    if(empty($config)) {
 			    $config = Helper::getConfig();
 		    }
@@ -95,7 +95,7 @@ class Chat
 			    $this->connection->send(new Response(200, $headers, "\r\n"));
 			   
 		    }                                     // 获取输入
-		    $this->inputs = Http::request()->post();    // 调试日志初始化
+		    $this->inputs = request()->post();    // 调试日志初始化
 		
 		    
 		    $this->debug  =  config('plugin.radmin.ai.debug');

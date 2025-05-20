@@ -1,15 +1,44 @@
 <?php
 /**
- * This file is part of webman.
+ * File:        middleware.php
+ * Author:      albert <albert@rocareer.com>
+ * Created:     2025/5/12 02:37
+ * Description:
  *
- * Licensed under The MIT License
- * For full copyright and license information, please see the MIT-LICENSE.txt
- * Redistributions of files must retain the above copyright notice.
- *
- * @author    walkor<walkor@workerman.net>
- * @copyright walkor<walkor@workerman.net>
- * @link      http://www.workerman.net/
- * @license   http://www.opensource.org/licenses/mit-license.php MIT License
+ * Copyright [2014-2026] [https://rocareer.com]
+ * Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
  */
 
-return [];
+use app\middleware\AccessControlMiddleWare;
+use app\middleware\AdminLog;
+use app\middleware\AdminSecurity;
+use app\middleware\RadminAuthMiddleware;
+use app\middleware\RequestContextMiddleWare;
+use app\middleware\RequestMiddleWare;
+
+return [
+    ''      => [
+        // 全局跨域
+        AccessControlMiddleWare::class,
+        // 请求预处理
+        RequestMiddleWare::class,
+        RequestContextMiddleWare::class
+
+    ],
+    'api'   => [
+        new RadminAuthMiddleware('user'),
+    ],
+    'admin' => [
+
+        new RadminAuthMiddleware('admin'),
+
+        // 管理员操作日志
+        AdminLog::class,
+        // 数据安全
+        AdminSecurity::class,
+    ],
+    'user'  => [
+        new RadminAuthMiddleware('user'),
+    ],
+
+];

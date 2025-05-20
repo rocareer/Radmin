@@ -15,11 +15,11 @@
 namespace Radmin\token\driver;
 
 use plugin\radmin\extend\ba\Random;
-use plugin\radmin\support\StatusCode;
 use Radmin\exception\TokenException;
 use Radmin\orm\Rdb;
 use Radmin\token\TokenInterface;
 use stdClass;
+use support\StatusCode;
 use Throwable;
 
 class Mysql implements TokenInterface

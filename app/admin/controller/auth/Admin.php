@@ -7,10 +7,10 @@ namespace app\admin\controller\auth;
 
 use app\admin\model\Admin as AdminModel;
 use app\common\controller\Backend;
-use plugin\radmin\support\member\Member;
 use Radmin\orm\Rdb;
 use Radmin\Response;
 use Radmin\util\SystemUtil;
+use support\member\Member;
 use Throwable;
 
 class Admin extends Backend

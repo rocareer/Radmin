@@ -138,14 +138,14 @@ class AdminLog extends BaseModel
     {
         $adminId=null;
         $userName=null;
-        if (Http::request()->member){
-            $userID = Http::request()->member->id;
-            $userName = Http::request()->member->username;
+        if (request()->member){
+            $userID = request()->member->id;
+            $userName = request()->member->username;
         }
         $adminId    = $adminId ?? $userID??0 ;
-        $username   = $userName ?? Http::request()->input('username', __('Unknown'));
-        $controller = str_replace('.', '/', Http::request()->controller());
-        $action     = Http::request()->action;
+        $username   = $userName ?? request()->input('username', __('Unknown'));
+        $controller = str_replace('.', '/', request()->controller());
+        $action     = request()->action;
         $path       = $controller . '/' . $action;
         if ($this->urlIgnoreRegex) {
             foreach ($this->urlIgnoreRegex as $item) {
@@ -156,7 +156,7 @@ class AdminLog extends BaseModel
         }
         $data = $data ?: $this->data;
         if (empty($data)) {
-            $data = Http::request()->all();
+            $data = request()->all();
         }
         $data  = $this->desensitization($data);
         $title = $title ?: $this->title;
@@ -174,14 +174,14 @@ class AdminLog extends BaseModel
                     '//app/radmin/', '',
                     str_replace
                     (
-                        Http::request()->host(), '', Http::request()->url()
+                        request()->host(), '', request()->url()
                     )
                 ), 0, 1500
             ),
             'title'     => $title,
             'data'      => !is_scalar($data) ? json_encode($data) : $data,
-            'ip'        => Http::request()->getRealIp(),
-            'useragent' => substr(Http::request()->header('user-agent'), 0, 255),
+            'ip'        => request()->getRealIp(),
+            'useragent' => substr(request()->header('user-agent'), 0, 255),
             'create_time'=> time(),
         ]);
     }

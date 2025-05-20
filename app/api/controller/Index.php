@@ -5,8 +5,8 @@ namespace app\api\controller;
 
 use app\common\controller\Frontend;
 use extend\ba\Tree;
-use plugin\radmin\support\member\Member;
 use Radmin\orm\Rdb;
+use support\member\Member;
 use Throwable;
 
 use function plugin\radmin\app\api\controller\get_sys_config;

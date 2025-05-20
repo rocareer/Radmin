@@ -4,11 +4,11 @@ declare (strict_types=1);
 namespace app\admin\controller;
 
 use app\common\controller\Backend;
-use plugin\radmin\support\member\Member;
 use Radmin\exception\BusinessException;
 use Radmin\Response;
 use Radmin\token\Token;
 use Radmin\util\SystemUtil;
+use support\member\Member;
 use Throwable;
 
 class Index extends Backend

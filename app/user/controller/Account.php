@@ -10,10 +10,10 @@ use app\common\model\UserMoneyLog;
 use app\common\model\UserScoreLog;
 use extend\ba\Captcha;
 use extend\ba\Random;
-use plugin\radmin\support\member\Member;
 use Radmin\Response;
 use Radmin\token\Token;
 use Radmin\util\DateUtil;
+use support\member\Member;
 use think\facade\Validate;
 use Throwable;
 
