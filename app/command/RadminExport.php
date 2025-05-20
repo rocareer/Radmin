@@ -1,8 +1,8 @@
 <?php
 
-namespace support\command;
+namespace app\command;
 
-use Radmin\Command;
+use support\Command;
 use extend\ra\FileUtil;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;

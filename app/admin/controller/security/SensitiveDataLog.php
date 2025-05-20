@@ -5,7 +5,7 @@ namespace app\admin\controller\security;
 use app\admin\model\SensitiveDataLog as SensitiveDataLogModel;
 use app\common\controller\Backend;
 use extend\ba\TableManager;
-use app\admin\controller\security\SystemUtil;
+use extend\ra\SystemUtil;
 use support\orm\Db;
 use support\Response;
 use Throwable;

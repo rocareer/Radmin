@@ -9,7 +9,7 @@ use extend\ba\Captcha;
 use extend\ba\ClickCaptcha;
 use app\exception\BusinessException;
 use support\Response;
-use Radmin\token\Token;
+use support\token\Token;
 use support\StatusCode;
 use Throwable;
 

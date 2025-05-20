@@ -4,7 +4,7 @@ namespace app\admin\controller\security;
 
 use app\admin\model\SensitiveData as SensitiveDataModel;
 use app\common\controller\Backend;
-use app\admin\controller\security\SystemUtil;
+use extend\ra\SystemUtil;
 use support\Response;
 use Throwable;
 

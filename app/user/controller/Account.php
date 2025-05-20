@@ -11,7 +11,7 @@ use app\common\model\UserScoreLog;
 use extend\ba\Captcha;
 use extend\ba\Random;
 use support\Response;
-use Radmin\token\Token;
+use support\token\Token;
 use extend\ra\DateUtil;
 use support\member\Member;
 use think\facade\Validate;

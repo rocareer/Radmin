@@ -3,7 +3,7 @@
 
 namespace extend\ba;
 
-use plugin\radmin\extend\ba\FileUtil;
+use extend\ra\FileUtil;
 use support\lang\Lang;
 use support\orm\Db;
 use Throwable;

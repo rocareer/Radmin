@@ -1,9 +1,8 @@
 <?php
 
-namespace support\command;
+namespace app\command;
 
-use Radmin\Command;
-use Radmin\Event;
+use support\Command;
 use support\orm\Db;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;

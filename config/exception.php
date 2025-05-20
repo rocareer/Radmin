@@ -4,7 +4,7 @@
  */
 
 
-use plugin\admin\app\exception\Handler;
+use app\exception\Handler;
 
 return [
     ''=> Handler::class,

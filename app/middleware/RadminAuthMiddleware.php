@@ -17,7 +17,7 @@ use app\exception\TokenExpiredException;
 use app\exception\UnauthorizedHttpException;
 use support\Request;
 use support\Response;
-use Radmin\token\Token;
+use support\token\Token;
 use support\member\Member;
 use support\StatusCode;
 use Throwable;

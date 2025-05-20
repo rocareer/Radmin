@@ -14,10 +14,10 @@
 
 namespace support\token\driver;
 
-use plugin\radmin\extend\ba\Random;
+use extend\ba\Random;
 use app\exception\TokenException;
 use support\orm\Db;
-use Radmin\token\TokenInterface;
+use support\token\TokenInterface;
 use stdClass;
 use support\StatusCode;
 use Throwable;

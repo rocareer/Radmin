@@ -13,7 +13,7 @@ namespace support\member\admin;
 use app\admin\model\AdminGroup;
 
 use support\orm\Db;
-use Radmin\token\Token;
+use support\token\Token;
 use support\member\Service;
 use Throwable;
 

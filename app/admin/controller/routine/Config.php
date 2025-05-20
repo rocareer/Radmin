@@ -5,14 +5,13 @@ namespace app\admin\controller\routine;
 use app\admin\model\Config as ConfigModel;
 use app\common\controller\Backend;
 use app\common\library\Email;
+use extend\ra\SystemUtil;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
 use PHPMailer\PHPMailer\PHPMailer;
-use app\admin\controller\routine\SystemUtil;
 use support\Response;
 use extend\ra\FileUtil;
 use Throwable;
 
-use function plugin\radmin\app\admin\controller\routine\get_sys_config;
 
 class Config extends Backend
 {
@@ -58,7 +57,7 @@ class Config extends Backend
             'list'          => $list,
             'remark'        => SystemUtil::get_route_remark(),
             'configGroup'   => $newConfigGroup ?? [],
-            'quickEntrance' => get_sys_config('config_quick_entrance'),
+            'quickEntrance' => SystemUtil::get_sys_config('config_quick_entrance'),
         ]);
     }
 

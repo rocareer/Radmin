@@ -1,10 +1,10 @@
 <?php
 
-namespace support\command;
+namespace app\command;
 
 use app\admin\model\data\Table;
-use Radmin\Command;
-use Radmin\Event;
+use support\Command;
+use Webman\Event\Event;
 use support\orm\Db;
 use extend\ra\FileUtil;
 use Symfony\Component\Console\Input\InputArgument;

@@ -12,16 +12,14 @@
 namespace extend\ba;
 
 use app\admin\library\module\Manage;
+use app\exception\TerminalException;
+use Exception;
 use extend\ra\SystemUtil;
-use plugin\radmin\extend\ba\FileUtil;
-use plugin\radmin\extend\ba\HttpResponseException;
-use plugin\radmin\extend\ba\Response;
-
+use extend\ra\FileUtil;
 use support\member\Member;
 use Throwable;
+use Workerman\Protocols\Http\Response;
 use Workerman\Protocols\Http\ServerSentEvents;
-
-use function plugin\radmin\extend\ba\get_sys_config;
 
 
 class Terminal
@@ -99,9 +97,7 @@ class Terminal
         // 执行出错
         'exec-error'     => 'command-exec-error',
     ];
-    /**
-     * @var array|mixed|\Workerman\Connection\TcpConnection|null
-     */
+
     protected mixed $connection;
 
     /**
@@ -121,9 +117,9 @@ class Terminal
      */
     public function __construct()
     {
-        $this->connection=request()->connection;
-        $this->uuid   = request()->input('uuid', '');
-        $this->extend = request()->input('extend', '');
+        $this->connection = request()->connection;
+        $this->uuid       = request()->input('uuid', '');
+        $this->extend     = request()->input('extend', '');
 
         // 初始化日志文件
         $outputDir        = runtime_path() . DIRECTORY_SEPARATOR . 'terminal';
@@ -152,12 +148,12 @@ class Terminal
         }
 
 
-        $commands =  config('terminal.commands');
-        if (SystemUtil::installed()){
-            $customCommands=SystemUtil::get_sys_config('','terminal');
-            foreach ($customCommands as $k=>$customCommand){
-                foreach ($customCommand as $comd){
-                    $commands[$k][$comd['key']]=$comd['value'];
+        $commands = config('terminal.commands');
+        if (SystemUtil::installed()) {
+            $customCommands = SystemUtil::get_sys_config('', 'terminal');
+            foreach ($customCommands as $k => $customCommand) {
+                foreach ($customCommand as $comd) {
+                    $commands[$k][$comd['key']] = $comd['value'];
                 }
             }
         }
@@ -200,7 +196,7 @@ class Terminal
      * @param bool $authentication 是否鉴权
      * @throws Throwable
      */
-    public function exec(bool $authentication = true,?string $commandkey=null): void
+    public function exec(bool $authentication = true, ?string $commandkey = null): void
     {
 
         $this->sendHeader();
@@ -210,8 +206,8 @@ class Terminal
         }
         if (!ob_get_level()) ob_start();
 
-        $this->commandKey = $commandkey??request()->input('command');
-        $command = self::getCommand($this->commandKey);
+        $this->commandKey = $commandkey ?? request()->input('command');
+        $command          = self::getCommand($this->commandKey);
         if (!$command) {
             $this->execError('The command was not allowed to be executed', true);
         }
@@ -222,7 +218,7 @@ class Terminal
                 if (!Member::terminal($token)) {
                     $this->execError("You are not super administrator or not logged in", true);
                 }
-            } catch (\Exception) {
+            } catch (Exception) {
                 $this->execError(__('Token expiration'));
             }
         }
@@ -319,6 +315,7 @@ class Terminal
      * 检查输出
      * @param string $outputs   全部输出内容
      * @param string $rowOutput 当前输出内容（行）
+     * @throws TerminalException
      */
     public function checkOutput(string $outputs, string $rowOutput): void
     {
@@ -408,8 +405,14 @@ class Terminal
 
     /**
      * 执行错误
+     * @param      $error
+     * @param bool $break
+     * @return   void
+     * @throws TerminalException
+     * Author:   albert <albert@rocareer.com>
+     * Time:     2025/5/21 00:50
      */
-    public function execError($error, $break = false): void
+    public function execError($error, bool $break = false): void
     {
         $this->output('Error:' . $error);
         $this->outputFlag('exec-error');
@@ -421,7 +424,7 @@ class Terminal
      */
     public function break(): void
     {
-        throw new HttpResponseException(Response::create()->contentType('text/event-stream'));
+        throw new TerminalException('break');
     }
 
     /**
@@ -454,7 +457,7 @@ class Terminal
 
     public static function mvDist(): bool
     {
-        $distPath      = base_path() .DIRECTORY_SEPARATOR .self::$distDir . DIRECTORY_SEPARATOR;
+        $distPath      = base_path() . DIRECTORY_SEPARATOR . self::$distDir . DIRECTORY_SEPARATOR;
         $indexHtmlPath = $distPath . 'index.html';
         $assetsPath    = $distPath . 'assets';
         if (!file_exists($indexHtmlPath) || !file_exists($assetsPath)) {
@@ -477,7 +480,7 @@ class Terminal
     public static function changeTerminalConfig($config = []): bool
     {
         // 不保存在数据库中，因为切换包管理器时，数据库资料可能还未配置
-        $oldPackageManager =  config('terminal.npm_package_manager');
+        $oldPackageManager = config('terminal.npm_package_manager');
         $newPackageManager = request()->post('manager', $config['manager'] ?? $oldPackageManager);
 
         if ($oldPackageManager == $newPackageManager) {
@@ -498,7 +501,7 @@ class Terminal
     {
         // $app = app();
         // if (!empty($app->worker) && !empty($app->connection)) {
-            $this->connection->send(new ServerSentEvents(['event' => 'message', 'data' => $data]));
+        $this->connection->send(new ServerSentEvents(['event' => 'message', 'data' => $data]));
         // } else {
         //     echo 'data: ' . $data . "\n\n";
         // }
@@ -510,16 +513,14 @@ class Terminal
     public function sendHeader(): void
     {
         $headers = array_merge([], [
-            'X-Accel-Buffering' => 'no',
-            'Content-Type'      => 'text/event-stream',
-            'Cache-Control'     => 'no-cache',
+            'X-Accel-Buffering'                => 'no',
+            'Content-Type'                     => 'text/event-stream',
+            'Cache-Control'                    => 'no-cache',
             'Access-Control-Allow-Credentials' => 'true',
-            'Access-Control-Allow-Origin' => '*',
-            'Access-Control-Allow-Methods' => '*',
-            'Access-Control-Allow-Headers' => "*",
+            'Access-Control-Allow-Origin'      => '*',
+            'Access-Control-Allow-Methods'     => '*',
+            'Access-Control-Allow-Headers'     => "*",
         ]);
-
-
-            $this->connection->send(new \Workerman\Protocols\Http\Response(200, $headers, "\r\n"));
+        $this->connection->send(new Response(200, $headers, "\r\n"));
     }
 }

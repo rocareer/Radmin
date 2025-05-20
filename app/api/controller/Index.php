@@ -5,6 +5,7 @@ namespace app\api\controller;
 
 use app\common\controller\Frontend;
 use extend\ba\Tree;
+use extend\ra\SystemUtil;
 use support\orm\Db;
 use support\member\Member;
 use Throwable;
@@ -30,9 +31,9 @@ class Index extends Frontend
         $menus = [];
 
         //登录用户
-        if ($this->request->login) {
+        if ($this->request->member) {
             $rules     = [];
-            $userMenus = Member::setCurrentRole('user')->getMenus($this->request->member->id);
+            $userMenus = Member::getMenus($this->request->member->id);
 
             // 首页加载的规则，验权，但过滤掉会员中心菜单
             foreach ($userMenus as $item) {
@@ -73,9 +74,9 @@ class Index extends Frontend
 
         $data = [
             'site'             => [
-                'siteName'     => get_sys_config('site_name'),
-                'recordNumber' => get_sys_config('record_number'),
-                'version'      => get_sys_config('version'),
+                'siteName'     => SystemUtil::get_sys_config('site_name'),
+                'recordNumber' => SystemUtil::get_sys_config('record_number'),
+                'version'      => SystemUtil::get_sys_config('version'),
                 'cdnUrl'       => full_url(),
                 'upload'       => keys_to_camel_case(get_upload_config(), [
                     'max_size',

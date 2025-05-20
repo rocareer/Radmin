@@ -22,15 +22,8 @@ class TerminalException extends Exception
     /**
      * 创建认证异常
      */
-    public function __construct(
-        string $message = '',
-        int $code = StatusCode::AUTH_ERROR,
-        array $data = ['data' => 'terminal error'],
-        ?string $type = null,
-        Throwable $previous = null
-    ) {
-        parent::__construct($message, $code, $data, $type, $previous);
-    }
-
+    public array $header = [
+        'Content-Type' => 'text/event-stream',
+    ];
 
 }

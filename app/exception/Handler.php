@@ -128,6 +128,7 @@ class Handler extends ExceptionHandler
      */
     protected function solveAllException(Throwable $e): void
     {
+        var_dump(get_class($e));
         if ($e instanceof Exception) {
             $this->statusCode = $e->statusCode;
             $this->header = $e->header;

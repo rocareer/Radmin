@@ -4,7 +4,7 @@
 namespace extend\ba;
 
 use GdImage;
-use plugin\radmin\extend\ba\FileUtil;
+use extend\ra\FileUtil;
 use support\orm\Db;
 use support\Response;
 use Throwable;

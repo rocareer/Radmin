@@ -9,7 +9,7 @@ use app\exception\UnauthorizedHttpException;
 
 use support\Log;
 use support\orm\Db;
-use Radmin\token\Token;
+use support\token\Token;
 use support\StatusCode;
 use think\db\exception\DataNotFoundException;
 use think\db\exception\DbException;

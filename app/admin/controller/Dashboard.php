@@ -4,6 +4,7 @@ namespace app\admin\controller;
 
 use app\common\controller\Backend;
 use extend\ra\SystemUtil;
+use support\Response;
 
 class Dashboard extends Backend
 {
@@ -12,7 +13,7 @@ class Dashboard extends Backend
         parent::initialize();
     }
 
-    public function index(): \Radmin\Response
+    public function index(): Response
     {
      return $this->success('', [
             'remark' => SystemUtil::get_route_remark()

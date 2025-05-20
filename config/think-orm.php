@@ -10,7 +10,7 @@ return [
             // 服务器地址
             'hostname' => env('MYSQL_HOSTNAME', '127.0.0.1'),
             // 数据库名
-            'database' => env('MYSQL_DATABASE', 'dev'),
+            'database' => env('MYSQL_DATABASE', 'dev2'),
             // 数据库用户名
             'username' => env('MYSQL_USERNAME', 'root'),
             // 数据库密码
@@ -25,7 +25,7 @@ return [
             // 数据库编码默认采用utf8
             'charset' => env('MYSQL_CHARSET', 'utf8'),
             // 数据库表前缀
-            'prefix' => env('MYSQL_PREFIX', 'ra_'),
+            'prefix' => env('MYSQL_PREFIX', 'r_'),
             // 断线重连
             'break_reconnect' => true,
             // 自定义分页类

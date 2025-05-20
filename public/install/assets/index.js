@@ -40609,11 +40609,11 @@ var nue = _$((go, bo) => {
         })
     }
 
-    const na = "", $le = na + "./api/install/envBaseCheck",
-        Ole = na + "./api/install/envNpmCheck", Nle = na + "./api/install/testDatabase",
-        v$ = na + "./api/install/baseConfig", Ile = na + "./api/install/commandExecComplete",
-        Mle = na + "./api/install/mvDist", Ale = na + "./api/install/manualInstall",
-        Ple = na + "./api/install/terminal", Rle = na + "./api/install/changePackageManager",
+    const na = "", $le = na + "/api/install/envBaseCheck",
+        Ole = na + "/api/install/envNpmCheck", Nle = na + "/api/install/testDatabase",
+        v$ = na + "/api/install/baseConfig", Ile = na + "/api/install/commandExecComplete",
+        Mle = na + "/api/install/mvDist", Ale = na + "/api/install/manualInstall",
+        Ple = na + "/api/install/terminal", Rle = na + "/api/install/changePackageManager",
         Lle = () => Rr.get($le), xle = () => {
             const e = ii();
             return Rr.post(Ole, {manager: e.state.packageManager})

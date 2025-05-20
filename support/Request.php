@@ -22,11 +22,12 @@ use Exception;
  */
 class Request extends \Webman\Http\Request
 {
-    private mixed $filter;
+    public mixed    $member = null;
+    protected mixed $filter = null;
     /**
      * @var mixed|string|null
      */
-    private mixed $token;
+    public mixed $token = null;
 
 
     /**
@@ -48,15 +49,16 @@ class Request extends \Webman\Http\Request
      * Author:   albert <albert@rocareer.com>
      * Time:     2025/5/16 17:15
      */
-    public function controller(?bool $full=false): ?string
+    public function controller(?bool $full = false): ?string
     {
-        if ($full){
+        if ($full) {
             return $this->controller;
         }
         $controller = explode('\\', $this->controller);
         $controller = array_slice($controller, -2);
         return strtolower(implode('/', $controller));
     }
+
     /**
      * buildadmin 前端路由适配 强写
      * @return   string

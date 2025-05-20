@@ -54,6 +54,7 @@ return [
         //
         '/install',
         '/api/install/*',
+        '/api/index/index',
         '/api/install/envBaseCheck',
         '/api/install/envNpmCheck',
 
@@ -64,7 +65,7 @@ return [
         // API免认证路径
         '/api/common/checkClickCaptcha',    // 验证码
         '/api/common/refreshToken',         // 刷新token
-        // '/api/index/index',                 // 刷新token
+        // '/api/index/index',
 
         '/api/user/checkIn',                // 用户中心登录
         '/api/user/logout',                 // 用户中心注销

@@ -20,6 +20,8 @@ use think\Facade;
  * @method static bool logout()                                         // 退出登录
  * @method static bool hasRole($role, ?array $roles = null)             // 检查角色
  * @method static bool memberInitialization(string $token)              // 初始化
+ * @method static bool terminal(string $token)                          // 终端检查权限
+ * @method static array getMenus(?int $uid = null)
  */
 class Member extends Facade
 {
@@ -36,6 +38,7 @@ class Member extends Facade
         $context->set('role',$role);
         return Container::get('member.service');
     }
+
 
     /**
      * @return   string

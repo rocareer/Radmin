@@ -6,7 +6,7 @@ use app\admin\model\AdminGroup;
 use app\admin\model\AdminRule;
 use app\common\controller\Backend;
 use extend\ba\Tree;
-use app\admin\controller\auth\SystemUtil;
+use extend\ra\SystemUtil;
 use support\Response;
 use support\member\Member;
 use Throwable;
