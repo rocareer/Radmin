@@ -3,7 +3,7 @@
 
 namespace Radmin\lang;
 
-use Radmin\Request;
+use support\Request;
 use think\facade\Cookie;
 
 

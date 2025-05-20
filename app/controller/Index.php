@@ -10,7 +10,7 @@ class Index
 	{
         try {
             if (!is_file(public_path() . '/install.lock') && is_file(base_path() . '/app/view/install' . DIRECTORY_SEPARATOR . 'index.html')) {
-                return redirect('/app/radmin/install');
+                return redirect('/install');
             }
             return view('index/index');
         } catch (\Exception $e) {

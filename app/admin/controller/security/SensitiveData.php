@@ -5,7 +5,7 @@ namespace app\admin\controller\security;
 use app\admin\model\SensitiveData as SensitiveDataModel;
 use app\common\controller\Backend;
 use plugin\radmin\app\admin\controller\security\SystemUtil;
-use Radmin\Response;
+use support\Response;
 use Throwable;
 
 class SensitiveData extends Backend

@@ -18,7 +18,7 @@
 
 declare(strict_types=1);
 
-namespace Radmin\exception;
+namespace app\exception;
 
 use support\StatusCode;
 use Throwable;

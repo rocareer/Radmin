@@ -4,7 +4,7 @@ namespace app\admin\controller\log\authentication;
 
 use app\common\controller\Backend;
 use plugin\radmin\app\admin\controller\log\authentication\SystemUtil;
-use Radmin\Response;
+use support\Response;
 use Throwable;
 
 /**

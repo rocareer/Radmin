@@ -9,7 +9,7 @@ use support\member\DbException;
 use support\member\ModelNotFoundException;
 use support\Container;
 use Radmin\Event;
-use Radmin\exception\BusinessException;
+use app\exception\BusinessException;
 
 use support\orm\Db;
 use Radmin\token\Token;

@@ -3,7 +3,7 @@
 
 namespace support\member;
 
-use Radmin\exception\BusinessException;
+use app\exception\BusinessException;
 use support\member\admin\AdminAuthenticator;
 use support\member\admin\AdminModel;
 use support\member\admin\AdminService;

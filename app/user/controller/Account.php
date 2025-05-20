@@ -10,7 +10,7 @@ use app\common\model\UserMoneyLog;
 use app\common\model\UserScoreLog;
 use extend\ba\Captcha;
 use extend\ba\Random;
-use Radmin\Response;
+use support\Response;
 use Radmin\token\Token;
 use Radmin\util\DateUtil;
 use support\member\Member;

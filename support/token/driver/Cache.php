@@ -14,7 +14,7 @@ namespace Radmin\token\driver;
 
 use plugin\radmin\extend\ba\Random;
 use support\token\driver\TokenExpirationException;
-use Radmin\exception\TokenException;
+use app\exception\TokenException;
 use Radmin\token\TokenInterface;
 use stdClass;
 use support\StatusCode;

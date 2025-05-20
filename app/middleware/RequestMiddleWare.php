@@ -6,16 +6,15 @@
 namespace app\middleware;
 
 use Exception;
-use Webman\Http\Request;
-use Webman\Http\Response;
-use Webman\MiddlewareInterface;
+use support\Response;
+use support\Request;
 
 class RequestMiddleWare implements MiddlewareInterface
 {
     /**
      * @throws Exception
      */
-    public function process(Request $request, callable $handler): Response
+    public function process(Request $request, callable $handler)
     {
         /**
          * 全局 token 检查

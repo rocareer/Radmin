@@ -8,7 +8,7 @@ namespace extend\ba;
 use Phinx\Db\Adapter\AdapterFactory;
 use Phinx\Db\Adapter\AdapterInterface;
 use Phinx\Db\Table;
-use Radmin\exception\Exception;
+use app\exception\Exception;
 use support\orm\Db;
 use Throwable;
 

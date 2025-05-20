@@ -67,7 +67,7 @@ class Request extends \Webman\Http\Request
     {
         $path = (string)parse_url($this->uri(), PHP_URL_PATH);
         // 匹配 /admin/ 开头且包含 . 的路径
-        if (preg_match('#^/app/radmin/admin/.*\..+#', $path)) {
+        if (preg_match('#^//admin/.*\..+#', $path)) {
             // 替换 . 为 /
             $newPath = str_replace('.', '/', $path);
         }

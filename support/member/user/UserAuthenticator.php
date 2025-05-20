@@ -3,7 +3,7 @@
 
 namespace support\member\user;
 
-use Radmin\exception\UnauthorizedHttpException;
+use app\exception\UnauthorizedHttpException;
 use support\member\Authenticator;
 
 class UserAuthenticator extends Authenticator

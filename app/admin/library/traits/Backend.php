@@ -3,7 +3,7 @@
 namespace app\admin\library\traits;
 
 use plugin\radmin\app\admin\library\traits\SystemUtil;
-use Radmin\Response;
+use support\Response;
 use Throwable;
 
 /**

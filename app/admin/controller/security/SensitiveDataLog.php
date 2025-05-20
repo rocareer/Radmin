@@ -7,7 +7,7 @@ use app\common\controller\Backend;
 use extend\ba\TableManager;
 use plugin\radmin\app\admin\controller\security\SystemUtil;
 use support\orm\Db;
-use Radmin\Response;
+use support\Response;
 use Throwable;
 
 class SensitiveDataLog extends Backend

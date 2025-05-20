@@ -3,7 +3,7 @@
 
 namespace support\member;
 
-use Radmin\exception\BusinessException;
+use app\exception\BusinessException;
 
 interface InterfaceAuthenticator
 {

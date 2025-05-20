@@ -11,10 +11,10 @@
 
 namespace app\middleware;
 
-use Radmin\Request;
-use Radmin\Response;
+use support\Request;
+use support\Response;
 
 interface MiddlewareInterface
 {
-    public function process(Request $request, callable $handler): Response;
+    public function process(Request $request, callable $handler);
 }

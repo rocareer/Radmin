@@ -14,9 +14,8 @@
 
 namespace app\middleware;
 
-use Webman\MiddlewareInterface;
-use Webman\Http\Response;
-use Webman\Http\Request;
+use support\Response;
+use support\Request;
 
 /**
  * Class StaticFile
@@ -24,7 +23,7 @@ use Webman\Http\Request;
  */
 class StaticFile implements MiddlewareInterface
 {
-    public function process(Request $request, callable $handler): Response
+    public function process(Request $request, callable $handler)
     {
         // Access to files beginning with. Is prohibited
         if (strpos($request->path(), '/.') !== false) {

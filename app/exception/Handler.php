@@ -7,11 +7,11 @@
  */
 declare(strict_types=1);
 
-namespace Radmin\exception;
+namespace app\exception;
 
 use FastRoute\BadRouteException;
 use support\Log;
-use Radmin\Response;
+use support\Response;
 use think\db\exception\DbException;
 use think\exception\ValidateException;
 use Throwable;
@@ -114,7 +114,7 @@ class Handler extends ExceptionHandler
         $this->responseData = array_merge($this->responseData, [
             'domain' => $request->host(),
             'method' => $request->method(),
-            'request_url' => $request->method() . ' ' . $request->uri(),
+            'request_url' => $request->method() . ' Handler.php' . $request->uri(),
             'timestamp' => date('Y-m-d H:i:s'),
             'client_ip' => $request->getRealIp(),
             'request_param' => $request->all(),

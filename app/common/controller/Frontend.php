@@ -1,7 +1,7 @@
 <?php
 
 namespace app\common\controller;
-use Radmin\exception\UnauthorizedHttpException;
+use app\exception\UnauthorizedHttpException;
 use service\auth\Auth;
 use support\member\Member;
 use support\StatusCode;

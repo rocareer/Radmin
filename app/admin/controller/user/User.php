@@ -5,7 +5,7 @@ namespace app\admin\controller\user;
 use app\admin\model\User as UserModel;
 use app\common\controller\Backend;
 use plugin\radmin\app\admin\controller\user\SystemUtil;
-use Radmin\Response;
+use support\Response;
 use Throwable;
 
 class User extends Backend

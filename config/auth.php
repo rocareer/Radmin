@@ -52,14 +52,14 @@ return [
     // 免认证路径配置
     'exclude' => [
         //
-        '/app/radmin/install',
-        '/app/radmin/api/install/*',
-        '/app/radmin/api/install/envBaseCheck',
-        '/app/radmin/api/install/envNpmCheck',
+        '/install',
+        '/api/install/*',
+        '/api/install/envBaseCheck',
+        '/api/install/envNpmCheck',
 
         // 管理后台免认证路径
-        '/app/radmin/admin/Index/login',     // 管理员登录
-        '/app/radmin/admin/Index/logout',    // 管理员注销
+        '/admin/Index/login',     // 管理员登录
+        '/admin/Index/logout',    // 管理员注销
 
         // API免认证路径
         '/api/common/checkClickCaptcha',    // 验证码

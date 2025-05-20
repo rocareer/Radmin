@@ -7,7 +7,7 @@ use app\admin\model\AdminRule;
 use app\common\controller\Backend;
 use extend\ba\Tree;
 use plugin\radmin\app\admin\controller\auth\SystemUtil;
-use Radmin\Response;
+use support\Response;
 use support\member\Member;
 use Throwable;
 

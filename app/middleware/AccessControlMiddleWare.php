@@ -1,14 +1,12 @@
 <?php
 
 namespace app\middleware;
-
-use Webman\Http\Request;
-use Webman\Http\Response;
-use Webman\MiddlewareInterface;
+use support\Response;
+use support\Request;
 
 class AccessControlMiddleWare implements MiddlewareInterface
 {
-    public function process(Request $request, callable $handler): Response
+    public function process(Request $request, callable $handler)
     {
 
         // OPTIONS 请求处理
@@ -24,7 +22,7 @@ class AccessControlMiddleWare implements MiddlewareInterface
         return $this->addCorsHeaders($response, $request);
     }
 
-    protected function addCorsHeaders(Response $response, Request $request): Response
+    protected function addCorsHeaders($response, $request)
     {
         $header = [
             // 'Access-Control-Allow-Credentials' => 'true',

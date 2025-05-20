@@ -5,7 +5,7 @@ namespace app\api\controller;
 
 use app\common\controller\Frontend;
 use app\common\library\upload;
-use Radmin\Response;
+use support\Response;
 use Throwable;
 
 class Ajax extends Frontend

@@ -12,11 +12,11 @@
 namespace app\middleware;
 
 use support\Container;
-use Radmin\exception\TokenException;
-use Radmin\exception\TokenExpiredException;
-use Radmin\exception\UnauthorizedHttpException;
-use Radmin\Request;
-use Radmin\Response;
+use app\exception\TokenException;
+use app\exception\TokenExpiredException;
+use app\exception\UnauthorizedHttpException;
+use support\Request;
+use support\Response;
 use Radmin\token\Token;
 use support\member\Member;
 use support\StatusCode;
@@ -42,7 +42,7 @@ class RadminAuthMiddleware implements MiddlewareInterface
     /**
      * @throws Throwable
      */
-    public function process(Request $request, callable $handler): Response
+    public function process(Request $request, callable $handler)
     {
         // 0. 设置请求角色
         $request->role = $this->allowedRole;

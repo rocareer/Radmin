@@ -171,7 +171,7 @@ class AdminLog extends BaseModel
             'username'  => $username,
             'url'       => substr(
                 str_replace(
-                    '//app/radmin/', '',
+                    '///', '',
                     str_replace
                     (
                         request()->host(), '', request()->url()

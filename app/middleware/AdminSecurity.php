@@ -12,9 +12,9 @@ use extend\ba\TableManager;
 use support\Log;
 use support\orm\Db;
 use Throwable;
-use Webman\Http\Request;
-use Webman\Http\Response;
-use Webman\MiddlewareInterface;
+use support\Response;
+use support\Request;
+
 
 class AdminSecurity implements MiddlewareInterface
 {
@@ -28,7 +28,7 @@ class AdminSecurity implements MiddlewareInterface
     /**
      * @throws exception
      */
-    public function process(Request $request, callable $handler): Response
+    public function process(Request $request, callable $handler)
     {
 
         $action = $request->action;

@@ -8,9 +8,9 @@ use app\common\library\upload;
 use extend\ba\TableManager;
 use extend\ba\Terminal;
 use support\Cache;
-use Radmin\exception\Exception;
+use app\exception\Exception;
 use support\orm\Db;
-use Radmin\Response;
+use support\Response;
 use Throwable;
 
 class Ajax extends Backend

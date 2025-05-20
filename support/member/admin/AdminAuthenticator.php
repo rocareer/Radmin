@@ -3,7 +3,7 @@
 
 namespace support\member\admin;
 
-use Radmin\exception\UnauthorizedHttpException;
+use app\exception\UnauthorizedHttpException;
 use support\member\Authenticator;
 use support\member\Member;
 

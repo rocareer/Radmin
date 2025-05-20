@@ -1,6 +1,6 @@
 <?php
 
-namespace Radmin\exception;
+namespace app\exception;
 
 use support\StatusCode;
 use Throwable;

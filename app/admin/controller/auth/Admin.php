@@ -8,7 +8,7 @@ namespace app\admin\controller\auth;
 use app\admin\model\Admin as AdminModel;
 use app\common\controller\Backend;
 use support\orm\Db;
-use Radmin\Response;
+use support\Response;
 use Radmin\util\SystemUtil;
 use support\member\Member;
 use Throwable;

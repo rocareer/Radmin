@@ -3,7 +3,8 @@
  * 异常处理配置
  */
 
-use Radmin\exception\Handler;
+
+use plugin\admin\app\exception\Handler;
 
 return [
     ''=> Handler::class,

@@ -7,7 +7,7 @@ use app\admin\model\UserRule;
 use app\common\controller\Backend;
 use extend\ba\Tree;
 use plugin\radmin\app\admin\controller\user\SystemUtil;
-use Radmin\Response;
+use support\Response;
 use Throwable;
 
 class Rule extends Backend
