@@ -11,7 +11,7 @@ use app\common\model\ai\UserTokens;
 use DateInterval;
 use exception;
 use plugin\radmin\app\common\library\ai\Http;
-use plugin\radmin\support\Cache;
+use support\Cache;
 use Psr\Http\Message\StreamInterface;
 use Radmin\orm\Rdb;
 use Radmin\util\DateUtil;

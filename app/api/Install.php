@@ -5,7 +5,7 @@ namespace app\api;
 
 use plugin\admin\api\Menu;
 use plugin\radmin\app\api\Rdb;
-use plugin\radmin\support\Db;
+use support\Db;
 use Throwable;
 
 class Install

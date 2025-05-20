@@ -3,7 +3,7 @@
 namespace {%namespace%};
 {%use%}
 use plugin\radmin\app\common\controller\Backend;
-use plugin\radmin\support\Response;
+use support\Response;
 
 /**
  * {%tableComment%}

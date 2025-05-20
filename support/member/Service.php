@@ -4,9 +4,9 @@
 namespace support\member;
 
 use Exception;
-use plugin\radmin\support\member\DataNotFoundException;
-use plugin\radmin\support\member\DbException;
-use plugin\radmin\support\member\ModelNotFoundException;
+use support\member\DataNotFoundException;
+use support\member\DbException;
+use support\member\ModelNotFoundException;
 use support\Container;
 use Radmin\Event;
 use Radmin\exception\BusinessException;

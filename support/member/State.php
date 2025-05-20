@@ -3,7 +3,6 @@
 
 namespace support\member;
 
-use plugin\radmin\support\member\AuthException;
 use support\Container;
 use Radmin\exception\BusinessException;
 use Radmin\Http;

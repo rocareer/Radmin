@@ -220,7 +220,7 @@ class Table extends Backend
      * @param array $data 表数据，包含 name 和 comment
      * @return bool 是否更新成功
      */
-    // 常量已移至 \plugin\radmin\support\orm\TableUtil 类
+    // 常量已移至 \support\orm\TableUtil 类
 
     /**
      * 更新数据表的描述信息
