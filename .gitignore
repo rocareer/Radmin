@@ -2,6 +2,7 @@
 /temp
 /.idea
 /.vscode
+/.git
 /public/assets
 /vendor
 *.log
