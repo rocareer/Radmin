@@ -2,7 +2,7 @@
 
 namespace app\admin\library\traits;
 
-use plugin\radmin\app\admin\library\traits\SystemUtil;
+use app\admin\library\traits\SystemUtil;
 use support\Response;
 use Throwable;
 

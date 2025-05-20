@@ -24,11 +24,11 @@
 
 use app\admin\library\module\Server;
 use app\admin\model\Config as configModel;
-use Radmin\util\FileUtil;
+use extend\ra\FileUtil;
 
 use Radmin\lang\Lang;
 use support\orm\Db;
-use Radmin\util\SystemUtil;
+use extend\ra\SystemUtil;
 
 
 if (!function_exists('__')) {

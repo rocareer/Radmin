@@ -9,9 +9,9 @@
  * Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
  */
 
-namespace Radmin\util;
+namespace extend\ra;
 
-use plugin\radmin\app\admin\model\Config as ConfigModel;
+use app\admin\model\Config as ConfigModel;
 
 use support\orm\Db;
 
@@ -19,7 +19,7 @@ class SystemUtil
 {
     public static function get_sys_config(string $name = '', string $group = '', bool $concise = true): mixed
     {
-        if (!radminInstalled()) {
+        if (!self::installed()) {
             return [];
         }
         if ($name) {
@@ -55,5 +55,9 @@ class SystemUtil
             ->whereOr('name', $path . '/' . $actionName)
             ->value('remark');
         return __((string)$remark);
+    }
+    public static function installed()
+    {
+        return file_exists(public_path('install.lock'));
     }
 }

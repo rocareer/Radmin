@@ -2,7 +2,7 @@
 
 namespace Radmin\command;
 
-use plugin\radmin\app\admin\model\data\Backup;
+use app\admin\model\data\Backup;
 use Radmin\Event;
 use support\Log;
 use support\orm\Model;

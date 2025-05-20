@@ -6,7 +6,7 @@ namespace app\common\library\ai;
 use app\common\model\ai\Config;
 use app\common\model\ai\Session;
 use GuzzleHttp\Client;
-use Radmin\util\DateUtil;
+use extend\ra\DateUtil;
 use Throwable;
 
 class Helper

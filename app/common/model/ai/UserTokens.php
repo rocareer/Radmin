@@ -4,7 +4,7 @@
 namespace app\common\model\ai;
 
 use app\common\model\BaseModel;
-use plugin\radmin\app\common\model\ai\Exception;
+use app\common\model\ai\Exception;
 use Throwable;
 
 /**

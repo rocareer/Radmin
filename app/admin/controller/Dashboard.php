@@ -3,7 +3,7 @@
 namespace app\admin\controller;
 
 use app\common\controller\Backend;
-use Radmin\util\SystemUtil;
+use extend\ra\SystemUtil;
 
 class Dashboard extends Backend
 {

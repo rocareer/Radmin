@@ -2,11 +2,11 @@
 
 namespace Radmin\command;
 
-use plugin\radmin\app\admin\model\data\Table;
+use app\admin\model\data\Table;
 use Radmin\Command;
 use Radmin\Event;
 use support\orm\Db;
-use Radmin\util\FileUtil;
+use extend\ra\FileUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;

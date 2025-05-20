@@ -5,7 +5,7 @@ namespace app\common\library\upload\driver;
 
 use app\common\library\upload\driver;
 
-use Radmin\util\FileUtil;
+use extend\ra\FileUtil;
 use Webman\Exception\FileException;
 use Webman\Http\UploadFile;
 

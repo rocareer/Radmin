@@ -3,7 +3,7 @@
 namespace app\admin\controller\log\authentication;
 
 use app\common\controller\Backend;
-use plugin\radmin\app\admin\controller\log\authentication\SystemUtil;
+use app\admin\controller\log\authentication\SystemUtil;
 use support\Response;
 use Throwable;
 

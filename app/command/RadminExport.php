@@ -3,7 +3,7 @@
 namespace Radmin\command;
 
 use Radmin\Command;
-use Radmin\util\FileUtil;
+use extend\ra\FileUtil;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;

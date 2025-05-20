@@ -6,7 +6,7 @@ namespace app\admin\controller\user;
 use app\admin\model\UserGroup;
 use app\admin\model\UserRule;
 use app\common\controller\Backend;
-use plugin\radmin\app\admin\controller\user\SystemUtil;
+use app\admin\controller\user\SystemUtil;
 use support\Response;
 use Throwable;
 

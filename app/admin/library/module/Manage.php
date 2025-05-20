@@ -6,7 +6,7 @@ use extend\ba\Depends;
 use extend\ba\Version;
 use FilesystemIterator;
 
-use Radmin\util\FileUtil;
+use extend\ra\FileUtil;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use Throwable;

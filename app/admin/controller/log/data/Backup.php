@@ -3,7 +3,7 @@
 namespace app\admin\controller\log\data;
 
 use app\common\controller\Backend;
-use plugin\radmin\app\admin\controller\log\data\SystemUtil;
+use app\admin\controller\log\data\SystemUtil;
 use support\Response;
 use Throwable;
 

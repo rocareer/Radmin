@@ -9,7 +9,7 @@ use extend\ba\TableManager;
 use Phinx\Db\Adapter\AdapterInterface;
 use Phinx\Db\Adapter\MysqlAdapter;
 use support\orm\Db;
-use Radmin\util\FileUtil;
+use extend\ra\FileUtil;
 use think\db\exception\DbException;
 use think\Exception;
 use Throwable;
