@@ -27,7 +27,7 @@ class Api extends BaseController
      * 默认响应输出类型,支持json/xml/jsonp
      * @var string
      */
-    protected string $responseType = 'json';
+    protected string $responseType = 'application/json';
 
     /**
      * 应用站点系统设置
