@@ -3,7 +3,7 @@ declare (strict_types=1);
 
 namespace app\controller;
 
-use Radmin\Http;
+
 use Radmin\Request;
 use think\exception\ValidateException;
 use think\Validate;

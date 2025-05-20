@@ -5,7 +5,7 @@ use exception;
 use extend\ba\Depends;
 use extend\ba\Version;
 use FilesystemIterator;
-use Radmin\Http;
+
 use Radmin\util\FileUtil;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;

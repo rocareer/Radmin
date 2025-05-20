@@ -25,7 +25,7 @@
 use app\admin\library\module\Server;
 use app\admin\model\Config as configModel;
 use Radmin\util\FileUtil;
-use Radmin\Http;
+
 use Radmin\lang\Lang;
 use Radmin\orm\Rdb;
 use Radmin\util\SystemUtil;

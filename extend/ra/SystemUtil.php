@@ -12,7 +12,7 @@
 namespace Radmin\util;
 
 use plugin\radmin\app\admin\model\Config as ConfigModel;
-use Radmin\Http;
+
 use Radmin\orm\Rdb;
 
 class SystemUtil

@@ -4,7 +4,7 @@ namespace app\admin\model;
 
 use app\common\model\BaseModel;
 use Exception;
-use Radmin\Http;
+
 use Radmin\orm\Rdb;
 use think\model\relation\BelongsTo;
 

@@ -21,7 +21,7 @@ use extend\ba\Terminal;
 use extend\ba\Version;
 use PDOException;
 use Radmin\exception\BusinessException;
-use Radmin\Http;
+
 use Radmin\orm\Rdb;
 use Radmin\Response;
 use Radmin\util\FileUtil;

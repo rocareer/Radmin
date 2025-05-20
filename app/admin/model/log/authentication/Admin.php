@@ -3,7 +3,7 @@
 namespace app\admin\model\log\authentication;
 
 use app\common\model\BaseModel;
-use Radmin\Http;
+
 
 /**
  * Admin
