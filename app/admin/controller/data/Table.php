@@ -4,7 +4,7 @@ namespace app\admin\controller\data;
 
 use app\common\controller\Backend;
 use plugin\radmin\app\admin\controller\data\SystemUtil;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\Response;
 use Throwable;
 
@@ -71,11 +71,11 @@ class Table extends Backend
     public function sync(): Response
     {
         try {
-            $connection = Rdb::connect();
+            $connection = Db::connect();
             $dbTables   = $connection->getTables();
             $sysTables  = $this->model->select()->toArray();
 
-            Rdb::startTrans();
+            Db::startTrans();
             try {
                 // 从数据库同步
                 foreach ($dbTables as $table) {
@@ -132,14 +132,14 @@ class Table extends Backend
                     }
                 }
 
-                Rdb::commit();
+                Db::commit();
                 return $this->success('同步成功', []);
             } catch (\Exception $e) {
-                Rdb::rollback();
+                Db::rollback();
                 return $this->error('同步失败');
             }
         } catch (\Exception $e) {
-            Rdb::rollback();
+            Db::rollback();
             return $this->error('同步失败');
         }
     }

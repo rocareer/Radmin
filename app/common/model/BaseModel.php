@@ -15,7 +15,7 @@
 
 namespace app\common\model;
 
-use Radmin\orm\Model as ThinkModel;
+use support\orm\Model as ThinkModel;
 
 class BaseModel extends ThinkModel
 {

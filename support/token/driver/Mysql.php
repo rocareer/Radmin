@@ -16,7 +16,7 @@ namespace Radmin\token\driver;
 
 use plugin\radmin\extend\ba\Random;
 use Radmin\exception\TokenException;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\token\TokenInterface;
 use stdClass;
 use support\StatusCode;
@@ -64,7 +64,7 @@ class Mysql implements TokenInterface
             $payload['create_time'] = time();
             $token                  = Random::uuid();
             $payload['token']       = getEncryptedToken($token);
-            return Rdb::name($this->config['table'])->insert($payload) ? $token : '';
+            return Db::name($this->config['table'])->insert($payload) ? $token : '';
         } catch (Throwable $e) {
             throw new TokenException($e->getMessage(), StatusCode::TOKEN_CREATE_FAILED);
         }
@@ -129,7 +129,7 @@ class Mysql implements TokenInterface
     {
         try {
             $token     = getEncryptedToken($token);
-            $tokenData = Rdb::name($this->config['table'])->where('token', $token)->find();
+            $tokenData = Db::name($this->config['table'])->where('token', $token)->find();
             if (!$tokenData) {
                 throw new TokenException('凭证解码失败', StatusCode:: TOKEN_DECODE_FAILED);
             }
@@ -150,7 +150,7 @@ class Mysql implements TokenInterface
     {
         try {
             $token = getEncryptedToken($token);
-            return Rdb::name($this->config['table'])->where('token', $token)->delete() > 0;
+            return Db::name($this->config['table'])->where('token', $token)->delete() > 0;
         } catch (Throwable $e) {
             throw new TokenException('Token销毁失败', StatusCode::TOKEN_DESTROY_FAILED);
         }

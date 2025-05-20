@@ -8,7 +8,7 @@ use app\common\library\Menu;
 use extend\ba\TableManager;
 use Phinx\Db\Adapter\AdapterInterface;
 use Phinx\Db\Adapter\MysqlAdapter;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\util\FileUtil;
 use think\db\exception\DbException;
 use think\Exception;
@@ -749,7 +749,7 @@ class Helper
             . 'ORDER BY ORDINAL_POSITION';
 
         $columns     = [];
-        $tableColumn = Rdb::connect($connection)->query($sql, [$connectionConfig['database'], TableManager::tableName($table, true, $connection)]);
+        $tableColumn = Db::connect($connection)->query($sql, [$connectionConfig['database'], TableManager::tableName($table, true, $connection)]);
 
         foreach ($tableColumn as $item) {
             $isNullAble = $item['IS_NULLABLE'] == 'YES';

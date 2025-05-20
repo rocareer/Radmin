@@ -9,7 +9,7 @@ use Phinx\Db\Adapter\AdapterFactory;
 use Phinx\Db\Adapter\AdapterInterface;
 use Phinx\Db\Table;
 use Radmin\exception\Exception;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Throwable;
 
 /**
@@ -72,7 +72,7 @@ class TableManager
         $tableList  = [];
         $config     = self::getConnectionConfig($connection);
         $connection = self::getConnection($connection);
-        $tables     = Rdb::connect($connection)->query("SELECT TABLE_NAME,TABLE_COMMENT FROM information_schema.TABLES WHERE table_schema = ? ", [$config['database']]);
+        $tables     = Db::connect($connection)->query("SELECT TABLE_NAME,TABLE_COMMENT FROM information_schema.TABLES WHERE table_schema = ? ", [$config['database']]);
         foreach ($tables as $row) {
             $tableList[$row['TABLE_NAME']] = $row['TABLE_NAME'] . ($row['TABLE_COMMENT'] ? ' - ' . $row['TABLE_COMMENT'] : '');
         }
@@ -99,7 +99,7 @@ class TableManager
         $sql        = "SELECT * FROM `information_schema`.`columns` "
             . "WHERE TABLE_SCHEMA = ? AND table_name = ? "
             . "ORDER BY ORDINAL_POSITION";
-        $columnList = Rdb::connect($connection)->query($sql, [$config['database'], $table]);
+        $columnList = Db::connect($connection)->query($sql, [$config['database'], $table]);
 
         $fieldList = [];
         foreach ($columnList as $item) {
@@ -173,7 +173,7 @@ class TableManager
     {
         $config     = self::getConnectionConfig($connection);
         $connection = self::getConnection($connection);
-        $db         = Rdb::connect($connection);
+        $db         = Db::connect($connection);
 
         // 数据库为懒连接，执行 sql 命令为 $db 实例连接数据库
         $db->query('SELECT 1');

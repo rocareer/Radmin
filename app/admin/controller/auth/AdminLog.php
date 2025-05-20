@@ -4,7 +4,7 @@ namespace app\admin\controller\auth;
 
 use app\admin\model\AdminLog as AdminLogModel;
 use app\common\controller\Backend;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\Response;
 use Radmin\util\SystemUtil;
 use support\member\Member;
@@ -45,7 +45,7 @@ class AdminLog extends Backend
         if (!Member::hasRole('super')) {
             $where[] = ['admin_id', '=', $this->request->member->id];
         }
-        $res = Rdb::name('admin_log')->
+        $res = Db::name('admin_log')->
         withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
             ->where($where)

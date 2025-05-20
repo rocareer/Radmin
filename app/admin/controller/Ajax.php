@@ -9,7 +9,7 @@ use extend\ba\TableManager;
 use extend\ba\Terminal;
 use support\Cache;
 use Radmin\exception\Exception;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\Response;
 use Throwable;
 
@@ -117,7 +117,7 @@ class Ajax extends Backend
          return $this->error(__('Data table does not exist'));
         }
 
-        $tablePk = Rdb::connect(TableManager::getConnection($connection))
+        $tablePk = Db::connect(TableManager::getConnection($connection))
             ->table($table)
             ->getPk();
      return $this->success('', ['pk' => $tablePk]);
@@ -178,7 +178,7 @@ class Ajax extends Backend
         }
 
         $connection = TableManager::getConnection($connection);
-        $tablePk    = Rdb::connect($connection)->name($table)->getPk();
+        $tablePk    = Db::connect($connection)->name($table)->getPk();
      return $this->success('', [
             'pk'        => $tablePk,
             'fieldList' => TableManager::getTableColumns($table, $clean, $connection),

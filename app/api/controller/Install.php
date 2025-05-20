@@ -22,7 +22,7 @@ use extend\ba\Version;
 use PDOException;
 use Radmin\exception\BusinessException;
 
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\Response;
 use Radmin\util\FileUtil;
 use support\member\admin\AdminModel;
@@ -86,7 +86,7 @@ class Install
 
     public function __construct()
     {
-        $this->request = Http::request();
+        $this->request = request();
     }
 
     /**
@@ -707,9 +707,9 @@ class Install
             $dbConfig                         = config('think-orm');
             $dbConfig['connections']['mysql'] = array_merge($dbConfig['connections']['mysql'], $database);
 
-            Rdb::setConfig($dbConfig);
-            Rdb::connect('mysql');
-            Rdb::execute("SELECT 1");
+            Db::setConfig($dbConfig);
+            Db::connect('mysql');
+            Db::execute("SELECT 1");
 
         } catch (PDOException $e) {
             $errorMsg = $e->getMessage();
@@ -722,7 +722,7 @@ class Install
         $databases = [];
         // 不需要的数据表
         $databasesExclude = ['information_schema', 'mysql', 'performance_schema', 'sys'];
-        $res              = Rdb::query("SHOW DATABASES");
+        $res              = Db::query("SHOW DATABASES");
         foreach ($res as $row) {
             if (!in_array($row['Database'], $databasesExclude)) {
                 $databases[] = $row['Database'];
@@ -733,7 +733,7 @@ class Install
             'code'      => 1,
             'msg'       => '',
             'databases' => $databases,
-            'pdo'       => $returnPdo ? Rdb::getPdo() : '',
+            'pdo'       => $returnPdo ? Db::getPdo() : '',
         ];
     }
 

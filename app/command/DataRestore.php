@@ -5,8 +5,8 @@ namespace Radmin\command;
 use plugin\radmin\app\admin\model\data\Backup;
 use Radmin\Event;
 use support\Log;
-use Radmin\orm\Model;
-use Radmin\orm\Rdb;
+use support\orm\Model;
+use support\orm\Db;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\ProgressBar;
 use Symfony\Component\Console\Input\InputArgument;
@@ -174,7 +174,7 @@ class DataRestore extends Command
         }
         
         try {
-            return (bool)Rdb::table('information_schema.tables')
+            return (bool)Db::table('information_schema.tables')
                 ->where('table_schema', config('think-orm.connections.mysql.database'))
                 ->where('table_name', $tableName)
                 ->find();
@@ -440,27 +440,27 @@ class DataRestore extends Command
             $successQueries = 0;
 
             // 开始事务
-            Rdb::startTrans();
+            Db::startTrans();
             try {
                 // 先删除已存在的表
-                Rdb::execute("DROP TABLE IF EXISTS `{$table}`");
+                Db::execute("DROP TABLE IF EXISTS `{$table}`");
 
                 foreach ($queries as $query) {
                     $totalQueries++;
                     if (!empty(trim($query))) {
                         // 执行SQL语句
-                        Rdb::execute($query);
+                        Db::execute($query);
                         $successQueries++;
                         $this->restoredRecords++;
                         $this->updateMemoryUsage();
                     }
                 }
 
-                Rdb::commit();
+                Db::commit();
                 $this->restoredTables++;
                 return $this->restoredRecords;
             } catch (\Exception $e) {
-                Rdb::rollback();
+                Db::rollback();
                 throw new \Exception("执行SQL失败: " . $e->getMessage(), 0, $e, $this->restoredRecords);
             }
         } catch (\Exception $e) {

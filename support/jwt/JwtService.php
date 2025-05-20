@@ -17,7 +17,7 @@ use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Psr\SimpleCache\InvalidArgumentException;
-use Radmin\cache\Cache;
+use support\cache\Cache;
 use Radmin\exception\TokenException;
 use Radmin\exception\TokenExpiredException;
 use ReflectionException;

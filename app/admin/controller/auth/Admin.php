@@ -7,7 +7,7 @@ namespace app\admin\controller\auth;
 
 use app\admin\model\Admin as AdminModel;
 use app\common\controller\Backend;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\Response;
 use Radmin\util\SystemUtil;
 use support\member\Member;
@@ -101,7 +101,7 @@ class Admin extends Backend
                             'group_id' => $datum,
                         ];
                     }
-                    Rdb::name('admin_group_access')->insertAll($groupAccess);
+                    Db::name('admin_group_access')->insertAll($groupAccess);
                 }
                 $this->model->commit();
 
@@ -180,7 +180,7 @@ class Admin extends Backend
                 $this->checkGroupAuth($checkGroups);
             }
 
-            Rdb::name('admin_group_access')
+            Db::name('admin_group_access')
                 ->where('uid', $id)
                 ->delete();
 
@@ -189,7 +189,7 @@ class Admin extends Backend
             $this->model->startTrans();
             try {
                 $result = $row->save($data);
-                if ($groupAccess) Rdb::name('admin_group_access')->insertAll($groupAccess);
+                if ($groupAccess) Db::name('admin_group_access')->insertAll($groupAccess);
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
@@ -231,7 +231,7 @@ class Admin extends Backend
             foreach ($data as $v) {
                 if ($v->id != $this->request->member->id) {
                     $count += $v->delete();
-                    Rdb::name('admin_group_access')
+                    Db::name('admin_group_access')
                         ->where('uid', $v['id'])
                         ->delete();
                 }

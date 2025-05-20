@@ -8,7 +8,7 @@ use Radmin\exception\BusinessException;
 use Radmin\exception\UnauthorizedHttpException;
 
 use support\Log;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\token\Token;
 use support\StatusCode;
 use think\db\exception\DataNotFoundException;
@@ -61,7 +61,7 @@ abstract class Authenticator implements InterfaceAuthenticator
         $this->credentials = $credentials;
 
         try {
-            Rdb::startTrans();
+            Db::startTrans();
 
             // 1. 验证基本凭证
             $this->validateCredentials();
@@ -106,18 +106,18 @@ abstract class Authenticator implements InterfaceAuthenticator
             //     ]
             // ]);
 
-            Rdb::commit();
+            Db::commit();
             return $this->memberModel;
 
         } catch (UnauthorizedHttpException $e) {
-            Rdb::rollback();
+            Db::rollback();
             $this->updateLoginState('false');
-            Rdb::commit();
+            Db::commit();
             throw new UnauthorizedHttpException($e->getMessage(), StatusCode::AUTHENTICATION_FAILED);
         } catch (Throwable $e) {
-            Rdb::rollback();
+            Db::rollback();
             $this->updateLoginState('false');
-            Rdb::commit();
+            Db::commit();
             Log::error('认证异常：' . $e->getMessage());
             throw new UnauthorizedHttpException($e->getMessage(), StatusCode::AUTHENTICATION_FAILED,false,[],$e);
         }
@@ -258,7 +258,7 @@ abstract class Authenticator implements InterfaceAuthenticator
     public function refreshToken(string $refreshToken): string
     {
         try {
-            Rdb::startTrans();
+            Db::startTrans();
 
             // 验证用户
             $this->validateRefreshToken($refreshToken);
@@ -276,11 +276,11 @@ abstract class Authenticator implements InterfaceAuthenticator
                 'data'        => ['ip' => request()->getRealIp()]
             ]);
 
-            Rdb::commit();
+            Db::commit();
             return $this->memberModel->token;
 
         } catch (Throwable $e) {
-            Rdb::rollback();
+            Db::rollback();
             Log::error('刷新令牌失败', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()

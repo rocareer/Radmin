@@ -34,7 +34,7 @@ abstract class BaseController
      */
     public function __construct()
     {
-        $this->request=Http::request();
+        $this->request=request();
         // 控制器初始化
         $this->initialize();
     }

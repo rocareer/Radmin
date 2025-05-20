@@ -5,7 +5,7 @@ namespace app\admin\model;
 use app\common\model\BaseModel;
 use Exception;
 
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use think\model\relation\BelongsTo;
 
 
@@ -54,7 +54,7 @@ class AdminLog extends BaseModel
 
     public static function instance()
     {
-        $request = Http::request();
+        $request = request();
         if (!isset($request->adminLog)) {
             $request->adminLog = new static();
         }
@@ -166,7 +166,7 @@ class AdminLog extends BaseModel
             $title           = $title ?: __('Unknown') . '(' . $action . ')';
             $title           = $controllerTitle ? ($controllerTitle . '-' . $title) : $title;
         }
-        Rdb::name('admin_log')->insert([
+        Db::name('admin_log')->insert([
             'admin_id'  => $adminId,
             'username'  => $username,
             'url'       => substr(

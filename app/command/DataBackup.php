@@ -5,7 +5,7 @@ namespace Radmin\command;
 use plugin\radmin\app\admin\model\data\Table;
 use Radmin\Command;
 use Radmin\Event;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\util\FileUtil;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -111,7 +111,7 @@ class DataBackup extends Command
     private function createSqlBackupFile(string $table, string $tableBackupDir, string $versionTimestamp, array $data): string
     {
         $backupFile  = $tableBackupDir . "{$versionTimestamp}.sql";
-        $createTable = Rdb::query("SHOW CREATE TABLE `{$table}`")[0]['Create TableUtil'];
+        $createTable = Db::query("SHOW CREATE TABLE `{$table}`")[0]['Create TableUtil'];
 
         $content = "-- TableUtil structure for {$table}\n";
         $content .= $createTable . ";\n\n";
@@ -264,7 +264,7 @@ class DataBackup extends Command
     private function backupTable(string $table, InputInterface $input, OutputInterface $output, string $baseBackupDir, string $versionTimestamp): void
     {
         try {
-            $data              = Rdb::table($table)->select()->toArray();
+            $data              = Db::table($table)->select()->toArray();
             $this->recordCount += count($data);
 
             $output->writeln($this->formatOutput("Backing up table: {$table}", count($data) . " 条", 90));

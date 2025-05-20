@@ -6,7 +6,7 @@ use app\controller\BaseController;
 use Exception;
 use Radmin\exception\ServerErrorHttpException;
 use Radmin\lang\Lang;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\Response;
 use Throwable;
 
@@ -39,7 +39,7 @@ class Api extends BaseController
         if ($this->useSystemSettings) {
             // 检查数据库连接
             try {
-                Rdb::execute("SELECT 1");
+                Db::execute("SELECT 1");
             } catch (Exception) {
                 throw new ServerErrorHttpException('数据库连接失败');
             }

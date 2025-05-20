@@ -11,7 +11,7 @@ use support\Container;
 use Radmin\Event;
 use Radmin\exception\BusinessException;
 
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\token\Token;
 use support\StatusCode;
 use Throwable;
@@ -283,7 +283,7 @@ abstract class Service implements InterfaceService
         if (!in_array('*', $ids)) {
             $where[] = ['id', 'in', $ids];
         }
-        $rules = Rdb::name($this->config['auth_rule'])
+        $rules = Db::name($this->config['auth_rule'])
             ->withoutField(['remark', 'status', 'weigh', 'update_time', 'create_time'])
             ->where($where)
             ->order('weigh desc,id asc')
@@ -330,7 +330,7 @@ abstract class Service implements InterfaceService
 
         $dbName = $this->config['auth_group_access'] ?: 'user';
         if ($this->config['auth_group_access']) {
-            $userGroups = Rdb::name($dbName)
+            $userGroups = Db::name($dbName)
                 ->alias('aga')
                 ->join($this->config['auth_group'] . ' ag', 'aga.group_id = ag.id', 'LEFT')
                 ->field('aga.uid,aga.group_id,ag.id,ag.pid,ag.name,ag.rules')
@@ -338,7 +338,7 @@ abstract class Service implements InterfaceService
                 ->select()
                 ->toArray();
         } else {
-            $userGroups = Rdb::name($dbName)
+            $userGroups = Db::name($dbName)
                 ->alias('u')
                 ->join($this->config['auth_group'] . ' ag', 'u.group_id = ag.id', 'LEFT')
                 ->field('u.id as uid,u.group_id,ag.id,ag.name,ag.rules')

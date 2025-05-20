@@ -2,7 +2,7 @@
 
 namespace Radmin\util;
 
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use ZipArchive;
 
 
@@ -66,7 +66,7 @@ class TableUtil
             
             // 直接拼接表名（因为SHOW TABLES不支持参数化查询）
             // 正确的语法是使用单引号包裹表名
-            $result = Rdb::query("SHOW TABLES LIKE '{$escapedTableName}'");
+            $result = Db::query("SHOW TABLES LIKE '{$escapedTableName}'");
             return !empty($result);
         } catch (\Exception $e) {
             error_log("检查表是否存在失败: " . $e->getMessage());
@@ -84,7 +84,7 @@ class TableUtil
     {
         try {
             // 使用参数化查询防止SQL注入
-            $status = Rdb::query("SHOW TABLE STATUS WHERE Name = ?", [$tableName])[0] ?? [];
+            $status = Db::query("SHOW TABLE STATUS WHERE Name = ?", [$tableName])[0] ?? [];
             
             // 获取创建时间
             $createTime = isset($status['Create_time']) && $status['Create_time'] 
@@ -93,8 +93,8 @@ class TableUtil
             
             // 获取更新时间，如果为空则尝试使用其他时间字段
             try {
-                $updateTime = Rdb::table($tableName)->max('update_time');
-                $ctime = Rdb::table($tableName)->max('create_time');
+                $updateTime = Db::table($tableName)->max('update_time');
+                $ctime = Db::table($tableName)->max('create_time');
                 if ($ctime >= $updateTime) {
                     $updateTime = $ctime;
                 }
@@ -109,9 +109,9 @@ class TableUtil
                     
             // 更新表统计信息
             if (strtolower($status['Engine'] ?? '') === 'innodb') {
-                Rdb::execute("ANALYZE TABLE `{$tableName}`");
+                Db::execute("ANALYZE TABLE `{$tableName}`");
                 // 重新获取状态信息
-                $status = Rdb::query("SHOW TABLE STATUS WHERE Name = ?", [$tableName])[0] ?? [];
+                $status = Db::query("SHOW TABLE STATUS WHERE Name = ?", [$tableName])[0] ?? [];
             }
 
             // 计算实际大小（字节）
@@ -120,7 +120,7 @@ class TableUtil
             $totalSize = $dataSize + $indexSize;
 
             // 获取实际行数
-            $realRows = Rdb::table($tableName)->count();
+            $realRows = Db::table($tableName)->count();
 
             return [
                 'createTime' => $createTime,           // 创建时间
@@ -168,8 +168,8 @@ class TableUtil
         FileUtil::mkdir($backupDir);
 
         // 获取表结构和数据
-        $createTable = Rdb::query("SHOW CREATE TABLE `{$tableName}`")[0]['Create TableUtil'];
-        $data = Rdb::table($tableName)->select()->toArray();
+        $createTable = Db::query("SHOW CREATE TABLE `{$tableName}`")[0]['Create TableUtil'];
+        $data = Db::table($tableName)->select()->toArray();
         $recordCount = count($data);
 
         // 生成SQL文件内容
@@ -241,24 +241,24 @@ class TableUtil
             $queries = self::readSqlFile($sqlFile);
             $recordCount = 0;
 
-            Rdb::startTrans();
+            Db::startTrans();
             try {
                 if ($dropIfExists) {
-                    Rdb::execute("DROP TABLE IF EXISTS `{$tableName}`");
+                    Db::execute("DROP TABLE IF EXISTS `{$tableName}`");
                 }
 
                 foreach ($queries as $query) {
                     if (!empty(trim($query))) {
-                        Rdb::execute($query);
+                        Db::execute($query);
                         if (stripos($query, 'INSERT INTO') === 0) {
                             $recordCount++;
                         }
                     }
                 }
-                Rdb::commit();
+                Db::commit();
                 return $recordCount;
             } catch (\Exception $e) {
-                Rdb::rollback();
+                Db::rollback();
                 throw new \Exception("执行SQL失败: " . $e->getMessage());
             }
         } finally {
@@ -387,7 +387,7 @@ class TableUtil
             // 注意：SHOW TABLES 不支持参数化查询，所以使用直接拼接
             // 但我们已经验证了表名的有效性，所以这里使用直接拼接是安全的
             $escapedTableName = str_replace("'", "''", $tableName);
-            $tables = Rdb::query("SHOW TABLES LIKE '{$escapedTableName}'");
+            $tables = Db::query("SHOW TABLES LIKE '{$escapedTableName}'");
 
             if (empty($tables)) {
                 error_log("表不存在: {$tableName}");
@@ -398,7 +398,7 @@ class TableUtil
             // 注意：MySQL不支持在SHOW CREATE TABLE中使用参数化查询
             // 但我们已经验证了表名的有效性，所以这里使用直接拼接是安全的
             $escapedTableName = str_replace('`', '``', $tableName);
-            $tableInfo = Rdb::query("SHOW CREATE TABLE `{$escapedTableName}`")[0] ?? [];
+            $tableInfo = Db::query("SHOW CREATE TABLE `{$escapedTableName}`")[0] ?? [];
 
             if (empty($tableInfo['Create TableUtil'])) {
                 error_log("无法获取表结构: {$tableName}");
@@ -415,13 +415,13 @@ class TableUtil
             // 构建并执行ALTER TABLE语句
             $sql = "ALTER TABLE `{$tableName}` COMMENT = '{$escapedComment}' ENGINE = {$engine} CHARSET = {$charset}";
 
-            Rdb::execute($sql);
+            Db::execute($sql);
             
             // 更新表统计信息
             if (strtolower($engine) === 'innodb') {
                 // 使用转义后的表名
                 $escapedTableName = str_replace('`', '``', $tableName);
-                Rdb::execute("ANALYZE TABLE `{$escapedTableName}`");
+                Db::execute("ANALYZE TABLE `{$escapedTableName}`");
             }
             
             return true;
@@ -564,7 +564,7 @@ class TableUtil
             $escapedTableName = str_replace('`', '``', $tableName);
             
             // 获取表字段信息
-            $columns = Rdb::query("SHOW FULL COLUMNS FROM `{$escapedTableName}`");
+            $columns = Db::query("SHOW FULL COLUMNS FROM `{$escapedTableName}`");
             if (empty($columns)) {
                 return [];
             }

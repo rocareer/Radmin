@@ -6,7 +6,7 @@ use app\admin\model\SensitiveDataLog as SensitiveDataLogModel;
 use app\common\controller\Backend;
 use extend\ba\TableManager;
 use plugin\radmin\app\admin\controller\security\SystemUtil;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\Response;
 use Throwable;
 
@@ -97,7 +97,7 @@ class SensitiveDataLog extends Backend
         $this->model->startTrans();
         try {
             foreach ($data as $row) {
-                if (Rdb::connect(TableManager::getConnection($row->connection))->name($row->data_table)->where($row->primary_key, $row->id_value)->update([
+                if (Db::connect(TableManager::getConnection($row->connection))->name($row->data_table)->where($row->primary_key, $row->id_value)->update([
                     $row->data_field => $row->before
                 ])) {
                     $row->delete();

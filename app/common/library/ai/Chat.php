@@ -13,7 +13,7 @@ use exception;
 use plugin\radmin\app\common\library\ai\Http;
 use support\Cache;
 use Psr\Http\Message\StreamInterface;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\util\DateUtil;
 use Throwable;
 use Workerman\Protocols\Http\Chunk;
@@ -652,16 +652,16 @@ class Chat
 
             // 扣取
             if ($amount) {
-                Rdb::startTrans();
+                Db::startTrans();
                 try {
                     UserTokens::create([
                         'ai_user_id' => $this->aiUserId,
                         'tokens'     => intval($amount) * (-1),
                         'memo'       => 'AI知识库：' . $this->tempData['messageTitle'],
                     ]);
-                    Rdb::commit();
+                    Db::commit();
                 } catch (Throwable $e) {
-                    Rdb::rollback();
+                    Db::rollback();
                     throw $e;
                 }
             }

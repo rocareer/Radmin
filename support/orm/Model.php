@@ -1,20 +1,20 @@
 <?php
 
-namespace Radmin\orm;
+namespace support\orm;
 
 use think\db\BaseQuery;
 use think\db\Query;
 use think\model\Collection;
 
 /**
- * @method static Rdb name(string $name) 指定当前数据表名（不含前缀）
- * @method static Rdb table(mixed $table) 指定当前操作的数据表
+ * @method static Db name(string $name) 指定当前数据表名（不含前缀）
+ * @method static Db table(mixed $table) 指定当前操作的数据表
  * @method static mixed transaction(callable $callback) 执行数据库事务
  * @method static void startTrans() 启动事务
  * @method static void commit() 用于非自动提交状态下面的查询提交
  * @method static void rollback() 事务回滚
  * @method array query(string $sql, array $bind = []) 执行查询 返回数据集
- * @method Rdb master(bool $readMaster = true) 设置从主服务器读取数据
+ * @method Db master(bool $readMaster = true) 设置从主服务器读取数据
  * @method int execute(string $sql, array $bind = []) 执行语句
  * @method BaseQuery connect(string|null $name = null, bool $force = false) 创建/切换数据库连接查询
  * @method static void setConfig($config) 设置配置对象

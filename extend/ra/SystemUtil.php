@@ -13,7 +13,7 @@ namespace Radmin\util;
 
 use plugin\radmin\app\admin\model\Config as ConfigModel;
 
-use Radmin\orm\Rdb;
+use support\orm\Db;
 
 class SystemUtil
 {
@@ -50,7 +50,7 @@ class SystemUtil
         $actionName     = request()->action;
         $path           = str_replace('.', '/', $controllerName);
         $path           = str_replace('plugin\radmin\app\admin\controller\\', '', $path);
-        $remark         = Rdb::name('admin_rule')
+        $remark         = Db::name('admin_rule')
             ->where('name', $path)
             ->whereOr('name', $path . '/' . $actionName)
             ->value('remark');

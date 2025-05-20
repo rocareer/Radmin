@@ -10,7 +10,7 @@
 // | Author: liu21st <liu21st@gmail.com>
 // +----------------------------------------------------------------------
 
-namespace Radmin\orm;
+namespace support\orm;
 
 use think\Event;
 use think\Facade;
@@ -18,17 +18,17 @@ use think\Facade;
 /**
  * Class Db
  * 数据库操作类
- * @mixin Rdbm
- * @method static Rdbm name(string $name) 指定当前数据表名（不含前缀）
- * @method static Rdbm table(mixed $table) 指定当前操作的数据表
+ * @mixin DbManager
+ * @method static DbManager name(string $name) 指定当前数据表名（不含前缀）
+ * @method static DbManager table(mixed $table) 指定当前操作的数据表
  * @method static mixed transaction(callable $callback) 执行数据库事务
  * @method static void startTrans() 启动事务
  * @method static void commit() 用于非自动提交状态下面的查询提交
  * @method static void rollback() 事务回滚
  * @method static array query(string $sql, array $bind = []) 执行查询返回数据集
- * @method static Rdbm master(bool $readMaster = true) 设置从主服务器读取数据
+ * @method static DbManager master(bool $readMaster = true) 设置从主服务器读取数据
  * @method static int execute(string $sql, array $bind = []) 执行语句
- * @method static Rdbm connect(string|null $name = null, bool $force = false) 创建/切换数据库连接查询
+ * @method static DbManager connect(string|null $name = null, bool $force = false) 创建/切换数据库连接查询
  * @method static void setConfig($config) 设置配置对象
  * @method static mixed getConfig(string $name = '', $default = null) 获取配置参数
  * @method static void setEvent(Event $event) 设置Event对象
@@ -36,7 +36,7 @@ use think\Facade;
  * @method static mixed trigger(string $event, $params = null, bool $once = false) 触发事件
  */
 
-class Rdb extends Facade
+class Db extends Facade
 {
 
     /**
@@ -46,7 +46,7 @@ class Rdb extends Facade
      */
     protected static function getFacadeClass()
     {
-        return Rdbm::class;
+        return DbManager::class;
     }
 
 }

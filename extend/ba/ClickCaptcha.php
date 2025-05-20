@@ -5,7 +5,7 @@ namespace extend\ba;
 
 use plugin\radmin\extend\ba\FileUtil;
 use Radmin\lang\Lang;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Throwable;
 
 
@@ -87,7 +87,7 @@ class ClickCaptcha
         $this->config = array_merge($clickConfig, $this->config, $config);
 
         // 清理过期的验证码
-        Rdb::name('captcha')->where('expire_time', '<', time())->delete();
+        Db::name('captcha')->where('expire_time', '<', time())->delete();
     }
 
     /**
@@ -152,7 +152,7 @@ class ClickCaptcha
         $nowTime         = time();
         $textArr['text'] = array_splice($textArr['text'], 0, $this->config['length']);
         $text            = array_splice($text, 0, $this->config['length']);
-        Rdb::name('captcha')
+        Db::name('captcha')
             ->replace()
             ->insert([
                 'key'         => md5($id),
@@ -205,11 +205,11 @@ class ClickCaptcha
     public function check(string $id, string $info, bool $unset = true): bool
     {
         $key     = md5($id);
-        $captcha = Rdb::name('captcha')->where('key', $key)->find();
+        $captcha = Db::name('captcha')->where('key', $key)->find();
         if ($captcha) {
             // 验证码过期
             if (time() > $captcha['expire_time']) {
-                Rdb::name('captcha')->where('key', $key)->delete();
+                Db::name('captcha')->where('key', $key)->delete();
                 return false;
             }
             $textArr = json_decode($captcha['captcha'], true);
@@ -230,7 +230,7 @@ class ClickCaptcha
                     return false;
                 }
             }
-            if ($unset) Rdb::name('captcha')->where('key', $key)->delete();
+            if ($unset) Db::name('captcha')->where('key', $key)->delete();
             return true;
         } else {
             return false;

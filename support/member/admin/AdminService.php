@@ -12,7 +12,7 @@ namespace support\member\admin;
 
 use app\admin\model\AdminGroup;
 
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\token\Token;
 use support\member\Service;
 use Throwable;
@@ -86,7 +86,7 @@ class AdminService extends Service
      */
     public function getAdminChildGroups(): array
     {
-        $groupIds = Rdb::name('admin_group_access')
+        $groupIds = Db::name('admin_group_access')
             ->where('uid', $this->id)
             ->select();
         $children = [];
@@ -103,7 +103,7 @@ class AdminService extends Service
      */
     public function getGroupAdmins(array $groups): array
     {
-        return Rdb::name('admin_group_access')
+        return Db::name('admin_group_access')
             ->where('group_id', 'in', $groups)
             ->column('uid');
     }

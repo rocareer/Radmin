@@ -10,7 +10,7 @@ use app\admin\model\SensitiveDataLog;
 use exception;
 use extend\ba\TableManager;
 use support\Log;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Throwable;
 use Webman\Http\Request;
 use Webman\Http\Response;
@@ -68,7 +68,7 @@ class AdminSecurity implements MiddlewareInterface
             }
 
 
-            $recycleData = Rdb::connect(TableManager::getConnection($recycle['connection']))
+            $recycleData = Db::connect(TableManager::getConnection($recycle['connection']))
                 ->name($recycle['data_table'])
                 ->whereIn($recycle['primary_key'], $dataIds)
                 ->select()
@@ -120,7 +120,7 @@ class AdminSecurity implements MiddlewareInterface
 
             $sensitiveData = $sensitiveData->toArray();
             $dataId        = $request->input($sensitiveData['primary_key']);
-            $editData      = Rdb::connect(TableManager::getConnection($sensitiveData['connection']))
+            $editData      = Db::connect(TableManager::getConnection($sensitiveData['connection']))
                 ->name($sensitiveData['data_table'])
                 ->field(array_keys($sensitiveData['data_fields']))
                 ->where($sensitiveData['primary_key'], $dataId)

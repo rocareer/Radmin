@@ -7,7 +7,7 @@ use support\Container;
 use Radmin\exception\BusinessException;
 
 use support\Log;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use support\StatusCode;
 use Throwable;
 
@@ -136,7 +136,7 @@ class State implements InterfaceState
     protected function recordLoginLog(bool $success): void
     {
         try {
-            Rdb::name($this->getLoginLogTable())->insert([
+            Db::name($this->getLoginLogTable())->insert([
                 'user_id'     => $this->memberModel->id,
                 'username'    => $this->memberModel->username,
                 'ip'          => request()->getRealIp(),

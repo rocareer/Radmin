@@ -3,7 +3,7 @@
 namespace app\common\controller;
 
 use Radmin\exception\BusinessException;
-use Radmin\orm\Model;
+use support\orm\Model;
 use support\member\Member;
 use support\StatusCode;
 use Throwable;

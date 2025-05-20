@@ -27,7 +27,7 @@ use app\admin\model\Config as configModel;
 use Radmin\util\FileUtil;
 
 use Radmin\lang\Lang;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\util\SystemUtil;
 
 
@@ -351,7 +351,7 @@ if (!function_exists('get_area')) {
 
         $cacheKey = 'area_data_' . md5(serialize($where));
 
-        return Rdb::name('area')
+        return Db::name('area')
             ->cache($cacheKey, $cacheTime)
             ->where($where)
             ->field('id as value,name as label')

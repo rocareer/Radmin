@@ -4,7 +4,7 @@ namespace app\admin\model\log\data;
 
 use app\admin\model\Admin;
 use app\common\model\BaseModel;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use think\model\relation\BelongsTo;
 
 /**
@@ -38,16 +38,16 @@ class Restore extends BaseModel
     public function record($data): void
     {
         try {
-            Rdb::startTrans();
+            Db::startTrans();
             $saveData = [
                 'admin_id'   => $data['admin_id'],
                 'version'    => $data['version'],
                 'table_name' => $data['table_name']
             ];
             $this->create($saveData);
-            Rdb::commit();
+            Db::commit();
         } catch (\Exception $e) {
-            Rdb::rollback();
+            Db::rollback();
             throw new \Exception($e->getMessage());
         }
     }

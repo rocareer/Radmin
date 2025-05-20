@@ -6,7 +6,7 @@ namespace app\common\model\ai;
 use app\common\library\ai\Helper;
 use app\common\model\BaseModel;
 use exception;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 
 /**
  * AiUser
@@ -71,9 +71,9 @@ class AiUser extends BaseModel
         if (!$row['user_id']) return '-';
 
         if ($row['user_type'] == 'user') {
-            return Rdb::name('user')->where('id', $row['user_id'])->value('nickname');
+            return Db::name('user')->where('id', $row['user_id'])->value('nickname');
         } elseif ($row['user_type'] == 'admin') {
-            return Rdb::name('admin')->where('id', $row['user_id'])->value('nickname');
+            return Db::name('admin')->where('id', $row['user_id'])->value('nickname');
         }
         return '';
     }

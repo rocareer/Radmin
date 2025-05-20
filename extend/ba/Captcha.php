@@ -5,7 +5,7 @@ namespace extend\ba;
 
 use GdImage;
 use plugin\radmin\extend\ba\FileUtil;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\Response;
 use Throwable;
 
@@ -84,7 +84,7 @@ class Captcha
         $this->config = array_merge($this->config, $config);
 
         // 清理过期的验证码
-        Rdb::name('captcha')
+        Db::name('captcha')
             ->where('expire_time', '<', time())
             ->delete();
     }
@@ -132,7 +132,7 @@ class Captcha
     public function check(string $code, string $id): bool
     {
         $key    = $this->authCode($this->seKey, $id);
-        $seCode = Rdb::name('captcha')->where('key', $key)->find();
+        $seCode = Db::name('captcha')->where('key', $key)->find();
 
         // 验证码为空
         if (empty($code) || empty($seCode)) {
@@ -141,12 +141,12 @@ class Captcha
 
         // 验证码过期
         if (time() > $seCode['expire_time']) {
-            Rdb::name('captcha')->where('key', $key)->delete();
+            Db::name('captcha')->where('key', $key)->delete();
             return false;
         }
 
         if ($this->authCode(strtoupper($code), $id) == $seCode['code']) {
-            $this->reset && Rdb::name('captcha')->where('key', $key)->delete();
+            $this->reset && Db::name('captcha')->where('key', $key)->delete();
             return true;
         }
 
@@ -164,14 +164,14 @@ class Captcha
     {
         $nowTime     = time();
         $key         = $this->authCode($this->seKey, $id);
-        $captchaTemp = Rdb::name('captcha')->where('key', $key)->find();
+        $captchaTemp = Db::name('captcha')->where('key', $key)->find();
         if ($captchaTemp) {
             // 重复的为同一标识创建验证码
-            Rdb::name('captcha')->where('key', $key)->delete();
+            Db::name('captcha')->where('key', $key)->delete();
         }
         $captcha = $this->generate($captcha);
         $code    = $this->authCode($captcha, $id);
-        Rdb::name('captcha')
+        Db::name('captcha')
             ->insert([
                 'key'         => $key,
                 'code'        => $code,
@@ -191,7 +191,7 @@ class Captcha
     public function getCaptchaData(string $id): array
     {
         $key    = $this->authCode($this->seKey, $id);
-        $seCode = Rdb::name('captcha')->where('key', $key)->find();
+        $seCode = Db::name('captcha')->where('key', $key)->find();
         return $seCode ?: [];
     }
 
@@ -245,7 +245,7 @@ class Captcha
         }
 
         $key     = $this->authCode($this->seKey, $id);
-        $captcha = Rdb::name('captcha')->where('key', $key)->find();
+        $captcha = Db::name('captcha')->where('key', $key)->find();
 
         // 绘验证码
         if ($captcha && $nowTime <= $captcha['expire_time']) {
@@ -255,7 +255,7 @@ class Captcha
 
             // 保存验证码
             $code = $this->authCode(strtoupper(implode('', $captcha)), $id);
-            Rdb::name('captcha')->insert([
+            Db::name('captcha')->insert([
                 'key'         => $key,
                 'code'        => $code,
                 'captcha'     => strtoupper(implode('', $captcha)),

@@ -4,7 +4,7 @@ namespace Radmin\command;
 
 use Radmin\Command;
 use Radmin\Event;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -94,7 +94,7 @@ class DataMigrate extends Command
         // 3. 初始化数据库连接
         try {
             // 测试数据库连接是否正常
-            Rdb::query("SELECT 1");
+            Db::query("SELECT 1");
         } catch (\Exception $e) {
             throw new \RuntimeException("数据库连接失败: " . $e->getMessage());
         }
@@ -212,18 +212,18 @@ class DataMigrate extends Command
                 $instance  = new $className();
 
                 // 执行迁移
-                Rdb::startTrans();
+                Db::startTrans();
                 try {
                     $instance->up();
 
                     // 记录迁移
                     $this->recordMigration($migration);
 
-                    Rdb::commit();
+                    Db::commit();
                     $executedCount++;
                     $output->writeln("<info>成功</info>");
                 } catch (\Exception $e) {
-                    Rdb::rollback();
+                    Db::rollback();
                     throw $e;
                 }
             } catch (\Exception $e) {
@@ -300,18 +300,18 @@ class DataMigrate extends Command
                 $instance  = new $className();
 
                 // 执行回滚
-                Rdb::startTrans();
+                Db::startTrans();
                 try {
                     $instance->down();
 
                     // 删除迁移记录
                     $this->removeMigration($migration);
 
-                    Rdb::commit();
+                    Db::commit();
                     $rolledBackCount++;
                     $output->writeln("<info>成功</info>");
                 } catch (\Exception $e) {
-                    Rdb::rollback();
+                    Db::rollback();
                     throw $e;
                 }
             } catch (\Exception $e) {
@@ -402,7 +402,7 @@ class DataMigrate extends Command
         $fullTableName = $prefix . $tableName;
 
         // todo 没有fetch 方法
-        // if (!Rdb::query("SHOW TABLES LIKE '{$fullTableName}'")->fetch()) {
+        // if (!Db::query("SHOW TABLES LIKE '{$fullTableName}'")->fetch()) {
         //     $sql = "CREATE TABLE `{$fullTableName}` (
         //         `id` int(11) NOT NULL AUTO_INCREMENT,
         //         `migration` varchar(255) NOT NULL,
@@ -413,7 +413,7 @@ class DataMigrate extends Command
         //         UNIQUE KEY `migration` (`migration`)
         //     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
         //
-        //     Rdb::execute($sql);
+        //     Db::execute($sql);
         // }
     }
 
@@ -460,24 +460,24 @@ class DataMigrate extends Command
             $tableName = str_replace(config('think-orm.connections.mysql.prefix'), '', $table);
             
             // 检查表是否已存在
-            $tableExists = Rdb::query("SHOW TABLES LIKE '{$table}'")->fetch();
+            $tableExists = Db::query("SHOW TABLES LIKE '{$table}'")->fetch();
             
             if ($tableExists) {
                 // 获取现有表结构
-                $createTableSql = Rdb::query("SHOW CREATE TABLE `{$table}`")->fetch()['Create TableUtil'] ?? '';
+                $createTableSql = Db::query("SHOW CREATE TABLE `{$table}`")->fetch()['Create TableUtil'] ?? '';
                 
                 // 生成修改表结构的迁移代码
                 $tableCode = <<<PHP
         // 修改表 {$tableName} 结构
         if (\$this->tableExists('{$table}')) {
             // 获取当前表结构
-            \$currentStructure = Rdb::query("SHOW CREATE TABLE `{$table}`")->fetch()['Create TableUtil'] ?? '';
+            \$currentStructure = Db::query("SHOW CREATE TABLE `{$table}`")->fetch()['Create TableUtil'] ?? '';
             
             // 这里添加需要修改的表结构逻辑
             // 示例：添加新字段
             /*
             if (!\$this->columnExists('{$table}', 'new_column')) {
-                Rdb::execute("
+                Db::execute("
                     ALTER TABLE `{$table}` 
                     ADD COLUMN `new_column` varchar(255) NULL COMMENT '新字段' AFTER `existing_column`,
                     ADD INDEX `idx_new_column` (`new_column`);
@@ -486,7 +486,7 @@ class DataMigrate extends Command
             */
         } else {
             // 表不存在时创建
-            Rdb::execute("
+            Db::execute("
                 {$createTableSql}
             ");
         }
@@ -495,7 +495,7 @@ PHP;
                 // 生成创建新表的代码
                 $tableCode = <<<PHP
         // 创建表 {$tableName}
-        Rdb::execute("
+        Db::execute("
             CREATE TABLE IF NOT EXISTS `{$table}` (
                 `id` int(11) NOT NULL AUTO_INCREMENT,
                 `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -516,7 +516,7 @@ PHP;
      */
     private function tableExists(string \$table): bool
     {
-        return (bool)Rdb::query("SHOW TABLES LIKE ?", [\$table])->fetch();
+        return (bool)Db::query("SHOW TABLES LIKE ?", [\$table])->fetch();
     }
     
     /**
@@ -524,7 +524,7 @@ PHP;
      */
     private function columnExists(string \$table, string \$column): bool
     {
-        return (bool)Rdb::query("SHOW COLUMNS FROM `{\$table}` LIKE ?", [\$column])->fetch();
+        return (bool)Db::query("SHOW COLUMNS FROM `{\$table}` LIKE ?", [\$column])->fetch();
     }
     
     /**
@@ -532,7 +532,7 @@ PHP;
      */
     private function indexExists(string \$table, string \$index): bool
     {
-        return (bool)Rdb::query("SHOW INDEX FROM `{\$table}` WHERE Key_name = ?", [\$index])->fetch();
+        return (bool)Db::query("SHOW INDEX FROM `{\$table}` WHERE Key_name = ?", [\$index])->fetch();
     }
 PHP;
             $content = str_replace('// todo 辅助方法', $helperMethods, $content);
@@ -565,7 +565,7 @@ PHP;
         $prefix    = config('think-orm.connections.mysql.prefix');
         $tableName = $prefix . self::MIGRATIONS_TABLE;
 
-        $result = Rdb::query("SELECT migration FROM `{$tableName}` ORDER BY id ASC")->fetchAll();
+        $result = Db::query("SELECT migration FROM `{$tableName}` ORDER BY id ASC")->fetchAll();
 
         $migrations = [];
         foreach ($result as $row) {
@@ -595,11 +595,11 @@ PHP;
         $tableName = $prefix . self::MIGRATIONS_TABLE;
 
         // 获取当前最大批次号
-        $batch = Rdb::query("SELECT MAX(batch) as max_batch FROM `{$tableName}`")->fetch();
+        $batch = Db::query("SELECT MAX(batch) as max_batch FROM `{$tableName}`")->fetch();
         $batch = $batch['max_batch'] ?? 0;
         $batch++;
 
-        Rdb::execute(
+        Db::execute(
             "INSERT INTO `{$tableName}` (migration, batch, admin_id) VALUES (?, ?, ?)",
             [$migration, $batch, $this->admin_id]
         );
@@ -613,7 +613,7 @@ PHP;
         $prefix    = config('think-orm.connections.mysql.prefix');
         $tableName = $prefix . self::MIGRATIONS_TABLE;
 
-        Rdb::execute("DELETE FROM `{$tableName}` WHERE migration = ?", [$migration]);
+        Db::execute("DELETE FROM `{$tableName}` WHERE migration = ?", [$migration]);
     }
 
     /**
@@ -624,7 +624,7 @@ PHP;
         $prefix    = config('think-orm.connections.mysql.prefix');
         $tableName = $prefix . self::MIGRATIONS_TABLE;
 
-        $result = Rdb::query(
+        $result = Db::query(
             "SELECT executed_at FROM `{$tableName}` WHERE migration = ?",
             [$migration]
         )->fetch();

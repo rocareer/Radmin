@@ -13,7 +13,7 @@ use app\common\controller\Backend;
 use app\common\library\Menu;
 use exception;
 use extend\ba\TableManager;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Radmin\Response;
 use Radmin\util\FileUtil;
 use Throwable;
@@ -353,7 +353,7 @@ class Crud extends Backend
         $tableName  = TableManager::tableName($info['table']['name'], false, $connection);
         $adapter    = TableManager::phinxAdapter(true, $connection);
         if ($adapter->hasTable($tableName)) {
-            $info['table']['empty'] = Rdb::connect($connection)
+            $info['table']['empty'] = Db::connect($connection)
                 ->name($tableName)
                 ->limit(1)
                 ->select()
@@ -490,7 +490,7 @@ class Crud extends Backend
         $connection = $this->request->get('connection');
         $connection = $connection ?: config('think-orm.default');
 
-        $crudLog = Rdb::name('crud_log')
+        $crudLog = Db::name('crud_log')
             ->where('table_name', $table)
             ->where('connection', $connection)
             ->order('create_time desc')
@@ -518,7 +518,7 @@ class Crud extends Backend
         if ($type == 'db') {
             $sql       = 'SELECT * FROM `information_schema`.`tables` '
                 . 'WHERE TABLE_SCHEMA = ? AND table_name = ?';
-            $tableInfo = Rdb::connect($connection)->query($sql, [$connectionConfig['database'], $table]);
+            $tableInfo = Db::connect($connection)->query($sql, [$connectionConfig['database'], $table]);
             if (!$tableInfo) {
              return $this->error(__('Record not found'));
             }
@@ -526,7 +526,7 @@ class Crud extends Backend
             // 数据表是否有数据
             $adapter = TableManager::phinxAdapter(false, $connection);
             if ($adapter->hasTable($table)) {
-                $empty = Rdb::connect($connection)
+                $empty = Db::connect($connection)
                     ->table($table)
                     ->limit(1)
                     ->select()

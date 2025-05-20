@@ -10,7 +10,7 @@
 namespace support\member\admin;
 
 use app\admin\model\AdminGroup;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use support\member\Model;
 use think\db\exception\DbException;
 
@@ -65,7 +65,7 @@ class AdminModel extends Model
      */
     public function getGroupArrAttr($value, $row): array
     {
-        return Rdb::name('admin_group_access')
+        return Db::name('admin_group_access')
             ->where('uid', $row['id'])
             ->column('group_id');
     }
@@ -79,7 +79,7 @@ class AdminModel extends Model
      */
     public function getGroupNameArrAttr($value, $row): array
     {
-        $groupAccess = Rdb::name('admin_group_access')
+        $groupAccess = Db::name('admin_group_access')
             ->where('uid', $row['id'])
             ->column('group_id');
         return (new AdminGroup)->whereIn('id', $groupAccess)->column('name');

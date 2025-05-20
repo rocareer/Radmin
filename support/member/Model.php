@@ -8,8 +8,8 @@ use Radmin\exception\BusinessException;
 use Radmin\exception\UnauthorizedHttpException;
 
 use support\Log;
-use Radmin\orm\Model as ThinkModel;
-use Radmin\orm\Rdb;
+use support\orm\Model as ThinkModel;
+use support\orm\Db;
 use support\StatusCode;
 use think\db\exception\DataNotFoundException;
 use think\db\exception\DbException;
@@ -291,7 +291,7 @@ abstract class Model extends ThinkModel implements InterfaceModel
                 'create_time' => time()
             ];
 
-            Rdb::name($this->getLoginLogTable())->insert($log);
+            Db::name($this->getLoginLogTable())->insert($log);
         } catch (Throwable $e) {
             Log::error('记录登录日志失败：' . $e->getMessage());
         }
@@ -311,7 +311,7 @@ abstract class Model extends ThinkModel implements InterfaceModel
                 'create_time' => time()
             ];
 
-            Rdb::name($this->getPasswordLogTable())->insert($log);
+            Db::name($this->getPasswordLogTable())->insert($log);
         } catch (Throwable $e) {
             Log::error('记录密码修改日志失败：' . $e->getMessage());
         }

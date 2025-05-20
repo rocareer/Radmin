@@ -3,8 +3,7 @@
 
 namespace support\orm;
 
-use Radmin\cache\Cache;
-use Radmin\orm\Rdb;
+use support\cache\Cache;
 use think\Paginator;
 use Webman\Bootstrap;
 
@@ -31,14 +30,14 @@ class Orm implements Bootstrap
 		}
 		// Container::getInstance()->bind('Rdbm', Rdbm::class);
 		// 配置
-		Rdb::setConfig($config);
+		Db::setConfig($config);
 
 		if (class_exists(Cache::class)) {
-			Rdb::setCache(Cache::store());
+			Db::setCache(Cache::store());
 		}
 		
 		Paginator::currentPageResolver(function ($pageName = 'page') {
-			$request = Http::request();
+			$request = request();
 			if (!$request) {
 				return 1;
 			}
@@ -51,7 +50,7 @@ class Orm implements Bootstrap
 		
 		// 设置分页url中域名与参数之间的path字符串
 		Paginator::currentPathResolver(function () {
-			$request = Http::request();
+			$request = request();
 			return $request ? $request->path() : '/';
 		});
 	}

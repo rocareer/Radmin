@@ -4,7 +4,7 @@
 namespace app\admin\model;
 
 use app\common\model\BaseModel;
-use Radmin\cache\Cache;
+use support\cache\Cache;
 use Radmin\exception\BusinessException;
 use Throwable;
 

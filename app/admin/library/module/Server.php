@@ -9,7 +9,7 @@ use FilesystemIterator;
 use GuzzleHttp\Exception\TransferException;
 use app\admin\library\crud\Helper;
 use Radmin\util\FileUtil;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use think\db\exception\PDOException;
@@ -243,7 +243,7 @@ class Server
                     $tempLine = str_ireplace('__PREFIX__',  config('database.connections.mysql.prefix'), $tempLine);
                     $tempLine = str_ireplace('INSERT INTO ', 'INSERT IGNORE INTO ', $tempLine);
                     try {
-                        Rdb::execute($tempLine);
+                        Db::execute($tempLine);
                     } catch (PDOException) {
                         // $e->getMessage();
                     }

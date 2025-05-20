@@ -5,7 +5,7 @@ namespace app\api\controller;
 
 use app\common\controller\Frontend;
 use extend\ba\Tree;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use support\member\Member;
 use Throwable;
 
@@ -53,7 +53,7 @@ class Index extends Frontend
                 }
             }
 
-            $rules         = Rdb::name('user_rule')
+            $rules         = Db::name('user_rule')
                 ->where('status', '1')
                 ->where('no_login_valid', 1)
                 ->where('type', 'in', [

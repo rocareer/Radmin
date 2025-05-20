@@ -5,7 +5,7 @@ namespace app\admin\controller\security;
 use app\admin\model\DataRecycleLog as DataRecycleLogModel;
 use app\common\controller\Backend;
 use extend\ba\TableManager;
-use Radmin\orm\Rdb;
+use support\orm\Db;
 use Throwable;
 
 class DataRecycleLog extends Backend
@@ -46,7 +46,7 @@ class DataRecycleLog extends Backend
         try {
             foreach ($data as $row) {
                 $recycleData = json_decode($row['data'], true);
-                if (is_array($recycleData) && Rdb::connect(TableManager::getConnection($row->connection))->name($row->data_table)->insert($recycleData)) {
+                if (is_array($recycleData) && Db::connect(TableManager::getConnection($row->connection))->name($row->data_table)->insert($recycleData)) {
                     $row->delete();
                     $count++;
                 }
