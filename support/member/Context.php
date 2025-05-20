@@ -1,6 +1,6 @@
 <?php
 
-namespace Radmin;
+namespace support\member;
 
 /**
  * 成员上下文管理器
