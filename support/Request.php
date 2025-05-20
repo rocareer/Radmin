@@ -1,15 +1,12 @@
 <?php
 /**
- * This file is part of webman.
+ * File:        Request.php
+ * Author:      albert <albert@rocareer.com>
+ * Created:     2025/5/21 01:36
+ * Description:
  *
- * Licensed under The MIT License
- * For full copyright and license information, please see the MIT-LICENSE.txt
- * Redistributions of files must retain the above copyright notice.
- *
- * @author    walkor<walkor@workerman.net>
- * @copyright walkor<walkor@workerman.net>
- * @link      http://www.workerman.net/
- * @license   http://www.opensource.org/licenses/mit-license.php MIT License
+ * Copyright [2014-2026] [https://rocareer.com]
+ * Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
  */
 
 namespace support;
@@ -102,6 +99,7 @@ class Request extends \Webman\Http\Request
     }
 
     /**
+     * 递归过滤给定的值
      * @param $data
      * @param $filter
      * @param $name
@@ -138,6 +136,14 @@ class Request extends \Webman\Http\Request
         return $data;
     }
 
+    /**
+     * 解析过滤器
+     * @param $filter
+     * @param $default
+     * @return   array
+     * Author:   albert <albert@rocareer.com>
+     * Time:     2025/5/21 01:36
+     */
     protected function getFilter($filter, $default): array
     {
         if (is_null($filter)) {
