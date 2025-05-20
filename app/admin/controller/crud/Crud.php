@@ -444,11 +444,11 @@ class Crud extends Backend
         $modelFileList   = [];
         $controllerFiles = [];
         foreach ($adminModelFiles as $item) {
-            $item                 = FileUtil::fsFit('/plugin/radmin/app/admin/model/' . $item);
+            $item                 = FileUtil::fsFit('/app/admin/model/' . $item);
             $modelFileList[$item] = $item;
         }
         foreach ($commonModelFiles as $item) {
-            $item                 = FileUtil::fsFit('/plugin/radmin/app/common/model/' . $item);
+            $item                 = FileUtil::fsFit('/app/common/model/' . $item);
             $modelFileList[$item] = $item;
         }
 
@@ -466,7 +466,7 @@ class Crud extends Backend
             if (in_array($item, $outExcludeController)) {
                 continue;
             }
-            $item                   = FileUtil::fsFit('/plugin/radmin/app/admin/controller/' . $item);
+            $item                   = FileUtil::fsFit('/app/admin/controller/' . $item);
             $controllerFiles[$item] = $item;
         }
 

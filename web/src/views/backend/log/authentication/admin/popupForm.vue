@@ -35,7 +35,7 @@
                         type="remoteSelect"
                         v-model="baTable.form.items!.admin_id"
                         prop="admin_id"
-                        :input-attr="{ pk: 'admin.id', field: 'username', remoteUrl: '/admin//plugin/radmin/admin/auth/Admin/index' }"
+                        :input-attr="{ pk: 'admin.id', field: 'username', remoteUrl: '/admin//admin/auth/Admin/index' }"
                         :placeholder="t('Please select field', { field: t('log.authentication.admin.admin_id') })"
                     />
                     <FormItem

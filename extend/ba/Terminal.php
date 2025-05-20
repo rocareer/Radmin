@@ -460,8 +460,8 @@ class Terminal
             return false;
         }
 
-        $toIndexHtmlPath = base_path() . '/plugin/radmin/public' . DIRECTORY_SEPARATOR . 'index.html';
-        $toAssetsPath    = base_path() . '/plugin/radmin/public' . DIRECTORY_SEPARATOR . 'assets';
+        $toIndexHtmlPath = base_path() . '/public' . DIRECTORY_SEPARATOR . 'index.html';
+        $toAssetsPath    = base_path() . '/public' . DIRECTORY_SEPARATOR . 'assets';
         @unlink($toIndexHtmlPath);
         FileUtil::delDir($toAssetsPath);
 

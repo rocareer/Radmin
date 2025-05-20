@@ -57,7 +57,7 @@ class DataMigrate extends Command
     {
         $this->output = $output;
         $this->input  = $input;
-        $this->migrate_path=base_path().'/plugin/radmin/database/migrations/';
+        $this->migrate_path=base_path().'/database/migrations/';
         // 初始化
         $this->initializeStats();
         // 执行操作
@@ -445,7 +445,7 @@ class DataMigrate extends Command
     private function generateMigrationContent(string $className, ?string $table = null): string
     {
         // 读取模板文件
-        $templatePath = base_path() . '/plugin/radmin/database/migrations/template.php';
+        $templatePath = base_path() . '/database/migrations/template.php';
         if (!file_exists($templatePath)) {
             throw new \Exception("迁移模板文件不存在: {$templatePath}");
         }

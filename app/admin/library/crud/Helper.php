@@ -689,7 +689,7 @@ class Helper
     public static function getStubFilePath(string $name): string
     {
         //todo
-        return base_path() . '/plugin/radmin/app/admin/' . DIRECTORY_SEPARATOR . 'library' . DIRECTORY_SEPARATOR . 'crud' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . FileUtil::fsFit($name) . '.stub';
+        return base_path() . '/app/admin/' . DIRECTORY_SEPARATOR . 'library' . DIRECTORY_SEPARATOR . 'crud' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . FileUtil::fsFit($name) . '.stub';
     }
 
     /**

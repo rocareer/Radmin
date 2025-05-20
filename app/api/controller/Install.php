@@ -152,8 +152,8 @@ class Install
         // php版本-end
 
         // 配置文件-start
-        $dbConfigFile     = base_path() . '/plugin/radmin/config/' . self::$dbConfigFileName;
-        $configIsWritable = FileUtil::pathIsWritable(base_path() . '/plugin/radmin/config') && FileUtil::pathIsWritable($dbConfigFile);
+        $dbConfigFile     = base_path() . '/config/' . self::$dbConfigFileName;
+        $configIsWritable = FileUtil::pathIsWritable(base_path() . '/config') && FileUtil::pathIsWritable($dbConfigFile);
         if (!$configIsWritable) {
             $configIsWritableLink = [
                 [
@@ -168,7 +168,7 @@ class Install
         // 配置文件-end
 
         // public-start
-        $publicIsWritable = FileUtil::pathIsWritable(base_path() . '/plugin/radmin/public');
+        $publicIsWritable = FileUtil::pathIsWritable(base_path() . '/public');
         if (!$publicIsWritable) {
             $publicIsWritableLink = [
                 [
@@ -456,7 +456,7 @@ class Install
         }
 
         // 写入数据库配置文件
-        $dbConfigFile = base_path() . '/plugin/radmin/config/' . self::$dbConfigFileName;
+        $dbConfigFile = base_path() . '/config/' . self::$dbConfigFileName;
 
 
         try {
@@ -543,16 +543,16 @@ class Install
         // 设置新的Token随机密钥key
         $oldTokenKey        = config('buildadmin.token.key');
         $newTokenKey        = Random::build('alnum', 32);
-        $buildConfigFile    = base_path() . '/plugin/radmin/config/' . self::$buildConfigFileName;
+        $buildConfigFile    = base_path() . '/config/' . self::$buildConfigFileName;
         $buildConfigContent = @file_get_contents($buildConfigFile);
         $buildConfigContent = preg_replace("/'key'(\s+)=>(\s+)'$oldTokenKey'/", "'key'\$1=>\$2'$newTokenKey'", $buildConfigContent);
         $result             = @file_put_contents($buildConfigFile, $buildConfigContent);
         if (!$result) {
-            return $this->error(__('File has no write permission:%s', ['/plugin/radmin/config/' . self::$buildConfigFileName]));
+            return $this->error(__('File has no write permission:%s', ['/config/' . self::$buildConfigFileName]));
         }
 
         // 建立安装锁文件
-        // $result = @file_put_contents(base_path().'/plugin/radmin/public/' . self::$lockFileName, date('Y-m-d H:i:s'));
+        // $result = @file_put_contents(base_path().'/public/' . self::$lockFileName, date('Y-m-d H:i:s'));
         // if (!$result) {
         //     return $this->error(__('File has no write permission:%s', ['plugin/radmin/public/' . self::$lockFileName]));
         // }
@@ -566,8 +566,8 @@ class Install
 
     protected function isInstallComplete(): bool
     {
-        if (is_file(base_path() . '/plugin/radmin/public/' . self::$lockFileName)) {
-            $contents = @file_get_contents(base_path() . '/plugin/radmin/public/' . self::$lockFileName);
+        if (is_file(base_path() . '/public/' . self::$lockFileName)) {
+            $contents = @file_get_contents(base_path() . '/public/' . self::$lockFileName);
             if ($contents == self::$InstallationCompletionMark) {
                 return true;
             }
@@ -588,7 +588,7 @@ class Install
             }
             $param = $this->request->only(['type', 'adminname', 'adminpassword', 'sitename']);
             if ($param['type'] == 'web') {
-                $result = @file_put_contents(base_path() . '/plugin/radmin/public/' . self::$lockFileName, self::$InstallationCompletionMark);
+                $result = @file_put_contents(base_path() . '/public/' . self::$lockFileName, self::$InstallationCompletionMark);
                 if (!$result) {
                     return $this->error(__('File has no write permission:%s', ['plugin/radmin/public/' . self::$lockFileName]));
                 }
@@ -677,7 +677,7 @@ class Install
         }
 
         if (Terminal::mvDist()) {
-            // copy(base_path().'/vendor/rocareer/radmin/plugin/radmin/config/event.php',base_path().'/plugin/radmin/config/event.php');
+            // copy(base_path().'/vendor/rocareer/radmin/config/event.php',base_path().'/config/event.php');
             return $this->success();
         } else {
             return $this->error(__('Failed to move the front-end file, please move it manually!'));

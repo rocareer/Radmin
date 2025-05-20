@@ -8,7 +8,7 @@ class install
 {
 	public function index()
 	{
-        return view('/plugin/radmin/app/view/install/index');
+        return view('/app/view/install/index');
 	}
 	
 }
