@@ -10,7 +10,7 @@
  */
 
 
-namespace Radmin\lang;
+namespace support\lang;
 
 
 

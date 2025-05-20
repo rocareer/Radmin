@@ -21,7 +21,7 @@
  *
  */
 
-namespace Radmin\token;
+namespace support\token;
 
 use stdClass;
 

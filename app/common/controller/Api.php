@@ -5,7 +5,7 @@ namespace app\common\controller;
 use app\controller\BaseController;
 use Exception;
 use app\exception\ServerErrorHttpException;
-use Radmin\lang\Lang;
+use support\lang\Lang;
 use support\orm\Db;
 use support\Response;
 use Throwable;

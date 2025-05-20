@@ -12,6 +12,7 @@
 namespace extend\ba;
 
 use app\admin\library\module\Manage;
+use extend\ra\SystemUtil;
 use plugin\radmin\extend\ba\FileUtil;
 use plugin\radmin\extend\ba\HttpResponseException;
 use plugin\radmin\extend\ba\Response;
@@ -152,8 +153,8 @@ class Terminal
 
 
         $commands =  config('terminal.commands');
-        if (radminInstalled()){
-            $customCommands=get_sys_config('','terminal');
+        if (SystemUtil::installed()){
+            $customCommands=SystemUtil::get_sys_config('','terminal');
             foreach ($customCommands as $k=>$customCommand){
                 foreach ($customCommand as $comd){
                     $commands[$k][$comd['key']]=$comd['value'];

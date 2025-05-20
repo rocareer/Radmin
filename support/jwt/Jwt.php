@@ -1,7 +1,7 @@
 <?php /** @noinspection PhpMultipleClassDeclarationsInspection */
 
 
-namespace Radmin\jwt;
+namespace support\jwt;
 
 use stdClass;
 use think\Facade;

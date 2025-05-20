@@ -23,10 +23,9 @@
 // +----------------------------------------------------------------------
 
 use app\admin\library\module\Server;
-use app\admin\model\Config as configModel;
 use extend\ra\FileUtil;
 
-use Radmin\lang\Lang;
+use support\lang\Lang;
 use support\orm\Db;
 use extend\ra\SystemUtil;
 

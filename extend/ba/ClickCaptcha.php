@@ -4,7 +4,7 @@
 namespace extend\ba;
 
 use plugin\radmin\extend\ba\FileUtil;
-use Radmin\lang\Lang;
+use support\lang\Lang;
 use support\orm\Db;
 use Throwable;
 

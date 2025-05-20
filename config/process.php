@@ -19,7 +19,7 @@ use app\process\Http;
 global $argv;
 
 return [
-    'Radmin' => [
+    'HTTP' => [
         'handler' => Http::class,
         'listen' => 'http://0.0.0.0:9696',
         'count' => 4,

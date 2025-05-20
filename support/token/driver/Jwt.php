@@ -9,7 +9,7 @@
  * Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
  */
 
-namespace Radmin\token\driver;
+namespace support\token\driver;
 
 use Exception;
 use app\exception\TokenException;

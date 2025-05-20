@@ -12,7 +12,7 @@
  *   +----------------------------------------------------------------------
  **/
 
-namespace Radmin\token\driver;
+namespace support\token\driver;
 
 use plugin\radmin\extend\ba\Random;
 use app\exception\TokenException;

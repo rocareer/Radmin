@@ -1,6 +1,6 @@
 <?php
 
-namespace Radmin\command;
+namespace support\command;
 
 use Radmin\Command;
 use Radmin\Event;

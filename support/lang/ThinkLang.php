@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Radmin\lang;
+namespace support\lang;
 
 use support\Request;
 use think\facade\Cookie;

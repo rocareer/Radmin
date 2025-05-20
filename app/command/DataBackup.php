@@ -1,6 +1,6 @@
 <?php
 
-namespace Radmin\command;
+namespace support\command;
 
 use app\admin\model\data\Table;
 use Radmin\Command;
