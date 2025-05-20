@@ -11,7 +11,7 @@
 
 use Phinx\Migration\AbstractMigration;
 use app\admin\model\Config;
-use Radmin\Log;
+use support\Log;
 
 class Radmin103 extends AbstractMigration
 {

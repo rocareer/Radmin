@@ -7,7 +7,7 @@ use support\Container;
 use Radmin\exception\BusinessException;
 use Radmin\exception\UnauthorizedHttpException;
 use Radmin\Http;
-use Radmin\Log;
+use support\Log;
 use Radmin\orm\Rdb;
 use Radmin\token\Token;
 use support\StatusCode;

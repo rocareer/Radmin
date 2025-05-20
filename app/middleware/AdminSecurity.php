@@ -9,7 +9,7 @@ use app\admin\model\SensitiveData;
 use app\admin\model\SensitiveDataLog;
 use exception;
 use extend\ba\TableManager;
-use Radmin\Log;
+use support\Log;
 use Radmin\orm\Rdb;
 use Throwable;
 use Webman\Http\Request;

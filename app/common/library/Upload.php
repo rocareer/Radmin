@@ -8,7 +8,7 @@ use app\common\model\Attachment;
 use exception;
 use extend\ba\Random;
 use InvalidArgumentException;
-use Radmin\Log;
+use support\Log;
 use Radmin\util\FileUtil;
 use think\helper\Str;
 use Throwable;

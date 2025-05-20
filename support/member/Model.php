@@ -7,7 +7,7 @@ namespace support\member;
 use Radmin\exception\BusinessException;
 use Radmin\exception\UnauthorizedHttpException;
 use Radmin\Http;
-use Radmin\Log;
+use support\Log;
 use Radmin\orm\Model as ThinkModel;
 use Radmin\orm\Rdb;
 use support\StatusCode;

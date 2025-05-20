@@ -4,7 +4,7 @@ namespace Radmin\command;
 
 use plugin\radmin\app\admin\model\data\Backup;
 use Radmin\Event;
-use Radmin\Log;
+use support\Log;
 use Radmin\orm\Model;
 use Radmin\orm\Rdb;
 use Symfony\Component\Console\Command\Command;
