@@ -125,7 +125,7 @@ class Account extends Frontend
             if (!Token::check($params['accountVerificationToken'], $params['type'] . '-pass', $user->id)) {
                 return $this->error(__('You need to verify your account before modifying the binding information'));
             }
-        } elseif (!isset($params['password']) || $user->password != encrypt_password($params['password'], $user->salt)) {
+        } elseif (!isset($params['password']) || $user->password != hash_password($params['password'])) {
             return $this->error(__('Password error'));
         }
 

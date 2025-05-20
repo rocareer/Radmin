@@ -70,7 +70,12 @@ if (!function_exists('modify_config')) {
     {
         $configPath = config_path();
         if ($plugin) {
-            $configPath = base_path() . DIRECTORY_SEPARATOR . 'plugin' . DIRECTORY_SEPARATOR . $plugin . DIRECTORY_SEPARATOR . 'config';
+            if (strpos($plugin, '/') !== false){
+                $configPath = base_path() . DIRECTORY_SEPARATOR . 'plugin' . DIRECTORY_SEPARATOR . $plugin . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . $configFile;
+            }else {
+                $configPath = config_path() . DIRECTORY_SEPARATOR . $plugin;
+            }
+
         }
         $configPath = $configPath . DIRECTORY_SEPARATOR . $configFile;
 

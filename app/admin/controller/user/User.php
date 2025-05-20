@@ -19,7 +19,7 @@ class User extends Backend
     protected array $withJoinTable = ['user_group'];
 
     // 排除字段
-    protected string|array $preExcludeFields = ['last_login_time', 'login_failure', 'password', 'salt'];
+    protected string|array $preExcludeFields = ['last_login_time', 'login_failure', 'password'];
 
     protected string|array $quickSearchField = ['username', 'nickname', 'id'];
 
@@ -41,7 +41,7 @@ class User extends Backend
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
         $res = $this->model
-            ->withoutField('password,salt')
+            ->withoutField('password')
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
             ->where($where)
@@ -124,7 +124,6 @@ class User extends Backend
             return parent::edit();
         }
 
-        unset($row->salt);
         $row->password = '';
         return $this->success('', [
             'row' => $row
@@ -139,7 +138,7 @@ class User extends Backend
     {
         list($where, $alias, $limit, $order) = $this->queryBuilder();
         $res = $this->model
-            ->withoutField('password,salt')
+            ->withoutField('password')
             ->withJoin($this->withJoinTable, $this->withJoinType)
             ->alias($alias)
             ->where($where)

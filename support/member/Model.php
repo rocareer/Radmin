@@ -195,11 +195,7 @@ abstract class Model extends ThinkModel implements InterfaceModel
 
         // 获取salt等额外参数
         $extend = [];
-        if (is_object($member) && property_exists($member, 'salt')) {
-            $extend['salt'] = $member->salt;
-        } elseif (is_array($member) && isset($member['salt'])) {
-            $extend['salt'] = $member['salt'];
-        }
+
         // 调用公共密码验证函数
         return verify_password($inputPassword, $hash, $extend);
     }

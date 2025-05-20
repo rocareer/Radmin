@@ -1,4 +1,5 @@
 /runtime
+/temp
 /.idea
 /.vscode
 /public/assets

@@ -49,6 +49,6 @@ class User extends BaseModel
      */
     public function resetPassword(int|string $uid, string $newPassword): int|User
     {
-        return $this->where(['id' => $uid])->update(['password' => hash_password($newPassword), 'salt' => '']);
+        return $this->where(['id' => $uid])->update(['password' => hash_password($newPassword)]);
     }
 }

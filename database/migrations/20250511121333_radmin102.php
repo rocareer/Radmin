@@ -20,18 +20,36 @@ class Radmin102 extends AbstractMigration
     public function up()
     {
         $this->addAuthentication();
+
+        // 删除 salt 字段
+        $this->deleteSalt();
+
     }
+
+    /**
+     * 为 admin 和 user 表删除 salt 字段
+     * @return   void
+     * Author:   albert <albert@rocareer.com>
+     * Time:     2025/5/21 04:45
+     */
+    public function deleteSalt(): void
+    {
+
+        $this->table(getDbPrefix().'admin')->removeColumn('salt')->save();
+        $this->table(getDbPrefix().'user')->removeColumn('salt')->save();
+    }
+
 
     /**
      * 添加鉴权配置项
      * @return   void
+     * Author:   albert <albert@rocareer.com>
+     * Time:     2025/5/11 04:59
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
-     * Author:   albert <albert@rocareer.com>
-     * Time:     2025/5/11 04:59
      */
-    public function addAuthentication()
+    public function addAuthentication(): void
     {
 
         $authentication = Config::where([
@@ -215,7 +233,7 @@ class Radmin102 extends AbstractMigration
                 'rule'      => 'required',
                 'extend'    => '',
                 'allow_del' => 0,
-                'weigh'     => 9999
+                'weigh'     => 0
             ];
             // 使用 Db 类插入新数据
             Config::insert($data);

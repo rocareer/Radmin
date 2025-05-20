@@ -175,7 +175,7 @@ abstract class Service implements InterfaceService
 
     public function checkPassword($password): bool
     {
-        return verify_password($password, $this->memberModel->password, ['salt' => $this->memberModel->salt]);
+        return verify_password($password, $this->memberModel->password);
     }
 
     /**

@@ -10,7 +10,6 @@ use extend\ba\Random;
  * 会员公共模型
  * @property int    $id              会员ID
  * @property string $password        密码密文
- * @property string $salt            密码盐
  * @property int    $login_failure   登录失败次数
  * @property string $last_login_time 上次登录时间
  * @property string $last_login_ip   上次登录IP
@@ -33,9 +32,8 @@ class User extends BaseModel
 
     public function resetPassword($uid, $newPassword): int|User
     {
-        $salt   = Random::build('alnum', 16);
         $passwd = hash_password($newPassword);
-        return $this->where(['id' => $uid])->update(['password' => $passwd, 'salt' => $salt]);
+        return $this->where(['id' => $uid])->update(['password' => $passwd]);
     }
 	
 	/**

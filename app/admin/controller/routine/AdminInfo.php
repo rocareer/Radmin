@@ -18,7 +18,7 @@ class AdminInfo extends Backend
      */
     protected object $model;
 
-    protected string|array $preExcludeFields = ['username', 'last_login_time', 'password', 'salt', 'status'];
+    protected string|array $preExcludeFields = ['username', 'last_login_time', 'password', 'status'];
 
     protected array $authAllowFields = ['id', 'username', 'nickname', 'avatar', 'email', 'mobile', 'motto', 'last_login_time'];
 

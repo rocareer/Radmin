@@ -21,7 +21,6 @@ use think\db\exception\DbException;
  * @property string $last_login_time 上次登录时间
  * @property int    $login_failure   登录失败次数
  * @property string $password        密码密文
- * @property string $salt            密码盐（废弃待删）
  * @property string $status          状态:enable=启用,disable=禁用,...(string存储，可自定义其他)
  */
 class Admin extends BaseModel
@@ -79,6 +78,6 @@ class Admin extends BaseModel
      */
     public function resetPassword(int|string $uid, string $newPassword): int|Admin
     {
-        return $this->where(['id' => $uid])->update(['password' => hash_password($newPassword), 'salt' => '']);
+        return $this->where(['id' => $uid])->update(['password' => hash_password($newPassword)]);
     }
 }

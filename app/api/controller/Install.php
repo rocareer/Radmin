@@ -568,12 +568,15 @@ class Install
 
     protected function isInstallComplete(): bool
     {
-        if (is_file(base_path() . '/public/' . self::$lockFileName)) {
-            $contents = @file_get_contents(base_path() . '/public/' . self::$lockFileName);
-            if ($contents == self::$InstallationCompletionMark) {
+        if (is_file(public_path() . DIRECTORY_SEPARATOR . self::$lockFileName)) {
+            $contents = @file_get_contents(public_path() . DIRECTORY_SEPARATOR . self::$lockFileName);
+            // 打开event
+            modify_config('app.php', ['enable' => true,], "webman/event");
+            if ($contents == self::$InstallationCompletionMark && config('plugin.webman.event.app.enable')) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -596,19 +599,7 @@ class Install
                 }
             } else {
                 // 管理员配置入库
-
-                $saveData = [
-                    'username' => $param['adminname'],
-                    'nickname' => ucfirst($param['adminname']),
-                ];
-                if (isset($param['adminpassword']) && $param['adminpassword']) {
-                    $salt                 = Random::build('alnum', 16);
-                    $passwd               = hash_password($param['adminpassword'], $salt);
-                    $saveData["password"] = $passwd;
-                    $saveData['salt']     = $salt;
-                }
                 try {
-                    // (new Terminal)->exec(false,'worker.reload');
                     // 管理员配置入库
                     $adminModel             = new AdminModel();
                     $defaultAdmin           = $adminModel->where('username', 'admin')->find();

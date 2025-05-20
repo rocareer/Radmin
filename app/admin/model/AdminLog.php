@@ -41,7 +41,7 @@ class AdminLog extends BaseModel
     ];
 
     protected array $desensitizationRegex = [
-        '/(password|salt|token)/i'
+        '/(password|token)/i'
     ];
 
     protected $name='admin_log';
