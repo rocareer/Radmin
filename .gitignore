@@ -1,6 +1,7 @@
 /runtime
 /.idea
 /.vscode
+/public/assets
 /vendor
 *.log
 .env
