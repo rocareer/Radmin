@@ -582,11 +582,9 @@ class Helper
             $value        = str_replace(['.', '/', '\\', '_'], '/', $value);
             $pathArrTemp  = explode('/', $value);
             $redundantDir = [
-                'plugin' => 0,
-                'radmin' => 1,
-                'app'    => 2,
-                $app     => 3,
-                $type    => 4,
+                'app'    => 0,
+                $app     => 1,
+                $type    => 2,
             ];
             foreach ($pathArrTemp as $key => $item) {
                 if (!array_key_exists($item, $redundantDir) || $key !== $redundantDir[$item]) {
@@ -608,7 +606,7 @@ class Helper
             throw new Exception('Unable to use internal variable:' . $lastName);
         }
 
-        $appDir       = base_path() . DIRECTORY_SEPARATOR . 'app/' . $app . DIRECTORY_SEPARATOR;
+        $appDir       = app_path().DIRECTORY_SEPARATOR. $app . DIRECTORY_SEPARATOR;
         $namespace    = "app\\$app\\$type" . ($pathArr ? '\\' . implode('\\', $pathArr) : '');
         $parseFile    = $appDir . $type . DIRECTORY_SEPARATOR . ($pathArr ? implode(DIRECTORY_SEPARATOR, $pathArr) . DIRECTORY_SEPARATOR : '') . $lastName . '.php';
         $rootFileName = $namespace . "/$lastName" . '.php';

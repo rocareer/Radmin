@@ -493,10 +493,8 @@ if (!function_exists('get_controller_list')) {
      */
     function get_controller_list(string $app = 'admin'): array
     {
-        // todo
-        // $controllerDir = app_path() . DIRECTORY_SEPARATOR . $app . DIRECTORY_SEPARATOR . 'controller' . DIRECTORY_SEPARATOR;
-        $controllerDir = base_path() . '/app' . DIRECTORY_SEPARATOR . $app . DIRECTORY_SEPARATOR . 'controller' . DIRECTORY_SEPARATOR;
-        return Filesystem::getDirFiles($controllerDir);
+        $controllerDir = app_path() . DIRECTORY_SEPARATOR . $app . DIRECTORY_SEPARATOR . 'controller' . DIRECTORY_SEPARATOR;
+        return FileUtil::getDirFiles($controllerDir);
     }
 }
 

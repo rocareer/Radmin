@@ -30,7 +30,7 @@ class InstallData extends AbstractMigration
                 'id'         => 1,
                 'username'   => 'admin',
                 'nickname'   => 'Admin',
-                'email'      => 'admin@rocareer.com',
+                'email'      => 'admin@r-admin.cn',
                 'mobile'     => '18888888888',
                 'updatetime' => $this->nowTime,
                 'createtime' => $this->nowTime,
