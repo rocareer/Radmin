@@ -180,7 +180,7 @@ if (!function_exists('getDbPrefix')) {
      */
     function getDbPrefix()
     {
-        return env('MYSQL_PREFIX') ?? config('database.connections.mysql.prefix');
+        return env('MYSQL_PREFIX') ?? config('think-orm.connections.mysql.prefix');
     }
 }
 

@@ -126,9 +126,9 @@ class Install
         if ($this->isInstallComplete()) {
             return $this->error(__('The system has completed installation. If you need to reinstall, please delete the %s file first', ['plugin/radmin/public/' . self::$lockFileName]), []);
         }
-        //        if (getenv('THINKORM_DEFAULT_TYPE')) {
-        //            return $this->error(__('检测到带有数据库配置的 .env 文件。请清理后再试一次!'));
-        //        }
+        if (getenv('MYSQL_PASSWORD')) {
+            return $this->error(__('检测到带有数据库配置的 .env 文件。请清理后再试一次!'));
+        }
 
         // php版本-start
         $phpVersion        = phpversion();
@@ -152,8 +152,8 @@ class Install
         // php版本-end
 
         // 配置文件-start
-        $dbConfigFile     = base_path() . '/config/' . self::$dbConfigFileName;
-        $configIsWritable = FileUtil::pathIsWritable(base_path() . '/config') && FileUtil::pathIsWritable($dbConfigFile);
+        $dbConfigFile     = base_path() . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . self::$dbConfigFileName;
+        $configIsWritable = FileUtil::pathIsWritable(base_path() . DIRECTORY_SEPARATOR . 'config') && FileUtil::pathIsWritable($dbConfigFile);
         if (!$configIsWritable) {
             $configIsWritableLink = [
                 [
@@ -168,7 +168,7 @@ class Install
         // 配置文件-end
 
         // public-start
-        $publicIsWritable = FileUtil::pathIsWritable(base_path() . '/public');
+        $publicIsWritable = FileUtil::pathIsWritable(public_path());
         if (!$publicIsWritable) {
             $publicIsWritableLink = [
                 [
