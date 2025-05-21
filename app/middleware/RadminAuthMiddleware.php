@@ -28,7 +28,7 @@ class RadminAuthMiddleware implements MiddlewareInterface
     /**
      * 允许访问的角色
      */
-    protected string $allowedRole;
+    protected ?string $allowedRole =null;
 
     /**
      * 构造函数
@@ -45,9 +45,9 @@ class RadminAuthMiddleware implements MiddlewareInterface
     public function process(Request $request, callable $handler)
     {
         // 0. 设置请求角色
-        $request->role = $this->allowedRole;
+        $request->role($this->allowedRole);
 
-
+        $request->token();
 
         // 2. 检查是否跳过认证
         if (shouldExclude($request->path())) return $handler($request);

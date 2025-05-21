@@ -45,6 +45,19 @@ class Request extends \Webman\Http\Request
     }
 
     /**
+     *
+     * @param string|null $role
+     * @return   mixed|string|null
+     * Author:   albert <albert@rocareer.com>
+     * Time:     2025/5/21 11:51
+     */
+    public function role(?string $role = null): mixed
+    {
+        $this->role = $role??$this->input('role')??$this->app;
+        return $this->role;
+    }
+
+    /**
      * @param bool|null $full
      * @return   string|null
      * Author:   albert <albert@rocareer.com>

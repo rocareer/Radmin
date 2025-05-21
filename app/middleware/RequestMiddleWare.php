@@ -15,10 +15,6 @@ class RequestMiddleWare implements MiddlewareInterface
      */
     public function process(Request $request, callable $handler)
     {
-        /**
-         * 全局 token 检查
-         */
-        $request->token();
 
         /**
          * 全局请求日志

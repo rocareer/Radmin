@@ -303,8 +303,7 @@ if (!function_exists('getTokenFromRequest')) {
         if (!empty($token) && str_starts_with($token, 'Bearer ')) {
             return extractBearerToken($token);
         }
-
-        $type = $request->role ?? $request->app;
+        $type = $request->role();
         // 从配置的 headers 中获取 Token
         $headers = config("auth.headers.{$type}", []);
         foreach ($headers as $header) {

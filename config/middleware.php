@@ -26,7 +26,7 @@ return [
 
     ],
     'api'   => [
-        new RadminAuthMiddleware('user'),
+        new RadminAuthMiddleware(),
     ],
     'admin' => [
 
