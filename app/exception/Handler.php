@@ -223,9 +223,10 @@ class Handler extends ExceptionHandler
 
     private function setCode($bodyValue, $errorCode)
     {
-        if($errorCode > 0){
-            return $errorCode;
-        }
-        return  $bodyValue[0] ?? 0;
+        return $errorCode;
+        // if($errorCode > 0){
+        //     return $errorCode;
+        // }
+        // return  $bodyValue[0] ?? 0;
     }
 }

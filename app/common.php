@@ -25,6 +25,7 @@
 use app\admin\library\module\Server;
 use extend\ra\FileUtil;
 
+use GuzzleHttp\Client;
 use support\lang\Lang;
 use support\orm\Db;
 use extend\ra\SystemUtil;
@@ -528,26 +529,26 @@ if (!function_exists('verify_password')) {
     }
 
 }
+
 if (!function_exists('get_ba_client')) {
     /**
      * 获取一个请求 BuildAdmin 开源社区的 Client
      * @throws Throwable
      */
-    function get_ba_client(): string
+    function get_ba_client(): Client
     {
-        // return new Client([
-        //     'base_uri'        =>  config('buildadmin.api_url'),
-        //     'timeout'         => 30,
-        //     'connect_timeout' => 30,
-        //     'verify'          => false,
-        //     'http_errors'     => false,
-        //     'headers'         => [
-        //         'X-REQUESTED-WITH' => 'XMLHttpRequest',
-        //         'Referer'          => dirname(request()->root(true)),
-        //         'User-Agent'       => 'BuildAdminClient',
-        //     ]
-        // ]);
-        return '';
+        return new Client([
+            'base_uri'        => config('buildadmin.api_url'),
+            'timeout'         => 30,
+            'connect_timeout' => 30,
+            'verify'          => false,
+            'http_errors'     => false,
+            'headers'         => [
+                'X-REQUESTED-WITH' => 'XMLHttpRequest',
+                // 'Referer'          => dirname(request()->root(true)),
+                'User-Agent'       => 'BuildAdminClient',
+            ]
+        ]);
     }
 
 }

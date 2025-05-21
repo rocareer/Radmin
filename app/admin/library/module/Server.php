@@ -3,7 +3,7 @@
 
 namespace app\admin\library\module;
 
-use ba\Depends;
+use extend\ba\Depends;
 use exception;
 use FilesystemIterator;
 use GuzzleHttp\Exception\TransferException;

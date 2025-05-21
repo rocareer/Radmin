@@ -47,7 +47,7 @@
     "doctrine/annotations": "^2.0",
     "psr/container": "^2.0",
     "rocareer/webman-migration": "^1.0",
-    "ext-http": "*"
+    "nelexa/zip": "^4.0"
   },
   "require-dev": {
     "rocareer/webman-dev": "dev-master",
