@@ -1,7 +1,8 @@
 <?php
 
 namespace app\admin\library\module;
-use exception;
+use app\exception\ModuleException;
+use Exception;
 use extend\ba\Depends;
 use extend\ba\Version;
 use FilesystemIterator;
@@ -65,7 +66,7 @@ class Manage
 
     public function __construct(string $uid)
     {
-        $this->installDir = root_path() . 'modules' . DIRECTORY_SEPARATOR;
+        $this->installDir = base_path() .DIRECTORY_SEPARATOR. 'modules' . DIRECTORY_SEPARATOR;
         $this->backupsDir = $this->installDir . 'backups' . DIRECTORY_SEPARATOR;
         if (!is_dir($this->installDir)) {
             mkdir($this->installDir, 0755, true);
@@ -104,7 +105,7 @@ class Manage
     public function download(string $token, int $orderId): string
     {
         if (!$orderId) {
-            throw new Exception('Order not found');
+            throw new ModuleException('Order not found');
         }
         // 下载 - 系统版本号要求、已安装模块的互斥和依赖检测
         $zipFile = Server::download($this->uid, $this->installDir, [
@@ -146,7 +147,7 @@ class Manage
         $file = FileUtil::fsFit(root_path() . 'public' . $file);
         if (!is_file($file)) {
             // 包未找到
-            throw new Exception('Zip file not found');
+            throw new ModuleException('Zip file not found');
         }
 
         $copyTo = $this->installDir . 'uploadTemp' . date('YmdHis') . '.zip';
@@ -165,7 +166,7 @@ class Manage
         if (empty($info['uid'])) {
             FileUtil::delDir($copyToDir);
             // 基本配置不完整
-            throw new Exception('Basic configuration of the Module is incomplete');
+            throw new ModuleException('Basic configuration of the Module is incomplete');
         }
 
         // 安装预检 - 系统版本号要求、已安装模块的互斥和依赖检测
@@ -200,14 +201,14 @@ class Manage
                 if (!$upgrade) {
                     FileUtil::delDir($copyToDir);
                     // 模块已经存在
-                    throw new Exception('Module already exists');
+                    throw new ModuleException('Module already exists');
                 }
             }
 
             if (!FileUtil::dirIsEmpty($this->modulesDir) && !$upgrade) {
                 FileUtil::delDir($copyToDir);
                 // 模块目录被占
-                throw new Exception('The directory required by the module is occupied');
+                throw new ModuleException('The directory required by the module is occupied');
             }
         }
 
@@ -239,7 +240,7 @@ class Manage
     {
         $state = $this->getInstallState();
         if ($state != self::DISABLE) {
-            throw new Exception('Please disable the module before updating');
+            throw new ModuleException('Please disable the module before updating');
         }
 
         $this->download($token, $orderId);
@@ -261,7 +262,7 @@ class Manage
     {
         $state = $this->getInstallState();
         if ($state == self::INSTALLED || $state == self::DIRECTORY_OCCUPIED || $state == self::DISABLE) {
-            throw new Exception('Module already exists');
+            throw new ModuleException('Module already exists');
         }
 
         if ($state == self::UNINSTALLED) {
@@ -296,7 +297,7 @@ class Manage
     {
         $info = $this->getInfo();
         if ($info['state'] != self::DISABLE) {
-            throw new Exception('Please disable the module first', 0, [
+            throw new ModuleException('Please disable the module first', 0, [
                 'uid' => $this->uid,
             ]);
         }
@@ -323,7 +324,7 @@ class Manage
                 self::DEPENDENT_WAIT_INSTALL,
             ];
             if (!in_array($info['state'], $canDisable)) {
-                throw new Exception('The current state of the module cannot be set to disabled', 0, [
+                throw new ModuleException('The current state of the module cannot be set to disabled', 0, [
                     'uid'   => $this->uid,
                     'state' => $info['state'],
                 ]);
@@ -332,7 +333,7 @@ class Manage
         }
 
         if ($info['state'] != self::DISABLE) {
-            throw new Exception('The current state of the module cannot be set to enabled', 0, [
+            throw new ModuleException('The current state of the module cannot be set to enabled', 0, [
                 'uid'   => $this->uid,
                 'state' => $info['state'],
             ]);
@@ -372,9 +373,9 @@ class Manage
      */
     public function disable(): array
     {
-        $update                 = request()->post("update/b", false);
-        $confirmConflict        = request()->post("confirmConflict/b", false);
-        $dependConflictSolution = request()->post("dependConflictSolution/a", []);
+        $update                 = request()->input("update", false);
+        $confirmConflict        = request()->input("confirmConflict", false);
+        $dependConflictSolution = request()->input("dependConflictSolution/a", []);
 
         $info    = $this->getInfo();
         $zipFile = $this->backupsDir . $this->uid . '-install.zip';
@@ -383,8 +384,9 @@ class Manage
             try {
                 $zipDir = $this->backupsDir . $this->uid . '-install' . DIRECTORY_SEPARATOR;
                 FileUtil::unzip($zipFile, $zipDir);
-            } catch (Exception) {
+            } catch (Exception $e) {
                 // skip
+                throw $e; // 重新抛出异常
             }
         }
 
@@ -402,7 +404,7 @@ class Manage
                     ];
                 }
             }
-            throw new Exception('Module file updated', -1, [
+            throw new ModuleException('Module file updated', -1, [
                 'uid'            => $this->uid,
                 'conflictFile'   => $conflictFile,
                 'dependConflict' => $dependConflictTemp,
@@ -569,16 +571,16 @@ class Manage
         ]);
 
         if ($update) {
-            $token = request()->post("token/s", '');
-            $order = request()->post("order/d", 0);
+            $token = request()->input("token/s", '');
+            $order = request()->input("order/d", 0);
             $this->update($token, $order);
-            throw new Exception('update', -3, [
+            throw new ModuleException('update', -3, [
                 'uid' => $this->uid,
             ]);
         }
 
         if ($dependWaitInstall) {
-            throw new Exception('dependent wait install', -2, [
+            throw new ModuleException('dependent wait install', -2, [
                 'uid'          => $this->uid,
                 'wait_install' => $dependWaitInstall,
             ]);
@@ -607,7 +609,7 @@ class Manage
         $webDep       = new Depends(root_path() . 'web' . DIRECTORY_SEPARATOR . 'package.json');
         $webNuxtDep   = new Depends(root_path() . 'web-nuxt' . DIRECTORY_SEPARATOR . 'package.json');
         if ($fileConflict || !self::isEmptyArray($dependConflict)) {
-            $extend = request()->post('extend/a', []);
+            $extend = request()->input('extend/a', []);
             if (!$extend) {
                 // 发现冲突->手动处理->转换为方便前端使用的格式
                 $fileConflictTemp   = array_map(function ($item) {
@@ -641,7 +643,7 @@ class Manage
                 $this->setInfo([
                     'state' => self::CONFLICT_PENDING,
                 ]);
-                throw new Exception('Module file conflicts', -1, [
+                throw new ModuleException('Module file conflicts', -1, [
                     'fileConflict'   => $fileConflictTemp,
                     'dependConflict' => $dependConflictTemp,
                     'uid'            => $this->uid,
@@ -696,6 +698,7 @@ class Manage
 
         // 备份将被覆盖的文件
         if ($coverFiles) {
+
             $backupsZip = $trigger == 'install' ? $this->backupsDir . $this->uid . '-install.zip' : $this->backupsDir . $this->uid . '-cover-' . date('YmdHis') . '.zip';
             FileUtil::zip($coverFiles, $backupsZip);
         }
@@ -811,7 +814,7 @@ class Manage
                 $waitInstall[] = 'nuxt_npm_dependent_wait_install';
             }
             if ($waitInstall) {
-                throw new Exception('dependent wait install', -2, [
+                throw new ModuleException('dependent wait install', -2, [
                     'uid'          => $this->uid,
                     'state'        => self::DEPENDENT_WAIT_INSTALL,
                     'wait_install' => $waitInstall,
@@ -902,14 +905,14 @@ class Manage
     public function checkPackage(): bool
     {
         if (!is_dir($this->modulesDir)) {
-            throw new Exception('Module package file does not exist');
+            throw new ModuleException('Module package file does not exist');
         }
         $info     = $this->getInfo();
         $infoKeys = ['uid', 'title', 'intro', 'author', 'version', 'state'];
         foreach ($infoKeys as $value) {
             if (!array_key_exists($value, $info)) {
                 FileUtil::delDir($this->modulesDir);
-                throw new Exception('Basic configuration of the Module is incomplete');
+                throw new ModuleException('Basic configuration of the Module is incomplete');
             }
         }
         return true;
@@ -938,7 +941,7 @@ class Manage
         } elseif ($arr) {
             return Server::setIni($this->modulesDir, $arr);
         }
-        throw new Exception('Parameter error');
+        throw new ModuleException('Parameter error');
     }
 
 
