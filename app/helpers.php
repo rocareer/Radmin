@@ -418,8 +418,11 @@ if (!function_exists('root_path')) {
      *
      * @return string
      */
-    function root_path(string $path = '')
+    function root_path(string $path = ''): string
     {
+        if (empty($path)){
+            return base_path().DIRECTORY_SEPARATOR;
+        }
         return base_path() . DIRECTORY_SEPARATOR . $path.DIRECTORY_SEPARATOR;
     }
 }
