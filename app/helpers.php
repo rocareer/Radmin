@@ -420,7 +420,7 @@ if (!function_exists('root_path')) {
      */
     function root_path(string $path = '')
     {
-        return base_path() . '/' . $path . '/';
+        return base_path() . DIRECTORY_SEPARATOR . $path.DIRECTORY_SEPARATOR;
     }
 }
 
