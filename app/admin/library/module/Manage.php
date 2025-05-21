@@ -67,7 +67,7 @@ class Manage
     public function __construct(string $uid)
     {
         $this->installDir = base_path() .DIRECTORY_SEPARATOR. 'modules' . DIRECTORY_SEPARATOR;
-        $this->backupsDir = $this->installDir . 'backups' . DIRECTORY_SEPARATOR;
+        $this->backupsDir = $this->installDir . '/backups' . DIRECTORY_SEPARATOR;
         if (!is_dir($this->installDir)) {
             mkdir($this->installDir, 0755, true);
         }

@@ -2,10 +2,8 @@
 
 namespace app\common\controller;
 use app\exception\UnauthorizedHttpException;
-use service\auth\Auth;
 use support\member\Member;
 use support\StatusCode;
-use think\exception\HttpResponseException;
 use Throwable;
 
 
@@ -29,13 +27,12 @@ class Frontend extends Api
     /**
      * 初始化
      * @throws Throwable
-     * @throws HttpResponseException
      */
     public function initialize():void
     {
         parent::initialize();
 
-        $this->member=Member::setCurrentRole($this->request->role);
+        $this->member=$this->request->member;
         $needLogin = !action_in_arr($this->noNeedLogin);
 
         if ($needLogin) {

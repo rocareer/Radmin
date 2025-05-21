@@ -10,8 +10,6 @@ use support\orm\Db;
 use support\member\Member;
 use Throwable;
 
-use function plugin\radmin\app\api\controller\get_sys_config;
-
 class Index extends Frontend
 {
     protected array $noNeedLogin = ['index'];
