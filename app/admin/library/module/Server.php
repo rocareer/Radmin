@@ -200,7 +200,7 @@ class Server
                     $path     = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
 
                     if ($onlyConflict) {
-                        $overwriteFile = root_path() . $path;
+                        $overwriteFile = base_path() .DIRECTORY_SEPARATOR. $path;
                         if (is_file($overwriteFile) && (filesize($overwriteFile) != filesize($filePath) || md5_file($overwriteFile) != md5_file($filePath))) {
                             $fileList[] = $path;
                         }
@@ -240,7 +240,7 @@ class Server
 
                 $tempLine .= $line;
                 if (str_ends_with(trim($line), ';')) {
-                    $tempLine = str_ireplace('__PREFIX__',  config('database.connections.mysql.prefix'), $tempLine);
+                    $tempLine = str_ireplace('__PREFIX__',  config('think-orm.connections.mysql.prefix'), $tempLine);
                     $tempLine = str_ireplace('INSERT INTO ', 'INSERT IGNORE INTO ', $tempLine);
                     try {
                         Db::execute($tempLine);
@@ -405,7 +405,7 @@ class Server
     {
         $mainTsKeys    = ['mainTsImport', 'mainTsStart'];
         $bootstrapCode = self::analysisWebBootstrap($uid, $dir);
-        $basePath      = root_path() . 'web' . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
+        $basePath      = root_path() .DIRECTORY_SEPARATOR. 'web' . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
 
         $marks = [
             'mainTsImport'    => self::buildMarkStr('import-root-mark'),
