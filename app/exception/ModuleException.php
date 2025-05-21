@@ -35,6 +35,7 @@ class ModuleException extends Exception
      */
     public string $errorMessage = 'ModuleException';
 
+    protected mixed $getData =[];
 
     public function __construct($errorMessage = null, $code = 0,$data = [], ?Throwable $previous = null)
     {
@@ -42,7 +43,13 @@ class ModuleException extends Exception
         $this->errorCode= $code;
         $params['errorCode'] = $code;
         $params['data'] = $data;
+        $this->getData=$data;
         parent::__construct($errorMessage, $params, $previous);
 
+    }
+
+    public function getData()
+    {
+        return $this->getData;
     }
 }
