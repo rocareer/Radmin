@@ -28,8 +28,8 @@ class ModuleException extends Exception
     /**
      * HTTP 状态码
      */
-    public int $statusCode = 200;
 
+    public int $statusCode=200;
     /**
      * 错误消息.
      */
@@ -51,5 +51,9 @@ class ModuleException extends Exception
     public function getData()
     {
         return $this->getData;
+    }
+    public function getModuleCode(): int
+    {
+        return  $this->errorCode;
     }
 }

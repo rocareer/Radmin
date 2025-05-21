@@ -48,11 +48,12 @@ class Module extends Backend
         if (!$uid) {
             return $this->error(__('Parameter error'));
         }
+
         $res = [];
         try {
             $res = Manage::instance($uid)->install($token, $orderId);
         } catch (ModuleException $e) {
-            return $this->error(__($e->getMessage()), $e->getData(), $e->getCode());
+            return $this->error(__($e->getMessage()), $e->getData(), $e->getModuleCode());
         } catch (Throwable $e) {
             return $this->error(__($e->getMessage()));
         }
@@ -70,7 +71,7 @@ class Module extends Backend
         try {
             Manage::instance($uid)->dependentInstallComplete('all');
         } catch (ModuleException $e) {
-            return $this->error(__($e->getMessage()), $e->getData(), $e->getCode());
+            return $this->error(__($e->getMessage()), $e->getData(), $e->getModuleCode());
         } catch (Throwable $e) {
             return $this->error(__($e->getMessage()));
         }
@@ -89,7 +90,7 @@ class Module extends Backend
         try {
             $info = Manage::instance($uid)->changeState($state);
         } catch (ModuleException $e) {
-            return $this->error(__($e->getMessage()), $e->getData(), $e->getCode());
+            return $this->error(__($e->getMessage()), $e->getData(), $e->getModuleCode());
         } catch (Throwable $e) {
             return $this->error(__($e->getMessage()));
         }
@@ -108,7 +109,7 @@ class Module extends Backend
         try {
             Manage::instance($uid)->uninstall();
         } catch (ModuleException $e) {
-            return $this->error(__($e->getMessage()), $e->getData(), $e->getCode());
+            return $this->error(__($e->getMessage()), $e->getData(), $e->getModuleCode());
         } catch (Throwable $e) {
             return $this->error(__($e->getMessage()));
         }
@@ -127,7 +128,7 @@ class Module extends Backend
         try {
             Manage::instance($uid)->update($token, $orderId);
         } catch (ModuleException $e) {
-            return $this->error(__($e->getMessage()), $e->getData(), $e->getCode());
+            return $this->error(__($e->getMessage()), $e->getData(), $e->getModuleCode());
         } catch (Throwable $e) {
             return $this->error(__($e->getMessage()));
         }
@@ -146,7 +147,7 @@ class Module extends Backend
         try {
             $info = Manage::instance()->upload($token, $file);
         } catch (ModuleException $e) {
-            return $this->error(__($e->getMessage()), $e->getData(), $e->getCode());
+            return $this->error(__($e->getMessage()), $e->getData(), $e->getModuleCode());
         } catch (Throwable $e) {
             return $this->error(__($e->getMessage()));
         }
