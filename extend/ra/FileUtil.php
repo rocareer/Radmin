@@ -2,11 +2,10 @@
 
 
 namespace extend\ra;
-
+use app\exception\ModuleException;
 use Exception;
 use FilesystemIterator;
 use PhpZip\ZipFile;
-use app\exception\BusinessException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use Throwable;
@@ -181,7 +180,7 @@ class FileUtil
             }
             $zip->saveAsFile($fileName);
         } catch (Throwable $e) {
-            throw new BusinessException('Unable to package zip file', 0, ['msg' => $e->getMessage(), 'file' => $fileName]);
+            throw new ModuleException('Unable to package zip file', 0, ['msg' => $e->getMessage(), 'file' => $fileName]);
         } finally {
             $zip->close();
         }
@@ -396,6 +395,4 @@ class FileUtil
 
         rmdir($dir);
     }
-
-
 }
