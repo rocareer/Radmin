@@ -45,7 +45,7 @@ class Index extends Frontend
             }
         } else {
             //未登录用户
-            $requiredLogin = $this->request->get('requiredLogin', false);
+            $requiredLogin = $this->request->input('requiredLogin', false);
             if ($requiredLogin) {
                 if ($this->request->role!=='user') {
                     return $this->error(__('Please login first'), [

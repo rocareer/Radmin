@@ -120,9 +120,9 @@ class ThinkLang
         // 自动侦测设置获取语言选择
         $langSet = '';
 
-        if ($request->get($this->config['detect_var'])) {
+        if ($request->input($this->config['detect_var'])) {
             // URL中设置了语言变量
-            $langSet = strtolower($request->get($this->config['detect_var']));
+            $langSet = strtolower($request->input($this->config['detect_var']));
         } elseif ($request->header($this->config['header_var'])) {
             // Header中设置了语言变量
             $langSet = strtolower($request->header($this->config['header_var']));

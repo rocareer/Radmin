@@ -420,8 +420,8 @@ class Crud extends Backend
      */
     public function getFileData(): Response
     {
-        $table       = $this->request->get('table');
-        $commonModel = $this->request->get('commonModel');
+        $table       = $this->request->input('table');
+        $commonModel = $this->request->input('commonModel');
 
         if (!$table) {
          return $this->error(__('Parameter error'));
@@ -486,8 +486,8 @@ class Crud extends Backend
      */
     public function checkCrudLog(): Response
     {
-        $table      = $this->request->get('table');
-        $connection = $this->request->get('connection');
+        $table      = $this->request->input('table');
+        $connection = $this->request->input('connection');
         $connection = $connection ?: config('think-orm.default');
 
         $crudLog = Db::name('crud_log')

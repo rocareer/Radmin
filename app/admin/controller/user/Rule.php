@@ -238,7 +238,7 @@ class Rule extends Backend
     private function getRules(array $where = []): array
     {
         $pk      = $this->model->getPk();
-        $initKey = $this->request->get("initKey/s", $pk);
+        $initKey = $this->request->input("initKey/s", $pk);
 
         if ($this->keyword) {
             $keyword = explode(' ', $this->keyword);
