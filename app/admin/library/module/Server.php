@@ -3,6 +3,7 @@
 
 namespace app\admin\library\module;
 
+use app\exception\ModuleException;
 use extend\ba\Depends;
 use exception;
 use FilesystemIterator;
@@ -35,14 +36,14 @@ class Server
             $body     = $response->getBody();
             $content  = $body->getContents();
             if ($content == '' || stripos($content, '<title>系统发生错误</title>') !== false) {
-                throw new Exception('package download failed', 0);
+                throw new ModuleException('package download failed', 0);
             }
             if (str_starts_with($content, '{')) {
                 $json = (array)json_decode($content, true);
-                throw new Exception($json['msg'], $json['code'], $json['data'] ?? []);
+                throw new ModuleException($json['msg'], $json['code'], $json['data'] ?? []);
             }
         } catch (TransferException $e) {
-            throw new Exception('package download failed', 0, ['msg' => $e->getMessage()]);
+            throw new ModuleException('package download failed', 0, ['msg' => $e->getMessage()]);
         }
 
         if ($write = fopen($tmpFile, 'w')) {
@@ -50,7 +51,7 @@ class Server
             fclose($write);
             return $tmpFile;
         }
-        throw new Exception("No permission to write temporary files");
+        throw new ModuleException("No permission to write temporary files");
     }
 
     /**
@@ -71,11 +72,11 @@ class Server
             if (str_starts_with($content, '{')) {
                 $json = json_decode($content, true);
                 if ($json && $json['code'] == 0) {
-                    throw new Exception($json['msg'], $json['code'], $json['data'] ?? []);
+                    throw new ModuleException($json['msg'], $json['code'], $json['data'] ?? []);
                 }
             }
         } catch (TransferException $e) {
-            throw new Exception('package check failed', 0, ['msg' => $e->getMessage()]);
+            throw new ModuleException('package check failed', 0, ['msg' => $e->getMessage()]);
         }
         return true;
     }
@@ -325,7 +326,7 @@ class Server
             }
         }
         if (!file_put_contents($infoFile, implode("\n", $ini) . "\n", LOCK_EX)) {
-            throw new Exception("Configuration file has no write permission");
+            throw new ModuleException("Configuration file has no write permission");
         }
         return true;
     }
