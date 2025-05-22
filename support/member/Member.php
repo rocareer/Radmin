@@ -22,6 +22,7 @@ use think\Facade;
  * @method static bool memberInitialization(string $token)              // 初始化
  * @method static bool terminal(string $token)                          // 终端检查权限
  * @method static array getMenus(?int $uid = null)
+ * @method static bool check(string $name, ?int $uid = null, string $relation = 'or', string $mode = 'url')
  */
 class Member extends Facade
 {

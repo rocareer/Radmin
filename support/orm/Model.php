@@ -5,6 +5,8 @@ namespace support\orm;
 use think\db\BaseQuery;
 use think\db\Query;
 use think\model\Collection;
+use Closure;
+use think\model\contract\Modelable;
 
 /**
  * @method static Db name(string $name) 指定当前数据表名（不含前缀）
@@ -59,6 +61,23 @@ class Model extends \think\Model
 
     public function __construct(array | object $data = [])
     {
-            parent::__construct($data);
+        parent::__construct($data);
+    }
+
+    public function withJoin(array | string $with, string $joinType = '')
+    {
+        // 检查是否是驼峰命名法
+        if (is_string($with)) {
+            $with = $this->convertToSnakeCase($with);
+        } elseif (is_array($with)) {
+            $with = array_map([$this, 'convertToSnakeCase'], $with);
+        }
+
+        return parent::withJoin($with, $joinType);
+    }
+    protected function convertToSnakeCase(string $value): string
+    {
+        // 使用正则表达式将驼峰命名法转换为下划线命名法
+        return parse_name($value);
     }
 }
