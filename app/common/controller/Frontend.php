@@ -36,12 +36,12 @@ class Frontend extends Api
         $needLogin = !action_in_arr($this->noNeedLogin);
 
         if ($needLogin) {
-            if ($this->request->role!=='user') {
+            if (!$this->request->member) {
                 throw new UnauthorizedHttpException('请先登录' ,StatusCode::NEED_LOGIN,true);
             }
             if (!action_in_arr($this->noNeedPermission)) {
                 $routePath = (str_replace('/api/','',$this->request->path()) ?? '');
-                if (!$this->member->check($routePath)) {
+                if (!Member::check($routePath)) {
                     throw new UnauthorizedHttpException('没有权限' ,StatusCode::NO_PERMISSION);
                 }
             }

@@ -54,7 +54,7 @@ return [
         //
         '/install',
         '/api/install/*',
-        '/api/index/index',
+        // '/api/index/index',
         '/api/install/envBaseCheck',
         '/api/install/envNpmCheck',
 

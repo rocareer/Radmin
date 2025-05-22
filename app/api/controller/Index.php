@@ -41,11 +41,12 @@ class Index extends Frontend
                     $rules[] = $item;
                 }
             }
-        } else {
+        }
+        else {
             //未登录用户
             $requiredLogin = $this->request->input('requiredLogin', false);
             if ($requiredLogin) {
-                if ($this->request->role!=='user') {
+                if (!$this->request->member) {
                     return $this->error(__('Please login first'), [
                         'type' => 'need login',
                     ], 303);
