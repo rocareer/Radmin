@@ -1,11 +1,19 @@
 <?php
-/** @noinspection PhpDynamicAsStaticMethodCallInspection */
-
+/**
+ * File:        Group.php
+ * Author:      albert <albert@rocareer.com>
+ * Created:     2025/5/22 09:19
+ * Description:
+ *
+ * Copyright [2014-2026] [https://rocareer.com]
+ * Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
+ */
 namespace app\admin\controller\user;
 
 use app\admin\model\UserGroup;
 use app\admin\model\UserRule;
 use app\common\controller\Backend;
+use extend\ba\Tree;
 use extend\ra\SystemUtil;
 use support\Response;
 use Throwable;
@@ -17,21 +25,39 @@ class Group extends Backend
      * @phpstan-var UserGroup
      */
     protected object $model;
-
+    /**
+     * @var Tree
+     */
+    protected Tree $tree; // 树状结构
     // 排除字段
     protected string|array $preExcludeFields = ['update_time', 'create_time'];
 
     protected string|array $quickSearchField = 'name';
+    protected bool         $assembleTree= false;
+    protected mixed          $keyword;
+    protected mixed          $initValue;
 
     public function initialize():void
     {
         parent::initialize();
         $this->model = new UserGroup();
+        $this->tree  = Tree::instance();
+        $isTree          = $this->request->input('isTree/b', false);
+        $this->initValue = $this->request->input("initValue/a", []);
+
+        $this->initValue = array_filter($this->initValue);
+        $this->keyword   = $this->request->input("quickSearch", '');
+
+        // 有初始化值时不组装树状（初始化出来的值更好看）
+        $this->assembleTree = $isTree && !$this->initValue;
     }
 
 
     public function index(): ?Response
     {
+        if ($this->request->input('select')) {
+            return $this->select();
+        }
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
 
@@ -183,6 +209,34 @@ class Group extends Backend
             unset($data['rules']);
         }
         return $data;
+    }
+    private function getGroups(array $where = []): array
+    {
+        $pk      = $this->model->getPk();
+        $initKey = $this->request->input("initKey", $pk);
+
+        if ($this->initValue) {
+            $where[] = [$initKey, 'in', $this->initValue];
+        }
+
+        $data = $this->model->where($where)->select()->toArray();
+
+
+        // 如果要求树状，此处先组装好 children
+        return $data;
+    }
+
+    /**
+     * 远程下拉
+     * @throws Throwable
+     */
+    public function select()
+    {
+        $data = $this->getGroups([['status', '=', 1]]);
+
+        return $this->success('', [
+            'options' => $data
+        ]);
     }
 
 }
