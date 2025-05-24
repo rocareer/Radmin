@@ -11,14 +11,14 @@
         >
             <el-button v-if="!isEmpty(state.userInfo)" v-blur class="table-header-operate">
                 <span class="table-header-operate-text">{{
-                    state.userInfo.username + '(ID:' + state.userInfo.id + ') ' + t('user.scoreLog.integral') + ':' + state.userInfo.score
-                }}</span>
+                        state.userInfo.username + '(ID:' + state.userInfo.id + ') ' + t('user.scoreLog.integral') + ':' + state.userInfo.score
+                    }}</span>
             </el-button>
         </TableHeader>
 
         <!-- 表格 -->
         <!-- 要使用`el-table`组件原有的属性，直接加在Table标签上即可 -->
-        <Table ref="tableRef" />
+        <Table />
 
         <!-- 表单 -->
         <PopupForm />
@@ -27,7 +27,7 @@
 
 <script setup lang="ts">
 import { isEmpty, parseInt } from 'lodash-es'
-import { ref, provide, reactive, watch } from 'vue'
+import { provide, reactive, watch } from 'vue'
 import baTableClass from '/@/utils/baTable'
 import { url } from '/@/api/backend/user/scoreLog'
 import PopupForm from './popupForm.vue'
@@ -43,7 +43,6 @@ defineOptions({
 })
 
 const { t } = useI18n()
-const tableRef = ref()
 const route = useRoute()
 const defalutUser = (route.query.user_id ?? '') as string
 const state: {
@@ -87,17 +86,16 @@ const baTable = new baTableClass(
             user_id: defalutUser,
             memo: '',
         },
-    },
-    {},
-    {
-        onSubmit: () => {
-            getUserInfo(baTable.comSearch.form.user_id)
-        },
     }
 )
 
+// 表单提交后
+baTable.after.onSubmit = () => {
+    getUserInfo(baTable.comSearch.form.user_id)
+}
+
 baTable.mount()
-baTable.getIndex()
+baTable.getData()
 
 provide('baTable', baTable)
 

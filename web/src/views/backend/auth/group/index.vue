@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, provide, ref } from 'vue'
+import { onMounted, provide, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PopupForm from './popupForm.vue'
 import { getAdminRules } from '/@/api/backend/auth/group'
@@ -42,10 +42,10 @@ defineOptions({
     name: 'auth/group',
 })
 
-const formRef = ref()
-const tableRef = ref()
 const { t } = useI18n()
 const adminInfo = useAdminInfo()
+const formRef = useTemplateRef('formRef')
+const tableRef = useTemplateRef('tableRef')
 
 const baTable: baTableClass = new baTableClass(
     new baTableApi('/admin/auth.Group/'),
@@ -55,7 +55,7 @@ const baTable: baTableClass = new baTableClass(
         column: [
             { type: 'selection', align: 'center' },
             { label: t('auth.group.Group name'), prop: 'name', align: 'left', width: '200' },
-            { label: t('auth.group.jurisdiction'), prop: 'rules', align: 'left' },
+            { label: t('auth.group.jurisdiction'), prop: 'rules', align: 'center' },
             {
                 label: t('State'),
                 prop: 'status',
@@ -73,72 +73,74 @@ const baTable: baTableClass = new baTableClass(
         defaultItems: {
             status: 1,
         },
-    },
-    {
-        // 提交前
-        onSubmit: ({ formEl, operate, items }) => {
-            let submitCallback = () => {
-                baTable.form.submitLoading = true
-                baTable.api
-                    .postData(operate, {
-                        ...items,
-                        rules: formRef.value.getCheckeds(),
-                    })
-                    .then((res) => {
-                        baTable.onTableHeaderAction('refresh', {})
-                        baTable.form.submitLoading = false
-                        baTable.form.operateIds?.shift()
-                        if (baTable.form.operateIds!.length > 0) {
-                            baTable.toggleForm('Edit', baTable.form.operateIds)
-                        } else {
-                            baTable.toggleForm()
-                        }
-                        baTable.runAfter('onSubmit', { res })
-                    })
-                    .catch(() => {
-                        baTable.form.submitLoading = false
-                    })
-            }
-
-            if (formEl) {
-                baTable.form.ref = formEl
-                formEl.validate((valid) => {
-                    if (valid) {
-                        submitCallback()
-                    }
-                })
-            } else {
-                submitCallback()
-            }
-            return false
-        },
-        // 双击编辑前
-        onTableDblclick: ({ row }) => {
-            return baTable.table.extend!.adminGroup.indexOf(row.id) === -1
-        },
-    },
-    {
-        getIndex: ({ res }) => {
-            baTable.table.extend!.adminGroup = res.data.group
-            let buttonsKey = getArrayKey(baTable.table.column, 'render', 'buttons')
-            baTable.table.column[buttonsKey].buttons!.forEach((value: OptButton) => {
-                value.display = (row) => {
-                    return res.data.group.indexOf(row.id) === -1
-                }
-            })
-        },
-        // 切换表单后
-        toggleForm({ operate }) {
-            if (operate == 'Add') {
-                menuRuleTreeUpdate()
-            }
-        },
-        // 编辑请求完成后
-        requestEdit() {
-            menuRuleTreeUpdate()
-        },
     }
 )
+
+// 利用提交前钩子重写提交操作
+baTable.before.onSubmit = ({ formEl, operate, items }) => {
+    let submitCallback = () => {
+        baTable.form.submitLoading = true
+        baTable.api
+            .postData(operate, {
+                ...items,
+                rules: formRef.value?.getCheckeds(),
+            })
+            .then((res) => {
+                baTable.onTableHeaderAction('refresh', {})
+                baTable.form.submitLoading = false
+                baTable.form.operateIds?.shift()
+                if (baTable.form.operateIds!.length > 0) {
+                    baTable.toggleForm('Edit', baTable.form.operateIds)
+                } else {
+                    baTable.toggleForm()
+                }
+                baTable.runAfter('onSubmit', { res })
+            })
+            .catch(() => {
+                baTable.form.submitLoading = false
+            })
+    }
+
+    if (formEl) {
+        baTable.form.ref = formEl
+        formEl.validate((valid) => {
+            if (valid) {
+                submitCallback()
+            }
+        })
+    } else {
+        submitCallback()
+    }
+    return false
+}
+
+// 利用双击单元格前钩子重写双击操作
+baTable.before.onTableDblclick = ({ row }) => {
+    return baTable.table.extend!.adminGroup.indexOf(row.id) === -1
+}
+
+// 获取到数据后钩子
+baTable.after.getData = ({ res }) => {
+    baTable.table.extend!.adminGroup = res.data.group
+    let buttonsKey = getArrayKey(baTable.table.column, 'render', 'buttons')
+    baTable.table.column[buttonsKey].buttons!.forEach((value: OptButton) => {
+        value.display = (row) => {
+            return res.data.group.indexOf(row.id) === -1
+        }
+    })
+}
+
+// 切换表单后钩子
+baTable.after.toggleForm = ({ operate }) => {
+    if (operate == 'Add') {
+        menuRuleTreeUpdate()
+    }
+}
+
+// 编辑请求完成后钩子
+baTable.after.getEditData = () => {
+    menuRuleTreeUpdate()
+}
 
 const menuRuleTreeUpdate = () => {
     getAdminRules().then((res) => {
@@ -166,7 +168,7 @@ provide('baTable', baTable)
 onMounted(() => {
     baTable.table.ref = tableRef.value
     baTable.mount()
-    baTable.getIndex()
+    baTable.getData()
 })
 </script>
 

@@ -18,7 +18,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, provide, ref } from 'vue'
+import { onMounted, provide, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import PopupForm from './popupForm.vue'
 import { getUserRules } from '/@/api/backend/user/group'
@@ -34,8 +34,9 @@ defineOptions({
 })
 
 const { t } = useI18n()
-const tableRef = ref()
-const formRef = ref()
+const formRef = useTemplateRef('formRef')
+const tableRef = useTemplateRef('tableRef')
+
 const baTable = new baTableClass(
     new baTableApi('/admin/user.Group/'),
     {
@@ -68,59 +69,58 @@ const baTable = new baTableClass(
         defaultItems: {
             status: 1,
         },
-    },
-    {
-        // 提交前
-        onSubmit: ({ formEl, operate, items }) => {
-            let submitCallback = () => {
-                baTable.form.submitLoading = true
-                baTable.api
-                    .postData(operate, {
-                        ...items,
-                        rules: formRef.value.getCheckeds(),
-                    })
-                    .then((res) => {
-                        baTable.onTableHeaderAction('refresh', {})
-                        baTable.form.submitLoading = false
-                        baTable.form.operateIds?.shift()
-                        if (baTable.form.operateIds!.length > 0) {
-                            baTable.toggleForm('Edit', baTable.form.operateIds)
-                        } else {
-                            baTable.toggleForm()
-                        }
-                        baTable.runAfter('onSubmit', { res })
-                    })
-                    .catch(() => {
-                        baTable.form.submitLoading = false
-                    })
-            }
-
-            if (formEl) {
-                baTable.form.ref = formEl
-                formEl.validate((valid) => {
-                    if (valid) {
-                        submitCallback()
-                    }
-                })
-            } else {
-                submitCallback()
-            }
-            return false
-        },
-    },
-    {
-        // 切换表单后
-        toggleForm({ operate }) {
-            if (operate == 'Add') {
-                menuRuleTreeUpdate()
-            }
-        },
-        // 编辑请求完成后
-        requestEdit() {
-            menuRuleTreeUpdate()
-        },
     }
 )
+
+// 利用提交前钩子重写提交操作
+baTable.before.onSubmit = ({ formEl, operate, items }) => {
+    let submitCallback = () => {
+        baTable.form.submitLoading = true
+        baTable.api
+            .postData(operate, {
+                ...items,
+                rules: formRef.value?.getCheckeds(),
+            })
+            .then((res) => {
+                baTable.onTableHeaderAction('refresh', {})
+                baTable.form.submitLoading = false
+                baTable.form.operateIds?.shift()
+                if (baTable.form.operateIds!.length > 0) {
+                    baTable.toggleForm('Edit', baTable.form.operateIds)
+                } else {
+                    baTable.toggleForm()
+                }
+                baTable.runAfter('onSubmit', { res })
+            })
+            .catch(() => {
+                baTable.form.submitLoading = false
+            })
+    }
+
+    if (formEl) {
+        baTable.form.ref = formEl
+        formEl.validate((valid) => {
+            if (valid) {
+                submitCallback()
+            }
+        })
+    } else {
+        submitCallback()
+    }
+    return false
+}
+
+// 打开表单后
+baTable.after.toggleForm = ({ operate }) => {
+    if (operate == 'Add') {
+        menuRuleTreeUpdate()
+    }
+}
+
+// 获取到编辑数据后
+baTable.after.getEditData = () => {
+    menuRuleTreeUpdate()
+}
 
 const menuRuleTreeUpdate = () => {
     getUserRules().then((res) => {
@@ -148,7 +148,7 @@ provide('baTable', baTable)
 onMounted(() => {
     baTable.table.ref = tableRef.value
     baTable.mount()
-    baTable.getIndex()
+    baTable.getData()
 })
 </script>
 

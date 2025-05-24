@@ -22,9 +22,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, toRaw } from 'vue'
 import { useEventListener } from '@vueuse/core'
+import { reactive, toRaw } from 'vue'
 import type { Axis, ContextMenuItemClickEmitArg, Props } from './interface'
+import { SYSTEM_ZINDEX } from '/@/stores/constant/common'
 
 const props = withDefaults(defineProps<Props>(), {
     width: 150,
@@ -59,6 +60,15 @@ const state: {
 })
 
 /**
+ * 删除事件监听的函数
+ */
+const removeEventListenerFn: Record<string, () => void> = {
+    click: () => {},
+    scroll: () => {},
+    keydown: () => {},
+}
+
+/**
  * 显示右击菜单
  * @param sourceData 来源数据，开发者可于右击菜单项被点击的事件中访问到它
  * @param axis 右击坐标信息
@@ -80,6 +90,14 @@ const onShowContextmenu = (sourceData: any, axis: Axis) => {
 
     state.axis = axis
     state.show = true
+
+    removeEventListenerFn.click = useEventListener(document, 'click', onHideContextmenu)
+    removeEventListenerFn.scroll = useEventListener(document, 'scroll', onHideContextmenu)
+    removeEventListenerFn.keydown = useEventListener(document, 'keydown', (e) => {
+        if (e.key === 'Escape') {
+            onHideContextmenu()
+        }
+    })
 }
 
 /**
@@ -87,6 +105,11 @@ const onShowContextmenu = (sourceData: any, axis: Axis) => {
  */
 const onHideContextmenu = () => {
     state.show = false
+
+    for (const key in removeEventListenerFn) {
+        removeEventListenerFn[key]()
+    }
+
     emits('hideContextmenu')
 }
 
@@ -100,22 +123,12 @@ defineExpose({
     onShowContextmenu,
     onHideContextmenu,
 })
-
-onMounted(() => {
-    useEventListener(document, 'click', onHideContextmenu)
-    useEventListener(document, 'scroll', onHideContextmenu)
-    useEventListener(document, 'keydown', (e) => {
-        if (e.key === 'Escape') {
-            onHideContextmenu()
-        }
-    })
-})
 </script>
 
 <style scoped lang="scss">
 .ba-contextmenu {
     position: fixed;
-    z-index: 9999;
+    z-index: v-bind('SYSTEM_ZINDEX');
 }
 .el-popper,
 .el-popper.is-light .el-popper__arrow::before {

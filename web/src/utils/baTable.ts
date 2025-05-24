@@ -9,11 +9,14 @@ import { findIndexRow } from '/@/components/table'
 import { i18n } from '/@/lang/index'
 import { auth, getArrayKey } from '/@/utils/common'
 
+/**
+ * 表格管家类
+ */
 export default class baTable {
-    // API实例
-    public api
+    /** baTableApi 类的实例，开发者可重写该类 */
+    public api: baTableApi
 
-    /* 表格状态-s 属性对应含义请查阅 BaTable 的类型定义 */
+    /** 表格状态，属性对应含义请查阅 BaTable 的类型定义 */
     public table: BaTable = reactive({
         ref: undefined,
         pk: 'id',
@@ -31,9 +34,8 @@ export default class baTable {
         expandAll: false,
         extend: {},
     })
-    /* 表格状态-e */
 
-    /* 表单状态-s 属性对应含义请查阅 BaTableForm 的类型定义 */
+    /** 表单状态，属性对应含义请查阅 BaTableForm 的类型定义 */
     public form: BaTableForm = reactive({
         ref: undefined,
         labelWidth: 160,
@@ -45,15 +47,14 @@ export default class baTable {
         loading: false,
         extend: {},
     })
-    /* 表单状态-e */
 
-    // BaTable前置处理函数列表（前置埋点）
+    /** BaTable 前置处理函数列表（前置埋点） */
     public before: BaTableBefore
 
-    // BaTable后置处理函数列表（后置埋点）
+    /** BaTable 后置处理函数列表（后置埋点） */
     public after: BaTableAfter
 
-    // 通用搜索数据
+    /** 公共搜索数据 */
     public comSearch: ComSearch = reactive({
         form: {},
         fieldData: new Map(),
@@ -100,9 +101,12 @@ export default class baTable {
         return true
     }
 
-    /* API请求方法-s */
-    // 查看
-    getIndex = () => {
+    /**
+     * 表格数据获取（请求表格对应控制器的查看方法）
+     * @alias getIndex
+     */
+    getData = () => {
+        if (this.runBefore('getData') === false) return
         if (this.runBefore('getIndex') === false) return
         this.table.loading = true
         return this.api
@@ -111,13 +115,21 @@ export default class baTable {
                 this.table.data = res.data.list
                 this.table.total = res.data.total
                 this.table.remark = res.data.remark
+                this.runAfter('getData', { res })
                 this.runAfter('getIndex', { res })
+            })
+            .catch((err) => {
+                this.runAfter('getData', { err })
+                this.runAfter('getIndex', { err })
             })
             .finally(() => {
                 this.table.loading = false
             })
     }
-    // 删除
+
+    /**
+     * 删除数据
+     */
     postDel = (ids: string[]) => {
         if (this.runBefore('postDel', { ids }) === false) return
         this.api.del(ids).then((res) => {
@@ -125,8 +137,13 @@ export default class baTable {
             this.runAfter('postDel', { res })
         })
     }
-    // 编辑
-    requestEdit = (id: string) => {
+
+    /**
+     * 获取被编辑行数据
+     * @alias requestEdit
+     */
+    getEditData = (id: string) => {
+        if (this.runBefore('getEditData', { id }) === false) return
         if (this.runBefore('requestEdit', { id }) === false) return
         this.form.loading = true
         this.form.items = {}
@@ -136,17 +153,18 @@ export default class baTable {
             })
             .then((res) => {
                 this.form.items = res.data.row
+                this.runAfter('getEditData', { res })
                 this.runAfter('requestEdit', { res })
             })
             .catch((err) => {
                 this.toggleForm()
+                this.runAfter('getEditData', { err })
                 this.runAfter('requestEdit', { err })
             })
             .finally(() => {
                 this.form.loading = false
             })
     }
-    /* API请求方法-e */
 
     /**
      * 双击表格
@@ -172,7 +190,7 @@ export default class baTable {
             if (!operateIds.length) {
                 return false
             }
-            this.requestEdit(operateIds[0])
+            this.getEditData(operateIds[0])
         } else if (operate == 'Add') {
             this.form.items = cloneDeep(this.form.defaultItems)
         }
@@ -185,13 +203,13 @@ export default class baTable {
      * 提交表单
      * @param formEl 表单组件ref
      */
-    onSubmit = (formEl: FormInstance | undefined = undefined) => {
+    onSubmit = (formEl?: FormInstance | null) => {
         // 当前操作的首字母小写
         const operate = this.form.operate!.replace(this.form.operate![0], this.form.operate![0].toLowerCase())
 
         if (this.runBefore('onSubmit', { formEl: formEl, operate: operate, items: this.form.items! }) === false) return
 
-        // 表单验证通过后执行的api请求操作
+        // 表单验证通过后执行的 api 请求操作
         const submitCallback = () => {
             this.form.submitLoading = true
             this.api
@@ -224,7 +242,7 @@ export default class baTable {
     }
 
     /**
-     * 获取表格选择项的id数组
+     * 获取表格选择项的主键数组
      */
     getSelectionIds() {
         const ids: string[] = []
@@ -330,7 +348,7 @@ export default class baTable {
                 () => {
                     // 刷新表格在大多数情况下无需置空 data，但任需防范表格列组件的 :key 不会被更新的问题，比如关联表的数据列
                     this.table.data = []
-                    this.getIndex()
+                    this.getData()
                 },
             ],
             [
@@ -390,7 +408,7 @@ export default class baTable {
 
     /**
      * 初始化默认排序
-     * el表格的`default-sort`在自定义排序时无效
+     * el-table 的 `default-sort` 在自定义排序时无效
      * 此方法只有在表格数据请求结束后执行有效
      */
     initSort = () => {
@@ -421,7 +439,7 @@ export default class baTable {
             return
         }
 
-        const el = this.table.ref.getRef().$el.querySelector('.el-table__body-wrapper .el-table__body tbody')
+        const el = this.table.ref.getRef()?.$el.querySelector('.el-table__body-wrapper .el-table__body tbody')
         const disabledTip = this.table.column[buttonsKey].buttons![moveButton].disabledTip
         Sortable.create(el, {
             animation: 200,
@@ -473,20 +491,20 @@ export default class baTable {
         const route = useRoute()
         this.table.routePath = route.fullPath
 
-        // 初始化通用搜索表单数据和字段 Map
+        // 初始化公共搜索表单数据和字段 Map
         this.initComSearch()
 
         if (this.table.acceptQuery && !isEmpty(route.query)) {
-            // 根据当前 URL 的 query 初始化通用搜索默认值
+            // 根据当前 URL 的 query 初始化公共搜索默认值
             this.setComSearchData(route.query)
 
-            // 获取通用搜索数据合并至表格筛选条件
+            // 获取公共搜索数据合并至表格筛选条件
             this.table.filter!.search = this.getComSearchData().concat(this.table.filter?.search ?? [])
         }
     }
 
     /**
-     * 通用搜索初始化
+     * 公共搜索初始化
      */
     initComSearch = () => {
         const form: anyObj = {}
@@ -503,7 +521,7 @@ export default class baTable {
                 field[key].operator = 'eq'
             }
 
-            // 通用搜索表单字段初始化
+            // 公共搜索表单字段初始化
             const prop = field[key].prop
             if (prop) {
                 if (field[key].operator == 'RANGE' || field[key].operator == 'NOT RANGE') {
@@ -519,7 +537,7 @@ export default class baTable {
                     form[prop] = ''
                 }
 
-                // 初始化字段的通用搜索数据
+                // 初始化字段的公共搜索数据
                 this.comSearch.fieldData.set(prop, {
                     operator: field[key].operator,
                     render: field[key].render,
@@ -532,7 +550,7 @@ export default class baTable {
     }
 
     /**
-     * 设置通用搜索数据
+     * 设置公共搜索数据
      */
     setComSearchData = (query: anyObj) => {
         for (const key in this.table.column) {
@@ -576,7 +594,7 @@ export default class baTable {
     }
 
     /**
-     * 获取通用搜索数据
+     * 获取公共搜索数据
      */
     getComSearchData = () => {
         const comSearchData: comSearchData[] = []
@@ -618,4 +636,8 @@ export default class baTable {
 
         return comSearchData
     }
+
+    // 方法别名
+    getIndex = this.getData
+    requestEdit = this.getEditData
 }
