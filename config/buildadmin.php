@@ -43,7 +43,7 @@ return [
         // 默认驱动方式
         'default' => 'mysql',
         // 加密key
-        'key'     => '06Jh5uNfTR4tYUsWxZGKrkwliHASFVp8',
+        'key'     => '0AkgIdacOU8nKMFNWbHjEt5oq4vyZm2L',
         // 加密方式
         'algo'    => 'ripemd160',
         // 驱动
