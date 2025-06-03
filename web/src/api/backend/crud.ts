@@ -2,7 +2,7 @@ import { useBaAccount } from '/@/stores/baAccount'
 import { useSiteConfig } from '/@/stores/siteConfig'
 import createAxios from '/@/utils/axios'
 
-export const url = '/admin/crud/crud/'
+export const url = '/admin/crud.Crud/'
 
 export function generate(data: anyObj) {
     return createAxios(
@@ -18,7 +18,6 @@ export function generate(data: anyObj) {
 }
 
 export function getFileData(table: string, commonModel = 0) {
-    console.log('getFileData', table, commonModel)
     return createAxios({
         url: url + 'getFileData',
         method: 'get',

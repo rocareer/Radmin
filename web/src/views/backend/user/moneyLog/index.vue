@@ -11,8 +11,8 @@
         >
             <el-button v-if="!isEmpty(state.userInfo)" v-blur class="table-header-operate">
                 <span class="table-header-operate-text">{{
-                        state.userInfo.username + '(ID:' + state.userInfo.id + ') ' + t('user.moneyLog.balance') + ':' + state.userInfo.money
-                    }}</span>
+                    state.userInfo.username + '(ID:' + state.userInfo.id + ') ' + t('user.moneyLog.balance') + ':' + state.userInfo.money
+                }}</span>
             </el-button>
         </TableHeader>
 

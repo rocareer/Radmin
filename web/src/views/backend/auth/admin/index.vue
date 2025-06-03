@@ -77,7 +77,6 @@ const baTable = new baTableClass(
                 render: 'buttons',
                 buttons: optButtons,
                 operator: false,
-                fixed:'right'
             },
         ],
         dblClickNotEditColumn: [undefined, 'status'],
@@ -92,7 +91,7 @@ const baTable = new baTableClass(
 provide('baTable', baTable)
 
 baTable.mount()
-baTable.getIndex()
+baTable.getData()
 </script>
 
 <style scoped lang="scss"></style>

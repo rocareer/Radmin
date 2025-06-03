@@ -52,4 +52,3 @@ const menuWidth = computed(() => config.menuWidth())
     z-index: v-bind('SYSTEM_ZINDEX');
 }
 </style>
-
