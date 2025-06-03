@@ -12,6 +12,8 @@
  * @license   http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
+use support\orm\Orm;
+
 return [
-   \support\orm\Orm::class,
+   Orm::class,
 ];
