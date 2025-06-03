@@ -39,7 +39,7 @@ trait Backend
     {
 
         if ($this->request->input('select')) {
-            return $this->select();
+            // return $this->select();
         }
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
