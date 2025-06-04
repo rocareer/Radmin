@@ -8,13 +8,18 @@
  * Copyright [2014-2026] [https://rocareer.com]
  * Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
  */
+
 namespace app\common\controller;
 
 use app\controller\BaseController;
 use Exception;
 use app\exception\ServerErrorHttpException;
+use support\Container;
+use support\Context;
 use support\lang\Lang;
+use support\member\Member;
 use support\orm\Db;
+use support\RequestContext;
 use support\Response;
 use Throwable;
 
@@ -33,7 +38,9 @@ class Api extends BaseController
      * 应用站点系统设置
      * @var bool
      */
-    protected bool $useSystemSettings = true;
+    protected bool   $useSystemSettings = true;
+    protected mixed  $member            = null;
+    protected string $role              = '';
 
 
     /**
@@ -54,12 +61,16 @@ class Api extends BaseController
 
             ip_check(); // ip检查
             set_timezone(); // 时区设定
+            $this->useSystemSettings=false;
         }
 
         parent::initialize();
 
         // 加载控制器语言包
         $this->loadControllerLang();
+
+        Member::setCurrentRole($this->role);
+        $this->member=RequestContext::get('member');
     }
 
 
@@ -71,15 +82,15 @@ class Api extends BaseController
     {
         $langSet        = Lang::getLangSet();
         $controllerPath = strtolower(str_replace('\\', '/', static::class));
-        $controllerPath=explode('controller/',$controllerPath);
-        $langPath=$controllerPath[0]."lang";
-        $controllerName=$controllerPath[1];
-        $langFile       = $langPath.'/'.$langSet.'/'.$controllerName.'.php';
-        $commonLangFile = base_path('app/admin/lang/').$langSet.'.php';
-        if(is_file($commonLangFile)) {
+        $controllerPath = explode('controller/', $controllerPath);
+        $langPath       = $controllerPath[0] . "lang";
+        $controllerName = $controllerPath[1];
+        $langFile       = $langPath . '/' . $langSet . '/' . $controllerName . '.php';
+        $commonLangFile = base_path('app/admin/lang/') . $langSet . '.php';
+        if (is_file($commonLangFile)) {
             Lang::load($commonLangFile);
         }
-        if(is_file($langFile)) {
+        if (is_file($langFile)) {
             Lang::load($langFile);
         }
     }
@@ -95,7 +106,7 @@ class Api extends BaseController
      */
     protected function success(string $msg = '', mixed $data = null, int $code = 1, ?string $type = null, array $header = []): ?Response
     {
-       return $this->result($msg, $data, $code, $type, $header);
+        return $this->result($msg, $data, $code, $type, $header);
     }
 
     /**
@@ -107,9 +118,9 @@ class Api extends BaseController
      * @param array       $header 发送的 header 信息
      * @return Response|null
      */
-    protected function error(string $msg = '', mixed $data = null, int $code = 0, ?string $type = null, array $header = []):?Response
+    protected function error(string $msg = '', mixed $data = null, int $code = 0, ?string $type = null, array $header = []): ?Response
     {
-      return  $this->result($msg, $data, $code, $type, $header);
+        return $this->result($msg, $data, $code, $type, $header);
     }
 
     /**
@@ -121,7 +132,7 @@ class Api extends BaseController
      * @param array       $headers
      * @return Response|null
      */
-    public function result(string $msg, mixed $data = null, int $code = 0, ?string $contentType = null, array $headers = []):?Response
+    public function result(string $msg, mixed $data = null, int $code = 0, ?string $contentType = null, array $headers = []): ?Response
     {
         // $start = microtime(true);
 
@@ -139,7 +150,6 @@ class Api extends BaseController
         $response->withHeaders([
             'Content-Type' => $contentType ?: $this->responseType ?? 'application/json',
         ]);
-
 
 
         //		 性能日志记录阈值可配置化

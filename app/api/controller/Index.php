@@ -29,7 +29,7 @@ class Index extends Frontend
         $menus = [];
 
         //登录用户
-        if ($this->request->member) {
+        if (!empty($this->member)) {
             $rules     = [];
             $userMenus = Member::getMenus($this->member->id);
 
@@ -46,7 +46,7 @@ class Index extends Frontend
             //未登录用户
             $requiredLogin = $this->request->input('requiredLogin', false);
             if ($requiredLogin) {
-                if (!$this->request->member) {
+                if (empty($this->member)) {
                     return $this->error(__('Please login first'), [
                         'type' => 'need login',
                     ], 303);
@@ -85,7 +85,7 @@ class Index extends Frontend
                 ]),
             ],
             'openMemberCenter' => config('buildadmin.open_member_center'),
-            'userInfo'         => $this->request->member,
+            'userInfo'         => $this->member,
             'menus'            => $menus,
             'rules'            => array_values($rules),
 

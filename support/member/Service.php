@@ -3,9 +3,11 @@
 
 namespace support\member;
 
+use app\exception\UnauthorizedHttpException;
 use Exception;
 use support\Container;
 use support\Request;
+use support\RequestContext;
 use Webman\Event\Event;
 use app\exception\BusinessException;
 
@@ -21,35 +23,34 @@ abstract class Service implements InterfaceService
      * 登录器
      * @var InterfaceAuthenticator|mixed|null
      */
-    private ?InterfaceAuthenticator $authenticator;
-    private mixed                   $state;
+    protected ?InterfaceAuthenticator $authenticator;
+    protected mixed                   $state;
 
     /**
      * 角色
      * @var string
      */
-    protected string $role = 'admin';
+    protected string $role = 'guest';
 
     /**
      *
      * @var mixed|null
      */
-    private mixed $children = null;
+    protected mixed $children = null;
     //instance
     protected ?object $memberModel = null;
-    private mixed     $context;
+    protected mixed     $context;
 
     protected Request|null $request;
 
 
-
     public function __construct()
     {
+
         $this->request       = request();
-        $this->context       = Container::get('member.context');
-        $this->authenticator = Container::get('member.authenticator');
-        $this->memberModel   = Container::get('member.model');
-        $this->state         = Container::get('member.state');
+        $this->authenticator = Container::make('member.authenticator',[]);
+        $this->memberModel   = Container::make('member.model',[]);
+        $this->state         = Container::make('member.state',[]);
     }
 
 
@@ -64,16 +65,17 @@ abstract class Service implements InterfaceService
     }
 
     /**
+     * @return   void
      * @throws BusinessException
+     * Author:   albert <albert@rocareer.com>
+     * Time:     2025/6/4 13:35
      */
-    public function initialization(): ?object
+    public function initialization(): void
     {
         if (!empty($this->memberModel)) {
             //状态更新
             $this->stateUpdateLogin('success');
-            return $this;
         }
-
         try {
 
             //用户信息初始化
@@ -87,12 +89,12 @@ abstract class Service implements InterfaceService
             //更新登录状态
             $this->stateUpdateLogin('success');
 
-            return $this;
+           RequestContext::set('member', $this->memberModel);
 
         } catch (Exception $e) {
             //状态更新
             $this->stateUpdateLogin('failure');
-            throw new BusinessException($e->getMessage(), $e->getCode(), false, [], $e);
+            throw new UnauthorizedHttpException($e->getMessage(), $e->getCode(), [], $e);
         }
     }
 
@@ -370,7 +372,7 @@ abstract class Service implements InterfaceService
      */
     public function setMember($member): void
     {
-        $this->memberModel  = $member;
+        $this->memberModel = $member;
     }
 
     /**
@@ -381,7 +383,6 @@ abstract class Service implements InterfaceService
     public function resetMember(): void
     {
         $this->memberModel = null;
-        $this->context->clear();
     }
 
 

@@ -53,7 +53,8 @@ class Request extends \Webman\Http\Request
      */
     public function role(?string $role = null): mixed
     {
-        $this->role = $role??$this->input('role')??$this->app;
+        $this->role = $role??$this->input('x-role')??$this->app;
+        RequestContext::set('role', $this->role);
         return $this->role;
     }
 

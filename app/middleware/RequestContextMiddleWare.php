@@ -14,18 +14,23 @@ namespace app\middleware;
 use Exception;
 use support\Container;
 use support\Request;
+use support\RequestContext;
 
-class RequestContextMiddleWare implements MiddlewareInterface
+class RequestContextMiddleWare
 {
-    /**
-     * @throws Exception
-     */
-    public function process(Request $request, callable $handler)
+    public function process($request, $handler)
     {
-        $context=Container::get('member.context');
+        // 创建上下文
+
+        // 将上下文绑定到当前请求
+        $request->text = RequestContext::get();
+
+        // 处理请求
         $response = $handler($request);
-        $context->clear();
+
+        // 清理上下文
+        RequestContext::clear();
+
         return $response;
     }
-
 }

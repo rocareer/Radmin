@@ -23,8 +23,11 @@ return [
 
         // 请求预处理
         RequestMiddleWare::class,
+
         AuthMiddleware::class,
-        RequestContextMiddleWare::class
+
+        RequestContextMiddleWare::class,
+
 
     ],
     'api'   => [

@@ -17,12 +17,12 @@ use support\member\State;
 
 return [
     //状态事件
-    'state.checkStatus'   => [
-        [State::class, 'checkStatus'],
-    ],
-    'state.updateLogin.*' => [
-        [State::class, 'updateLoginState'],
-    ],
+    // 'state.checkStatus'   => [
+    //     [State::class, 'checkStatus'],
+    // ],
+    // 'state.updateLogin.*' => [
+    //     [State::class, 'updateLoginState'],
+    // ],
 
 
 

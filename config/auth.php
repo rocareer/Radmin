@@ -54,36 +54,19 @@ return [
         //
         '/install',
         '/api/install/*',
-        '/api/index/index',
+        // '/api/index/index',
         '/api/install/envBaseCheck',
         '/api/install/envNpmCheck',
 
         // 管理后台免认证路径
-        '/admin/Index/login',     // 管理员登录
-        '/admin/Index/logout',    // 管理员注销
+        // '/admin/Index/login',     // 管理员登录
+        // '/admin/Index/logout',    // 管理员注销
 
         // API免认证路径
         '/api/common/checkClickCaptcha',    // 验证码
         '/api/common/refreshToken',         // 刷新token
-        // '/api/index/index',
-
-        '/api/user/checkIn',                // 用户中心登录
-        '/api/user/logout',                 // 用户中心注销
 
         '/api/common/checkClickCaptcha',    // 验证码
-
-
-        //新user应用
-        '/user/index/login',
-        '/user/index/logout',
-
-        // 兼容旧路径
-        '/admin/Index/login',
-        '/admin/Index/logout',
-
-        // 测试路由
-        // '/test/auth/index',
-        '/test/auth/login',
 
         // 终端免验证
         '/admin/ajax/terminal'

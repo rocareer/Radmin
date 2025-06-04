@@ -2,8 +2,10 @@
 
 namespace app\common\controller;
 
+use support\Context;
 use support\orm\Model;
 use support\member\Member;
+use support\RequestContext;
 use support\StatusCode;
 use app\exception\UnauthorizedHttpException;
 use Throwable;
@@ -11,7 +13,6 @@ use Throwable;
 
 class Backend extends Api
 {
-    protected ?object $member;
     /**
      * 无需登录的方法，访问本控制器的此方法，无需管理员登录
      * @var array
@@ -117,12 +118,14 @@ class Backend extends Api
      * @var string|array
      */
     protected string|array $indexField = ['*'];
+    protected string       $role       = 'admin';
 
     /**
      * 引入traits
      * traits内实现了index、add、edit等方法
      */
     use \app\admin\library\traits\Backend;
+
 
     /**
      * 初始化
@@ -132,20 +135,17 @@ class Backend extends Api
     {
         parent::initialize();
 
-
         $needLogin = !action_in_arr($this->noNeedLogin);
 
-
         if ($needLogin) {
-            $this->member=Member::initialization();
-
-            var_dump($this->member);
-            if (empty($this->member)){
+            Member::initialization();
+            $this->member=RequestContext::get('member');
+            if (empty($this->member)) {
                 throw new UnauthorizedHttpException('请先登录', StatusCode::NEED_LOGIN);
             }
             if (!action_in_arr($this->noNeedPermission)) {
                 $routePath = ($this->request->controller() ?? '') . '/' . $this->request->action;
-                if (!Member::check($routePath,$this->member->id)) {
+                if (!Member::check($routePath, $this->member->id)) {
                     $this->error(__('You have no permission'), [], 401);
                 }
             }
@@ -299,7 +299,7 @@ class Backend extends Api
         $pk    = $this->model->getPk();
         $order = $this->request->input("order") ?: $this->defaultSortField;
 
-       try {
+        try {
             if ($order && is_string($order)) {
                 $order = explode(',', $order);
                 $order = [$order[0] => $order[1] ?? 'asc'];
@@ -345,7 +345,7 @@ class Backend extends Api
             return in_array($this->member->id, $adminIds) ? [] : [$this->member->id];
         } elseif ($this->dataLimit == 'allAuth' || $this->dataLimit == 'allAuthAndOthers') {
             // 取得拥有他所有权限的分组
-            $allAuthGroups = Member::getAllAuthGroups($this->dataLimit,[]);
+            $allAuthGroups = Member::getAllAuthGroups($this->dataLimit, []);
             // 取得分组内的所有管理员
             $adminIds = Member::getGroupAdmins($allAuthGroups);
         }

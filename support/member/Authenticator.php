@@ -17,6 +17,8 @@ use think\db\exception\ModelNotFoundException;
 use Throwable;
 use Webman\Event\Event;
 
+use function DI\get;
+
 /**
  * 认证器抽象基类
  */
@@ -46,7 +48,7 @@ abstract class Authenticator implements InterfaceAuthenticator
     public function __construct()
     {
         $this->config      = config('auth.login.' . $this->role);
-        $this->memberModel =Container::get('member.model');
+        $this->memberModel =Container::make('member.model',[]);
     }
 
     /**
@@ -163,6 +165,7 @@ abstract class Authenticator implements InterfaceAuthenticator
      */
     protected function findMember(): void
     {
+
         $user = $this->memberModel->findByName($this->credentials['username']);
         if (!$user) {
             throw new UnauthorizedHttpException('用户不存在', StatusCode::USER_NOT_FOUND);

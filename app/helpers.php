@@ -10,8 +10,11 @@
  * Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
  */
 
-
 use extend\ra\FileUtil;
+use Psr\Container\ContainerInterface;
+use support\Container;
+use support\Context;
+use support\RequestContext;
 use think\helper\Str;
 
 if (!function_exists('env')) {
@@ -30,6 +33,31 @@ if (!function_exists('env')) {
         }
         return $default;
     }
+}
+
+
+if (!function_exists('resolveByRole')) {
+    function resolveByRole(ContainerInterface $container, string $mapKey)
+    {
+        // Container::get('role');
+        $role = RequestContext::get('role');
+        $map = $container->make($mapKey);
+
+        if ($mapKey=='member.service.map'){
+            // var_dump('Service map:', $map); // 调试信息，查看服务映射
+        }
+
+        if (!isset($map[$role])) {
+            throw new RuntimeException("Role '$role' is not defined in $mapKey.");
+        }
+
+        $service = $container->make($map[$role]);
+        if ($mapKey=='member.service.map'){
+            // var_dump('Resolved service:', $service); // 调试信息，查看解析的服务
+        }
+        return $service;
+    }
+
 }
 
 if (!function_exists('var_export_short')) {
@@ -70,9 +98,9 @@ if (!function_exists('modify_config')) {
     {
         $configPath = config_path();
         if ($plugin) {
-            if (strpos($plugin, '/') !== false){
+            if (strpos($plugin, '/') !== false) {
                 $configPath = base_path() . DIRECTORY_SEPARATOR . 'plugin' . DIRECTORY_SEPARATOR . $plugin . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . $configFile;
-            }else {
+            } else {
                 $configPath = config_path() . DIRECTORY_SEPARATOR . $plugin;
             }
 
@@ -303,7 +331,7 @@ if (!function_exists('getTokenFromRequest')) {
         if (!empty($token) && str_starts_with($token, 'Bearer ')) {
             return extractBearerToken($token);
         }
-        $type = $request->role();
+        $type = RequestContext::get('role');
         // 从配置的 headers 中获取 Token
         $headers = config("auth.headers.{$type}", []);
         foreach ($headers as $header) {
@@ -419,10 +447,10 @@ if (!function_exists('root_path')) {
      */
     function root_path(string $path = ''): string
     {
-        if (empty($path)){
-            return base_path().DIRECTORY_SEPARATOR;
+        if (empty($path)) {
+            return base_path() . DIRECTORY_SEPARATOR;
         }
-        return base_path() . DIRECTORY_SEPARATOR . $path.DIRECTORY_SEPARATOR;
+        return base_path() . DIRECTORY_SEPARATOR . $path . DIRECTORY_SEPARATOR;
     }
 }
 

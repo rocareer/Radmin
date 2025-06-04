@@ -19,5 +19,5 @@ use DI\ContainerBuilder;
 $builder = new ContainerBuilder();
 $builder->addDefinitions(config('dependence', []));
 $builder->useAutowiring(true);
-$builder->enableCompilation(runtime_path() . '/definitions');
+// $builder->enableCompilation(runtime_path() . '/definitions');
 return $builder->build();

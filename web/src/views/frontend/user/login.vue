@@ -113,7 +113,7 @@
                                                 size="large"
                                                 @click="sendRegisterCaptchaPre"
                                                 :loading="state.sendCaptchaLoading"
-                                                :disabled="state.codeSendCountdown <= 0 ? false : true"
+                                                :disabled="state.codeSendCountdown > 0"
                                                 type="primary"
                                             >
                                                 {{
@@ -222,7 +222,7 @@
                                 <el-button
                                     @click="sendRetrieveCaptchaPre"
                                     :loading="state.sendCaptchaLoading"
-                                    :disabled="state.codeSendCountdown <= 0 ? false : true"
+                                    :disabled="state.codeSendCountdown > 0"
                                     type="primary"
                                 >
                                     {{ state.codeSendCountdown <= 0 ? t('user.login.send') : state.codeSendCountdown + t('user.login.seconds') }}
@@ -263,7 +263,7 @@ import { sendEms, sendSms } from '/@/api/common'
 import { uuid } from '/@/utils/random'
 import { useI18n } from 'vue-i18n'
 import { buildValidatorData, validatorAccount } from '/@/utils/validate'
-import { checkIn, retrievePassword } from '/@/api/frontend/user/index'
+import { login, retrievePassword } from '/@/api/frontend/user'
 import { useEventListener } from '@vueuse/core'
 import { onResetForm } from '/@/utils/common'
 import { useUserInfo } from '/@/stores/userInfo'
@@ -273,6 +273,8 @@ import loginMounted from '/@/components/mixins/loginMounted'
 import LoginFooterMixin from '/@/components/mixins/loginFooter.vue'
 import type { FormItemRule, FormInstance } from 'element-plus'
 import clickCaptcha from '/@/components/clickCaptcha'
+import Icon from '/@/components/icon/index.vue'
+
 let timer: number
 
 const { t } = useI18n()
@@ -363,15 +365,33 @@ const rules: Partial<Record<string, FormItemRule[]>> = reactive({
             trigger: 'blur',
         },
     ],
-    password: [buildValidatorData({ name: 'required', title: t('user.login.password') }), buildValidatorData({ name: 'password' })],
-    mobile: [buildValidatorData({ name: 'required', title: t('user.login.mobile') }), buildValidatorData({ name: 'mobile' })],
+    password: [
+        buildValidatorData({
+            name: 'required',
+            title: t('user.login.password'),
+        }),
+        buildValidatorData({ name: 'password' }),
+    ],
+    mobile: [
+        buildValidatorData({
+            name: 'required',
+            title: t('user.login.mobile'),
+        }),
+        buildValidatorData({ name: 'mobile' }),
+    ],
     captcha: [buildValidatorData({ name: 'required', title: t('user.login.Verification Code') })],
 })
 
 const retrieveRules: Partial<Record<string, FormItemRule[]>> = reactive({
     account: [buildValidatorData({ name: 'required', title: t('user.login.Account name') })],
     captcha: [buildValidatorData({ name: 'required', title: t('user.login.Verification Code') })],
-    password: [buildValidatorData({ name: 'required', title: t('user.login.password') }), buildValidatorData({ name: 'password' })],
+    password: [
+        buildValidatorData({
+            name: 'required',
+            title: t('user.login.password'),
+        }),
+        buildValidatorData({ name: 'password' }),
+    ],
 })
 
 const resize = () => {
@@ -400,7 +420,7 @@ const onSubmitPre = () => {
 const onSubmit = (captchaInfo = '') => {
     state.formLoading = true
     state.form.captchaInfo = captchaInfo
-    checkIn('post', state.form)
+    login('post', state.form)
         .then((res) => {
             userInfo.dataFill(res.data.userInfo, false)
             if (state.to) return (location.href = state.to)
@@ -501,7 +521,7 @@ onMounted(async () => {
     resize()
     useEventListener(window, 'resize', resize)
 
-    checkIn('get').then((res) => {
+    login('get').then((res) => {
         state.userLoginCaptchaSwitch = res.data.userLoginCaptchaSwitch
         state.accountVerificationType = res.data.accountVerificationType
         state.retrievePasswordForm.type = res.data.accountVerificationType.length > 0 ? res.data.accountVerificationType[0] : ''
@@ -522,17 +542,21 @@ onUnmounted(() => {
     padding: 10px 60px 20px 60px;
     background-color: var(--ba-bg-color-overlay);
 }
+
 .login-title {
     text-align: center;
     font-size: var(--el-font-size-large);
     line-height: 100px;
     user-select: none;
 }
+
 :deep(.el-input--large) .el-input__wrapper {
     padding: 4px 15px;
 }
+
 .form-buttons {
     padding-top: 20px;
+
     .el-button {
         width: 100%;
         letter-spacing: 2px;
@@ -541,21 +565,26 @@ onUnmounted(() => {
         margin-left: 0;
     }
 }
+
 .register-verification-radio {
     margin-top: 10px;
 }
+
 .captcha-box {
     display: flex;
     align-items: center;
     justify-content: flex-end;
+
     .el-button {
         width: 90%;
         height: 100%;
     }
 }
+
 .form-footer {
     display: flex;
     align-items: center;
+
     .forgot-password {
         color: var(--ba-color-primary-light);
         margin-left: auto;
@@ -563,11 +592,13 @@ onUnmounted(() => {
         cursor: pointer;
     }
 }
+
 .retrieve-password-form {
     display: flex;
     justify-content: center;
     margin-right: 50px;
 }
+
 @media screen and (max-width: 768px) {
     .login-box {
         width: 100%;

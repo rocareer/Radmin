@@ -22,15 +22,14 @@ class Index extends Backend
      */
     public function index(): Response
     {
-        $userInfo = $this->member;
-        $menus    = Member::getMenus($userInfo->id);
 
+        $menus    = Member::getMenus($this->member->id);
 
         if (!$menus) {
             return $this->error(__('No background menu, please contact super administrator!'));
         }
         return $this->success('', [
-            'adminInfo'  => $userInfo,
+            'adminInfo'  => Member::memberInitialization(),
             'menus'      => $menus,
             'siteConfig' => [
                 'siteName'     => SystemUtil::get_sys_config('site_name'),
@@ -73,7 +72,6 @@ class Index extends Backend
                 'captchaInfo'   => $this->request->post('captchaInfo'),
                 'captchaSwitch' => $captchaSwitch,
             ];
-
 
                 $res = Member::login($credentials, (bool)$this->request->post('keep'));
                 return $this->success(__('Login succeeded!'), [

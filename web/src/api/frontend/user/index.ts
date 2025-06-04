@@ -1,12 +1,12 @@
 import createAxios from '/@/utils/axios'
 import { useUserInfo } from '/@/stores/userInfo'
 
-export const userUrl = '/api/user/'
-export const accountUrl = '/api/account/'
+export const userUrl = '/user/index/'
+export const accountUrl = '/user/account/'
 
-export function checkIn(method: 'get' | 'post', params: object = {}) {
+export function login(method: 'get' | 'post', params: object = {}) {
     return createAxios({
-        url: userUrl + 'checkIn',
+        url: userUrl + 'login',
         data: params,
         method: method,
     })

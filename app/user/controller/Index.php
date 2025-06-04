@@ -35,6 +35,7 @@ class Index extends Frontend
     public function initialize():void
     {
         parent::initialize();
+
     }
 
     /**
@@ -43,6 +44,7 @@ class Index extends Frontend
      */
     public function login(): Response
     {
+
         $openMemberCenter =  config('buildadmin.open_member_center');
         if (!$openMemberCenter) {
             return $this->error(__('Member center disabled'));
@@ -88,7 +90,7 @@ class Index extends Frontend
                     'captchaSwitch' => $captchaSwitch,
                 ];
 
-                $res = Member::setCurrentRole('user')->login($credentials, !empty($params['keep']));
+                $res = Member::login($credentials, !empty($params['keep']));
 
 
             } elseif ($params['tab'] == 'register') {

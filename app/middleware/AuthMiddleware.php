@@ -15,10 +15,11 @@ use support\Container;
 use app\exception\TokenException;
 use app\exception\TokenExpiredException;
 use app\exception\UnauthorizedHttpException;
-use support\Request;
-use support\Response;
-use support\token\Token;
+use support\Context;
 use support\member\Member;
+use support\Request;
+use support\RequestContext;
+use support\token\Token;
 use support\StatusCode;
 use Throwable;
 
@@ -26,57 +27,29 @@ class AuthMiddleware implements MiddlewareInterface
 {
 
     /**
-     * 允许访问的角色
-     */
-    protected ?string $allowedRole =null;
-
-    /**
-     * 构造函数
-     * @param string|null $allowedRole
-     */
-    public function __construct(?string $allowedRole = null)
-    {
-        $this->allowedRole = $allowedRole;
-    }
-
-    /**
      * @throws Throwable
      */
     public function process(Request $request, callable $handler)
     {
-        // 0. 设置请求角色
-        $request->role($this->allowedRole);
-
+        $request->role();
         $request->token();
-
         // 2. 检查是否跳过认证
         if (shouldExclude($request->path())) return $handler($request);
-
-        // 1. 初始化上下文
-        $this->ContextInit();
-
         // 3. 没有凭证则跳过
-        if (empty($request->token)) throw new UnauthorizedHttpException('没有凭证', StatusCode::TOKEN_NOT_FOUND, true);
-
+        if (empty($request->token)) return $handler($request);
         // 4. 验证Token有效性 无效则通知刷新
         try {
             $request->payload = Token::verify($request->token);
         } catch (TokenExpiredException) {
             throw new TokenException('', StatusCode::TOKEN_SHOULD_REFRESH);
         } catch (Throwable) {
-            throw new UnauthorizedHttpException('凭证无效', StatusCode::TOKEN_INVALID, true);
+            throw new UnauthorizedHttpException('凭证无效', StatusCode::NEED_LOGIN);
         }
-
-        // 7. 处理请求
-        return $handler($request);
+        Member::setCurrentRole($request->payload->role);
+        Member::initialization();
+        // 4. 处理请求
+        $response = $handler($request);
+        return $response;
     }
 
-    /**
-     * @return void
-     */
-    private function ContextInit(): void
-    {
-        $context ??= Container::get('member.context');
-        $context->set('role', $this->allowedRole);
-    }
 }

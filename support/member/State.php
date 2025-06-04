@@ -49,8 +49,7 @@ class State implements InterfaceState
 
     public function __construct()
     {
-        $this->context     = Container::get('member.context');
-        $this->memberModel = $this->context->get('model');
+        $this->memberModel = Container::get('member.model');
         $this->config      = config('auth');
     }
 

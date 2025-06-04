@@ -1,8 +1,11 @@
 <?php
 
 namespace app\common\controller;
+
 use app\exception\UnauthorizedHttpException;
+use support\Context;
 use support\member\Member;
+use support\RequestContext;
 use support\StatusCode;
 use Throwable;
 
@@ -22,27 +25,34 @@ class Frontend extends Api
      */
     protected array $noNeedPermission = [];
 
-    protected mixed $member;
+    protected string $role='user';
+
+    public function __construct()
+    {
+        parent::__construct();
+    }
 
     /**
      * 初始化
      * @throws Throwable
      */
-    public function initialize():void
+    public function initialize(): void
     {
         parent::initialize();
 
-        $this->member=$this->request->member;
+
         $needLogin = !action_in_arr($this->noNeedLogin);
 
         if ($needLogin) {
-            if (!$this->request->member) {
-                throw new UnauthorizedHttpException('请先登录' ,StatusCode::NEED_LOGIN,true);
+            Member::initialization();
+            $this->member = RequestContext::get('member');
+            if (empty($this->member)) {
+                throw new UnauthorizedHttpException('请先登录', StatusCode::NEED_LOGIN);
             }
             if (!action_in_arr($this->noNeedPermission)) {
-                $routePath = (str_replace('/api/','',$this->request->path()) ?? '');
+                $routePath = (str_replace('/user/', '', $this->request->path()) ?? '');
                 if (!Member::check($routePath)) {
-                    throw new UnauthorizedHttpException('没有权限' ,StatusCode::NO_PERMISSION);
+                    throw new UnauthorizedHttpException('没有权限', StatusCode::NO_PERMISSION);
                 }
             }
         }
