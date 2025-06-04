@@ -67,8 +67,10 @@ class Api extends BaseController
         // 加载控制器语言包
         $this->loadControllerLang();
 
-        Member::setCurrentRole($this->role);
-        $this->member=RequestContext::get('member');
+        if (!empty($this->role)){
+            Member::setCurrentRole($this->role);
+            $this->member=RequestContext::get('member');
+        }
     }
 
 
