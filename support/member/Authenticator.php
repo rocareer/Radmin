@@ -121,7 +121,7 @@ abstract class Authenticator implements InterfaceAuthenticator
             $this->updateLoginState('false');
             Db::commit();
             Log::error('认证异常：' . $e->getMessage());
-            throw new UnauthorizedHttpException($e->getMessage(), StatusCode::AUTHENTICATION_FAILED,false,[],$e);
+            throw new UnauthorizedHttpException($e->getMessage(), StatusCode::AUTHENTICATION_FAILED,[],$e);
         }
     }
 

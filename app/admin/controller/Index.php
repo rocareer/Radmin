@@ -5,6 +5,7 @@ namespace app\admin\controller;
 
 use app\common\controller\Backend;
 use app\exception\BusinessException;
+use support\RequestContext;
 use support\Response;
 use support\token\Token;
 use extend\ra\SystemUtil;
@@ -29,7 +30,7 @@ class Index extends Backend
             return $this->error(__('No background menu, please contact super administrator!'));
         }
         return $this->success('', [
-            'adminInfo'  => Member::memberInitialization(),
+            'adminInfo'  => RequestContext::get('member'),
             'menus'      => $menus,
             'siteConfig' => [
                 'siteName'     => SystemUtil::get_sys_config('site_name'),

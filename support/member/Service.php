@@ -94,7 +94,7 @@ abstract class Service implements InterfaceService
         } catch (Exception $e) {
             //状态更新
             $this->stateUpdateLogin('failure');
-            throw new UnauthorizedHttpException($e->getMessage(), $e->getCode(), [], $e);
+            throw $e;
         }
     }
 
