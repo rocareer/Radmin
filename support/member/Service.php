@@ -39,7 +39,7 @@ abstract class Service implements InterfaceService
     protected mixed $children = null;
     //instance
     protected ?object $memberModel = null;
-    protected mixed     $context;
+    protected mixed   $context;
 
     protected Request|null $request;
 
@@ -48,9 +48,9 @@ abstract class Service implements InterfaceService
     {
 
         $this->request       = request();
-        $this->authenticator = Container::make('member.authenticator',[]);
-        $this->memberModel   = Container::make('member.model',[]);
-        $this->state         = Container::make('member.state',[]);
+        $this->authenticator = Container::make('member.authenticator', []);
+        $this->memberModel   = Container::make('member.model', []);
+        $this->state         = Container::make('member.state', []);
     }
 
 
@@ -89,7 +89,7 @@ abstract class Service implements InterfaceService
             //更新登录状态
             $this->stateUpdateLogin('success');
 
-           RequestContext::set('member', $this->memberModel);
+            RequestContext::set('member', $this->memberModel);
 
         } catch (Exception $e) {
             //状态更新
@@ -375,6 +375,7 @@ abstract class Service implements InterfaceService
     public function resetMember(): void
     {
         $this->memberModel = null;
+        RequestContext::clear();
     }
 
 
