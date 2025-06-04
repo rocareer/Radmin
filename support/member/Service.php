@@ -185,27 +185,19 @@ abstract class Service implements InterfaceService
      * 用户:用户信息初始化
      * By albert  2025/05/06 17:35:46
      * @param string|null $token
-     * @throws BusinessException
+     * @throws UnauthorizedHttpException
      */
     public function memberInitialization(?string $token = null): void
     {
         try {
-            $token = $token ?? $this->request->token ?? getTokenFromRequest() ?? false;
-            if (empty($token)) {
-                throw new BusinessException('没有凭证', StatusCode::TOKEN_NOT_FOUND);
-            }
-            $tokenData = Token::verify($token);
-            if (empty($tokenData)) {
-                throw new BusinessException('凭证无效', StatusCode::TOKEN_INVALID);
-            }
-            $member = $this->memberModel->findById($tokenData->sub);
+            $member = $this->memberModel->findById($this->request->payload->sub);
             if (empty($member)) {
-                throw new BusinessException('用户不存在', StatusCode::MEMBER_NOT_FOUND);
+                throw new UnauthorizedHttpException('用户不存在', StatusCode::NEED_LOGIN);
             }
             $this->setMember($member);
             $this->memberModel = $member;
         } catch (Throwable $e) {
-            throw new BusinessException($e->getMessage(), $e->getCode());
+            throw new UnauthorizedHttpException($e->getMessage(), StatusCode::NEED_LOGIN);
         }
     }
 
