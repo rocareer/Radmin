@@ -36,9 +36,9 @@ class Api extends BaseController
      * 应用站点系统设置
      * @var bool
      */
-    protected bool   $useSystemSettings = true;
-    protected mixed  $member            = null;
-    protected string $role              = '';
+    protected bool    $useSystemSettings = true;
+    protected mixed   $member            = null;
+    protected ?string $role              = null;
 
 
     /**
@@ -59,7 +59,7 @@ class Api extends BaseController
 
             ip_check(); // ip检查
             set_timezone(); // 时区设定
-            $this->useSystemSettings=false;
+            $this->useSystemSettings = false;
         }
 
         parent::initialize();
@@ -67,9 +67,9 @@ class Api extends BaseController
         // 加载控制器语言包
         $this->loadControllerLang();
 
-        if (!empty($this->role)){
+        if (!empty($this->role)) {
             Member::setCurrentRole($this->role);
-            $this->member=RequestContext::get('member');
+            $this->member = RequestContext::get('member');
         }
     }
 

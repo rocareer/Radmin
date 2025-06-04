@@ -118,7 +118,7 @@ class Backend extends Api
      * @var string|array
      */
     protected string|array $indexField = ['*'];
-    protected string       $role       = 'admin';
+    protected ?string       $role       = 'admin';
 
     /**
      * 引入traits
