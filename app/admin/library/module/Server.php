@@ -222,6 +222,7 @@ class Server
             'extend',
             'modules',
             'public',
+            'plugin',
             'vendor',
             'web',
             'web-nuxt',
