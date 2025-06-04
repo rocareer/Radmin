@@ -94,7 +94,7 @@ class Rule extends Backend
 
             $data = $this->excludeFields($data);
             if ($this->dataLimit && $this->dataLimitFieldAutoFill) {
-                $data[$this->dataLimitField] = $this->request->member->id;
+                $data[$this->dataLimitField] = $this->member->id;
             }
 
             $result = false;
@@ -245,7 +245,7 @@ class Rule extends Backend
         $pk      = $this->model->getPk();
         $initKey = $this->request->input("initKey", $pk);
 
-        $ids = Member::getRuleIds($this->request->member->id);
+        $ids = Member::getRuleIds($this->member->id);
 
         // 如果没有 * 则只获取用户拥有的规则
         if (!in_array('*', $ids)) {

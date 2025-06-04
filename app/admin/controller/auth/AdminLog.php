@@ -43,7 +43,7 @@ class AdminLog extends Backend
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
         if (!Member::hasRole('super')) {
-            $where[] = ['admin_id', '=', $this->request->member->id];
+            $where[] = ['admin_id', '=', $this->member->id];
         }
         $res = Db::name('admin_log')->
         withJoin($this->withJoinTable, $this->withJoinType)

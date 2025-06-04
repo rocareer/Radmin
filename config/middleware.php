@@ -12,7 +12,7 @@
 use app\middleware\AccessControlMiddleWare;
 use app\middleware\AdminLog;
 use app\middleware\AdminSecurity;
-use app\middleware\RadminAuthMiddleware;
+use app\middleware\AuthMiddleware;
 use app\middleware\RequestContextMiddleWare;
 use app\middleware\RequestMiddleWare;
 
@@ -20,17 +20,17 @@ return [
     ''      => [
         // 全局跨域
         AccessControlMiddleWare::class,
+
         // 请求预处理
         RequestMiddleWare::class,
+        AuthMiddleware::class,
         RequestContextMiddleWare::class
 
     ],
     'api'   => [
-        new RadminAuthMiddleware(),
+
     ],
     'admin' => [
-
-        new RadminAuthMiddleware('admin'),
 
         // 管理员操作日志
         AdminLog::class,
@@ -38,7 +38,7 @@ return [
         AdminSecurity::class,
     ],
     'user'  => [
-        new RadminAuthMiddleware('user'),
+
     ],
 
 ];

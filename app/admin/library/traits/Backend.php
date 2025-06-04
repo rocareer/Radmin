@@ -72,7 +72,7 @@ trait Backend
 
             $data = $this->excludeFields($data);
             if ($this->dataLimit && $this->dataLimitFieldAutoFill) {
-                $data[$this->dataLimitField] = $this->request->member->id;
+                $data[$this->dataLimitField] = $this->member->id;
             }
 
 

@@ -5,6 +5,7 @@ namespace support\member;
 
 use Exception;
 use support\Container;
+use support\Request;
 use Webman\Event\Event;
 use app\exception\BusinessException;
 
@@ -18,40 +19,33 @@ abstract class Service implements InterfaceService
     //common
     /**
      * 登录器
-     * @var InterfaceAuthenticator|mixed|null 
+     * @var InterfaceAuthenticator|mixed|null
      */
     private ?InterfaceAuthenticator $authenticator;
-    private mixed $state;
+    private mixed                   $state;
 
     /**
      * 角色
-     * @var string 
+     * @var string
      */
-    protected string $role     = 'admin';
+    protected string $role = 'admin';
 
     /**
-     * ID
-     * @var int|null 
+     *
+     * @var mixed|null
      */
-    public ?int      $id       = null;
-    /**
-     * 用户名
-     * @var string|null 
-     */
-    public ?string   $username = null;
-
-    /**
-     * 
-     * @var mixed|null 
-     */
-    protected mixed $children = null;
+    private mixed $children = null;
     //instance
     protected ?object $memberModel = null;
     private mixed     $context;
 
+    protected Request|null $request;
+
+
 
     public function __construct()
     {
+        $this->request       = request();
         $this->context       = Container::get('member.context');
         $this->authenticator = Container::get('member.authenticator');
         $this->memberModel   = Container::get('member.model');
@@ -59,18 +53,25 @@ abstract class Service implements InterfaceService
     }
 
 
+    public function __get($name)
+    {
+        if (property_exists($this->memberModel, $name)) {
+            return $this->memberModel->$name;
+        }
+
+        // 添加逻辑来处理未定义的属性
+        return null;
+    }
+
     /**
      * @throws BusinessException
      */
     public function initialization(): ?object
     {
-        $request = request();
-        if (!empty($request->member)) {
-            //状态初始化
-            $this->memberModel = $request->member;
+        if (!empty($this->memberModel)) {
             //状态更新
             $this->stateUpdateLogin('success');
-            return $request->member;
+            return $this;
         }
 
         try {
@@ -86,7 +87,7 @@ abstract class Service implements InterfaceService
             //更新登录状态
             $this->stateUpdateLogin('success');
 
-            return $this->memberModel;
+            return $this;
 
         } catch (Exception $e) {
             //状态更新
@@ -187,7 +188,7 @@ abstract class Service implements InterfaceService
     public function memberInitialization(?string $token = null): void
     {
         try {
-            $token = $token ?? request()->token ?? getTokenFromRequest() ?? false;
+            $token = $token ?? $this->request->token ?? getTokenFromRequest() ?? false;
             if (empty($token)) {
                 throw new BusinessException('没有凭证', StatusCode::TOKEN_NOT_FOUND);
             }
@@ -222,7 +223,6 @@ abstract class Service implements InterfaceService
     }
 
 
-
     /**
      * 检查当前用户是否拥有指定角色
      * By albert  2025/04/30 04:02:04
@@ -246,7 +246,7 @@ abstract class Service implements InterfaceService
      */
     public function getMenus(?int $uid = null): array
     {
-        $uid             = $uid ?? $this->id;
+        $uid             = $uid ?? $this->memberModel->id;
         $this->children  = [];
         $originAuthRules = $this->getOriginAuthRules($uid);
         foreach ($originAuthRules as $rule) {
@@ -270,7 +270,7 @@ abstract class Service implements InterfaceService
      */
     public function getOriginAuthRules(?int $uid = null): array
     {
-        $uid = $uid ?? $this->id;
+        $uid = $uid ?? $this->memberModel->id;
         $ids = $this->getRuleIds($uid);
         if (empty($ids)) return [];
 
@@ -304,7 +304,7 @@ abstract class Service implements InterfaceService
      */
     public function getRuleIds(?int $id = null): array
     {
-        $id = $id ?? $this->id;
+        $id = $id ?? $this->memberModel->id;
         // 用户的组别和规则ID
         $groups = $this->getGroups($id);
         $ids    = [];
@@ -323,7 +323,7 @@ abstract class Service implements InterfaceService
      */
     public function getGroups(?int $id = null): array
     {
-        $id = $id ?? $this->id;
+        $id = $id ?? $this->memberModel->id;
 
         $dbName = $this->config['auth_group_access'] ?: 'user';
         if ($this->config['auth_group_access']) {
@@ -370,9 +370,7 @@ abstract class Service implements InterfaceService
      */
     public function setMember($member): void
     {
-        $this->memberModel = $member;
-        $this->id          = $member->id;
-        $this->username    = $member->username;
+        $this->memberModel  = $member;
     }
 
     /**
@@ -383,10 +381,7 @@ abstract class Service implements InterfaceService
     public function resetMember(): void
     {
         $this->memberModel = null;
-        $this->id          = null;
-        $this->username    = null;
         $this->context->clear();
-
     }
 
 
@@ -422,7 +417,7 @@ abstract class Service implements InterfaceService
      */
     public function check(string $name, ?int $uid = null, string $relation = 'or', string $mode = 'url'): bool
     {
-        $uid = $uid ?? $this->id;
+        $uid = $uid ?? $this->memberModel->id;
         // 获取用户需要验证的所有有效规则列表
         $ruleList = $this->getRuleList($uid);
         if (in_array('*', $ruleList)) {
@@ -475,7 +470,7 @@ abstract class Service implements InterfaceService
      */
     public function getRuleList(?int $uid = null): array
     {
-        $uid = $uid ?? $this->id;
+        $uid = $uid ?? $this->memberModel->id;
         // 读取用户规则节点
         $ids = $this->getRuleIds($uid);
         if (empty($ids)) return [];

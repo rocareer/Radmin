@@ -22,7 +22,7 @@ class Index extends Backend
      */
     public function index(): Response
     {
-        $userInfo = $this->request->member;
+        $userInfo = $this->member;
         $menus    = Member::getMenus($userInfo->id);
 
 

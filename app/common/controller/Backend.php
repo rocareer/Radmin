@@ -2,10 +2,10 @@
 
 namespace app\common\controller;
 
-use app\exception\BusinessException;
 use support\orm\Model;
 use support\member\Member;
 use support\StatusCode;
+use app\exception\UnauthorizedHttpException;
 use Throwable;
 
 
@@ -137,14 +137,15 @@ class Backend extends Api
 
 
         if ($needLogin) {
-            Member::initialization();
+            $this->member=Member::initialization();
 
-            if (empty($this->request->member)){
-                throw new BusinessException('请先登录', StatusCode::NEED_LOGIN);
+            var_dump($this->member);
+            if (empty($this->member)){
+                throw new UnauthorizedHttpException('请先登录', StatusCode::NEED_LOGIN);
             }
             if (!action_in_arr($this->noNeedPermission)) {
                 $routePath = ($this->request->controller() ?? '') . '/' . $this->request->action;
-                if (!Member::check($routePath,$this->request->member->id)) {
+                if (!Member::check($routePath,$this->member->id)) {
                     $this->error(__('You have no permission'), [], 401);
                 }
             }
@@ -341,14 +342,14 @@ class Backend extends Api
         } elseif (is_numeric($this->dataLimit) && $this->dataLimit > 0) {
             // 在组内，可查看所有，不在组内，可查看自己的
             $adminIds = Member::getGroupAdmins([$this->dataLimit]);
-            return in_array($this->request->member->id, $adminIds) ? [] : [$this->request->member->id];
+            return in_array($this->member->id, $adminIds) ? [] : [$this->member->id];
         } elseif ($this->dataLimit == 'allAuth' || $this->dataLimit == 'allAuthAndOthers') {
             // 取得拥有他所有权限的分组
             $allAuthGroups = Member::getAllAuthGroups($this->dataLimit,[]);
             // 取得分组内的所有管理员
             $adminIds = Member::getGroupAdmins($allAuthGroups);
         }
-        $adminIds[] = $this->request->member->id;
+        $adminIds[] = $this->member->id;
         return array_unique($adminIds);
     }
 

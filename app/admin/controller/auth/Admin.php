@@ -157,7 +157,7 @@ class Admin extends Backend
                 }
             }
 
-            if ($this->request->member->id == $data['id'] && $data['status'] == 'disable') {
+            if ($this->member->id == $data['id'] && $data['status'] == 'disable') {
                 return $this->error(__('Please use another administrator account to disable the current account!'));
             }
 
@@ -229,7 +229,7 @@ class Admin extends Backend
         $this->model->startTrans();
         try {
             foreach ($data as $v) {
-                if ($v->id != $this->request->member->id) {
+                if ($v->id != $this->member->id) {
                     $count += $v->delete();
                     Db::name('admin_group_access')
                         ->where('uid', $v['id'])

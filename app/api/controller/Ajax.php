@@ -30,7 +30,7 @@ class Ajax extends Frontend
                 ->setFile($file)
                 ->setDriver($driver)
                 ->setTopic($topic)
-                ->upload(null, 0, $this->request->member->id);
+                ->upload(null, 0, $this->member->id);
             unset($attachment['create_time'], $attachment['quote']);
         } catch (Throwable $e) {
             return $this->error($e->getMessage());

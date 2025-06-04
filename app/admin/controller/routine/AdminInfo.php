@@ -76,7 +76,7 @@ class AdminInfo extends Backend
             }
 
             if (!empty($data['password'])) {
-                $this->model->resetPassword($this->request->member->id, $data['password']);
+                $this->model->resetPassword($this->member->id, $data['password']);
             }
 
             $data   = $this->excludeFields($data);

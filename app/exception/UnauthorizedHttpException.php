@@ -36,15 +36,14 @@ class UnauthorizedHttpException extends Exception
     public string $errorMessage = 'Unauthorized';
 
 
-    public function __construct(?string $errorMessage = null, $code = 0,$needLogin = false,array $data = [], ?Throwable $previous = null)
+    public function __construct(?string $errorMessage = null, $code = 0,array $data = [], ?Throwable $previous = null)
     {
 
         $errorMessage=$errorMessage??$this->errorMessage;
         $params['errorCode'] = $code;
         $params['data'] = $data;
-        if ($needLogin) {
+        if ($code==StatusCode::NEED_LOGIN) {
             $params['data']['type'] = 'need login';
-            $params['errorCode']    = StatusCode::NEED_LOGIN;
         }
         parent::__construct($errorMessage, $params, $previous);
     }

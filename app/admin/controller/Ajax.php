@@ -40,7 +40,7 @@ class Ajax extends Backend
                 ->setFile($file)
                 ->setDriver($driver)
                 ->setTopic($topic)
-                ->upload(null, $this->request->member->id);
+                ->upload(null, $this->member->id);
             unset($attachment['create_time'], $attachment['quote']);
         } catch (Throwable $e) {
          return $this->error($e->getMessage());

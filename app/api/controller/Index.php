@@ -31,7 +31,7 @@ class Index extends Frontend
         //登录用户
         if ($this->request->member) {
             $rules     = [];
-            $userMenus = Member::getMenus($this->request->member->id);
+            $userMenus = Member::getMenus($this->member->id);
 
             // 首页加载的规则，验权，但过滤掉会员中心菜单
             foreach ($userMenus as $item) {

@@ -22,7 +22,7 @@ use support\member\Member;
 use support\StatusCode;
 use Throwable;
 
-class RadminAuthMiddleware implements MiddlewareInterface
+class AuthMiddleware implements MiddlewareInterface
 {
 
     /**
@@ -66,12 +66,6 @@ class RadminAuthMiddleware implements MiddlewareInterface
         } catch (Throwable) {
             throw new UnauthorizedHttpException('凭证无效', StatusCode::TOKEN_INVALID, true);
         }
-
-        // 5. 初始化后 设置 member 信息到请求体
-        $request->member = Member::initialization();
-
-        // 6. 验证请求角色
-        if (!Member::hasRole($this->allowedRole, $request->member->roles)) throw new TokenException('', StatusCode::TOKEN_SHOULD_REFRESH);
 
         // 7. 处理请求
         return $handler($request);

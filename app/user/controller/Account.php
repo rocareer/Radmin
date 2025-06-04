@@ -36,11 +36,11 @@ class Account extends Frontend
             $days[$i]    = date("Y-m-d", $sevenDays + ($i * 86400));
             $tempToday0  = strtotime($days[$i]);
             $tempToday24 = strtotime('+1 day', $tempToday0) - 1;
-            $score[$i]   = UserScoreLog::where('user_id', $this->request->member->id)
+            $score[$i]   = UserScoreLog::where('user_id', $this->member->id)
                 ->where('create_time', 'BETWEEN', $tempToday0 . ',' . $tempToday24)
                 ->sum('score');
 
-            $userMoneyTemp = UserMoneyLog::where('user_id', $this->request->member->id)
+            $userMoneyTemp = UserMoneyLog::where('user_id', $this->member->id)
                 ->where('create_time', 'BETWEEN', $tempToday0 . ',' . $tempToday24)
                 ->sum('money');
             $money[$i]     = bcdiv($userMoneyTemp, 100, 2);
@@ -70,7 +70,7 @@ class Account extends Frontend
                 return $this->error($e->getMessage());
             }
 
-            $model = User::find($this->request->member->id);
+            $model = User::find($this->member->id);
             $model->startTrans();
             try {
                 $model->save($data);
@@ -101,7 +101,7 @@ class Account extends Frontend
         $params  = $this->request->only(['type', 'captcha']);
         if ($captcha->check($params['captcha'], ($params['type'] == 'email' ? $this->auth->email : $this->auth->mobile) . "user_{$params['type']}_verify")) {
             $uuid = Random::uuid();
-            Token::set($uuid, $params['type'] . '-pass', $this->request->member->id, 600);
+            Token::set($uuid, $params['type'] . '-pass', $this->member->id, 600);
             return $this->success('', [
                 'type'                     => $params['type'],
                 'accountVerificationToken' => $uuid,
@@ -173,7 +173,7 @@ class Account extends Frontend
             try {
                 $validate = new AccountValidate();
                 $validate->scene('changePassword')->check(['password' => $params['newPassword']]);
-                $model->resetPassword($this->request->member->id, $params['newPassword']);
+                $model->resetPassword($this->member->id, $params['newPassword']);
                 $model->commit();
             } catch (Throwable $e) {
                 $model->rollback();
@@ -193,7 +193,7 @@ class Account extends Frontend
     {
         $limit         = $this->request->input('limit');
         $integralModel = new UserScoreLog();
-        $res           = $integralModel->where('user_id', $this->request->member->id)
+        $res           = $integralModel->where('user_id', $this->member->id)
             ->order('create_time desc')
             ->paginate($limit);
 
@@ -211,7 +211,7 @@ class Account extends Frontend
     {
         $limit      = $this->request->input('limit');
         $moneyModel = new UserMoneyLog();
-        $res        = $moneyModel->where('user_id', $this->request->member->id)
+        $res        = $moneyModel->where('user_id', $this->member->id)
             ->order('create_time desc')
             ->paginate($limit);
 
