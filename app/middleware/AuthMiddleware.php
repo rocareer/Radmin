@@ -40,14 +40,12 @@ class AuthMiddleware implements MiddlewareInterface
         // 4. 验证Token有效性 无效则通知刷新
         try {
             $request->payload = Token::verify($request->token);
+            Member::initialization();
         } catch (TokenExpiredException) {
             throw new TokenException('', StatusCode::TOKEN_SHOULD_REFRESH);
-        } catch (Throwable) {
-            throw new UnauthorizedHttpException('凭证无效', StatusCode::NEED_LOGIN);
+        } catch (Throwable $e) {
+            throw $e;
         }
-        var_dump($request->payload);
-        Member::setCurrentRole($request->payload->role);
-        Member::initialization();
         // 4. 处理请求
         $response = $handler($request);
         return $response;

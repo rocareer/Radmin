@@ -118,7 +118,7 @@ class Backend extends Api
      * @var string|array
      */
     protected string|array $indexField = ['*'];
-    protected ?string       $role       = 'admin';
+    protected ?string      $role       = 'admin';
 
     /**
      * 引入traits
@@ -138,7 +138,6 @@ class Backend extends Api
         $needLogin = !action_in_arr($this->noNeedLogin);
 
         if ($needLogin) {
-            Member::initialization();
             $this->member=RequestContext::get('member');
             if (empty($this->member)) {
                 throw new UnauthorizedHttpException('请先登录', StatusCode::NEED_LOGIN);

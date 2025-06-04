@@ -12,6 +12,7 @@
 namespace support;
 
 use Exception;
+use stdClass;
 
 /**
  * Class Request
@@ -24,7 +25,7 @@ class Request extends \Webman\Http\Request
      * @var mixed|string|null
      */
     public mixed    $role   = null; // 角色
-    public mixed    $payload= null;
+    public stdClass $payload;
     protected mixed $filter = null;
     /**
      * @var mixed|string|null
@@ -54,7 +55,7 @@ class Request extends \Webman\Http\Request
      */
     public function role(?string $role = null): mixed
     {
-        $this->role = $role??$this->input('x-role')??$this->app;
+        $this->role = $role ?? $this->input('x-role') ?? $this->app;
         RequestContext::set('role', $this->role);
         return $this->role;
     }
@@ -70,12 +71,12 @@ class Request extends \Webman\Http\Request
         if ($full) {
             return $this->controller;
         }
-        if (str_contains($this->controller,'controller\\')){
-            $this->controller=str_replace('controller\\','',$this->controller);
+        if (str_contains($this->controller, 'controller\\')) {
+            $this->controller = str_replace('controller\\', '', $this->controller);
         }
         $controller = explode('\\', $this->controller);
         $controller = array_slice($controller, -2);
-        $controller= strtolower(implode('/', $controller));
+        $controller = strtolower(implode('/', $controller));
         return $controller;
     }
 

@@ -55,7 +55,7 @@ class Index extends Backend
     public function login(): Response
     {
         // 检查登录态
-        if ($this->request->member) {
+        if (RequestContext::get('member')) {
          return $this->success(__('You have already logged in. There is no need to log in again~'), [
                 'type' => 'logged in'
             ], 303);

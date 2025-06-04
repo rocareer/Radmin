@@ -58,10 +58,6 @@ return [
         '/api/install/envBaseCheck',
         '/api/install/envNpmCheck',
 
-        // 管理后台免认证路径
-        // '/admin/Index/login',     // 管理员登录
-        // '/admin/Index/logout',    // 管理员注销
-
         // API免认证路径
         '/api/common/checkClickCaptcha',    // 验证码
         '/api/common/refreshToken',         // 刷新token
