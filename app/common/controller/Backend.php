@@ -138,7 +138,7 @@ class Backend extends Api
         $needLogin = !action_in_arr($this->noNeedLogin);
 
         if ($needLogin) {
-            $this->member=RequestContext::get('member');
+            $this->member = RequestContext::get('member');
             if (empty($this->member)) {
                 throw new UnauthorizedHttpException('请先登录', StatusCode::NEED_LOGIN);
             }

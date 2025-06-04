@@ -25,7 +25,7 @@ class Frontend extends Api
      */
     protected array $noNeedPermission = [];
 
-    protected string $role='user';
+    protected ?string $role='user';
 
     public function __construct()
     {
