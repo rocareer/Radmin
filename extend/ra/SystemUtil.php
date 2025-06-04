@@ -46,10 +46,10 @@ class SystemUtil
 
     public static function get_route_remark(): string
     {
-        $controllerName = request()->controller;
+        $controllerName = request()->controller();
         $actionName     = request()->action;
         $path           = str_replace('.', '/', $controllerName);
-        $path           = str_replace('plugin\radmin\app\admin\controller\\', '', $path);
+        $path           = str_replace('admin/', '', $path);
         $remark         = Db::name('admin_rule')
             ->where('name', $path)
             ->whereOr('name', $path . '/' . $actionName)
