@@ -69,9 +69,16 @@ class Request extends \Webman\Http\Request
         if ($full) {
             return $this->controller;
         }
+        if (str_contains($this->controller,'controller\\')){
+            $this->controller=str_replace('controller\\','',$this->controller);
+        }
         $controller = explode('\\', $this->controller);
         $controller = array_slice($controller, -2);
-        return strtolower(implode('/', $controller));
+        $controller= strtolower(implode('/', $controller));
+        // if (str_contains($controller,'controller/')){
+        //     $controller=str_replace('controller/','',$controller);
+        // }
+        return $controller;
     }
 
     /**
