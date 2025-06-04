@@ -23,7 +23,4 @@ return [
     'state.updateLogin.*' => [
         [State::class, 'updateLoginState'],
     ],
-
-
-
 ];

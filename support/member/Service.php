@@ -72,9 +72,10 @@ abstract class Service implements InterfaceService
      */
     public function initialization(): void
     {
-        if (!empty($this->memberModel)) {
+        if (!empty(RequestContext::get('member'))) {
             //状态更新
             $this->stateUpdateLogin('success');
+            return;
         }
         try {
 
@@ -189,6 +190,7 @@ abstract class Service implements InterfaceService
      */
     public function memberInitialization(?string $token = null): void
     {
+        var_dump($this->request->payload);
         try {
             $member = $this->memberModel->findById($this->request->payload->sub);
             if (empty($member)) {
@@ -365,6 +367,7 @@ abstract class Service implements InterfaceService
     public function setMember($member): void
     {
         $this->memberModel = $member;
+        RequestContext::set('member', $this->memberModel);
     }
 
     /**

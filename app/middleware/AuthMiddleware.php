@@ -45,6 +45,7 @@ class AuthMiddleware implements MiddlewareInterface
         } catch (Throwable) {
             throw new UnauthorizedHttpException('凭证无效', StatusCode::NEED_LOGIN);
         }
+        var_dump($request->payload);
         Member::setCurrentRole($request->payload->role);
         Member::initialization();
         // 4. 处理请求

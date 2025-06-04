@@ -24,6 +24,7 @@ class Request extends \Webman\Http\Request
      * @var mixed|string|null
      */
     public mixed    $role   = null; // 角色
+    public mixed    $payload= null;
     protected mixed $filter = null;
     /**
      * @var mixed|string|null
@@ -75,9 +76,6 @@ class Request extends \Webman\Http\Request
         $controller = explode('\\', $this->controller);
         $controller = array_slice($controller, -2);
         $controller= strtolower(implode('/', $controller));
-        // if (str_contains($controller,'controller/')){
-        //     $controller=str_replace('controller/','',$controller);
-        // }
         return $controller;
     }
 
