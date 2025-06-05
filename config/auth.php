@@ -79,7 +79,8 @@ return [
         ],
         'user'  => [
             'Ba-user-token',
-            'ba-user-token'
+            'ba-user-token',
+            'X-Token'
         ],
         'api'  => [
             'Ba-user-token',
