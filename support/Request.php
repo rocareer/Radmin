@@ -26,12 +26,16 @@ class Request extends \Webman\Http\Request
      */
     public mixed    $role   = null; // 角色
     public stdClass $payload;
-    protected mixed $filter = null;
+    protected mixed  $filter  = null;
     /**
      * @var mixed|string|null
      */
     public mixed $token = null;
 
+    public function __construct(protected string $buffer) {
+        parent::__construct($buffer);
+        $this->payload = new stdClass(); // 或者根据需要初始化
+    }
 
     /**
      *
