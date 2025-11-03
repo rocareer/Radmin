@@ -4,6 +4,7 @@ namespace app\admin\controller\security;
 
 use app\admin\model\DataRecycle as DataRecycleModel;
 use app\common\controller\Backend;
+use support\Response;
 use Throwable;
 
 class DataRecycle extends Backend
