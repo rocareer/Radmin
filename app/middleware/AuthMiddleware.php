@@ -44,8 +44,6 @@ class AuthMiddleware implements MiddlewareInterface
             Member::initialization();
         } catch (TokenExpiredException) {
             throw new TokenException('', StatusCode::TOKEN_SHOULD_REFRESH);
-        } catch (Throwable) {
-            throw new UnauthorizedHttpException('凭证无效', StatusCode::NEED_LOGIN);
         }
         // 4. 处理请求
         $response = $handler($request);

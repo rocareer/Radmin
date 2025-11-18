@@ -109,6 +109,7 @@ if (!function_exists('modify_config')) {
      */
     function modify_config(string $configFile, array $newConfig, ?string $plugin = null, bool $replace = false, bool $convertToClass = true): bool
     {
+        return true;
         $configPath = config_path();
         if ($plugin) {
             if (strpos($plugin, '/') !== false) {

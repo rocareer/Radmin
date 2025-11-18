@@ -40,13 +40,22 @@ abstract class Service implements InterfaceService
     //instance
     protected ?object $memberModel = null;
     protected mixed   $context;
+    protected mixed   $request;
 
-    protected Request|null $request;
-
+    /**
+     * 默认配置
+     * @var array|string[]
+     */
+    protected array $config = [
+        'auth_group'        => 'user_group', // 用户组数据表名
+        'auth_group_access' => '', // 用户-用户组关系表
+        'auth_rule'         => 'user_rule', // 权限规则表
+    ];
 
     public function __construct()
     {
         $this->request = request();
+        $this->initializeDependencies();
     }
 
     /**
@@ -54,7 +63,12 @@ abstract class Service implements InterfaceService
      */
     protected function initializeDependencies()
     {
-        if ($this->authenticator === null) {
+        // 使用反射检查属性是否已初始化
+        $reflection            = new \ReflectionClass($this);
+        $authenticatorProperty = $reflection->getProperty('authenticator');
+        $authenticatorProperty->setAccessible(true);
+
+        if (!$authenticatorProperty->isInitialized($this)) {
             $this->authenticator = Container::get('member.authenticator');
             $this->memberModel   = Container::get('member.model');
             $this->state         = Container::get('member.state');
@@ -87,20 +101,16 @@ abstract class Service implements InterfaceService
             return;
         }
         try {
-
             //用户信息初始化
             $this->memberInitialization();
-
+            //用户信息扩展
             $this->extendMemberInfo();
-
             //用户状态检查
             $this->stateCheckStatus();
             //缓存用户信息
             //更新登录状态
             $this->stateUpdateLogin('success');
-
             RequestContext::set('member', $this->memberModel);
-
         } catch (Exception $e) {
             //状态更新
             $this->stateUpdateLogin('failure');
@@ -199,9 +209,9 @@ abstract class Service implements InterfaceService
      */
     public function memberInitialization(?string $token = null): void
     {
-        var_dump($this->request->payload);
         try {
-            $member = $this->memberModel->findById($this->request->payload->sub);
+            $this->request = request();
+            $member        = $this->memberModel->findById($this->request->payload->sub);
             if (empty($member)) {
                 throw new UnauthorizedHttpException('用户不存在', StatusCode::NEED_LOGIN);
             }
