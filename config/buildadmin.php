@@ -6,7 +6,7 @@
 
 return [
     // 允许跨域访问的域名
-    'cors_request_domain'   => 'localhost,localhost:5173,http://localhost:5173,127.0.0.1:5173,http://127.0.0.1:5173,v10.rocareer.com',
+    'cors_request_domain'   => 'localhost',
     // 是否开启会员登录验证码
     'user_login_captcha'    => false,
     // 是否开启管理员登录验证码
@@ -43,7 +43,7 @@ return [
         // 默认驱动方式
         'default' => 'mysql',
         // 加密key
-        'key'     => 'XDhVQEk5NgmuvT74Y3ayWe6Utq0JC2Rl',
+        'key'     => 'beVCfwqBxZ31WjYtnXky0UE5irN78RcT',
         // 加密方式
         'algo'    => 'ripemd160',
         // 驱动
