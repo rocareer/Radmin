@@ -152,13 +152,26 @@ abstract class Service implements InterfaceService
     public function login(array $credentials, bool $keep = false): array
     {
         try {
+            // 验证必要参数
+            if (empty($credentials['username']) || empty($credentials['password'])) {
+                throw new \InvalidArgumentException('用户名和密码不能为空');
+            }
+            
             $credentials['keep'] = $keep;
             $this->memberModel   = $this->authenticator->authenticate($credentials);//设置用户信息
+            
+            // 验证认证结果
+            if (empty($this->memberModel)) {
+                throw new UnauthorizedHttpException('认证失败', StatusCode::NEED_LOGIN);
+            }
+            
             $this->setMember($this->memberModel);
             Event::emit("log.authentication.{$this->role}.login.success", $this->memberModel);
+            
             return $this->memberModel->toArray();
+            
         } catch (Throwable $e) {
-            Event::emit("log.authentication.{$this->role}.login.failure", $this->memberModel);
+            Event::emit("log.authentication.{$this->role}.login.failure", $this->memberModel ?? null);
             throw $e;
         }
     }
@@ -171,13 +184,17 @@ abstract class Service implements InterfaceService
     public function logout(): void
     {
         try {
-            if (request()->token) {
-                Token::destroy(request()->token);
+            $currentToken = request()->token;
+            if (!empty($currentToken)) {
+                Token::destroy($currentToken);
             }
+            
             Event::emit("log.authentication.{$this->role}.logout.success", $this->memberModel);
             $this->resetMember();
+            
         } catch (Exception $e) {
             Event::emit("log.authentication.{$this->role}.logout.failure", $this->memberModel);
+            // 登出失败不抛出异常，避免影响用户体验
         }
     }
 
@@ -198,6 +215,14 @@ abstract class Service implements InterfaceService
 
     public function checkPassword($password): bool
     {
+        if (empty($password)) {
+            return false;
+        }
+        
+        if (empty($this->memberModel) || empty($this->memberModel->password)) {
+            return false;
+        }
+        
         return verify_password($password, $this->memberModel->password);
     }
 
@@ -211,12 +236,25 @@ abstract class Service implements InterfaceService
     {
         try {
             $this->request = request();
-            $member        = $this->memberModel->findById($this->request->payload->sub);
+            
+            // 安全检查：确保payload存在且包含必要字段
+            if (!isset($this->request->payload) || !isset($this->request->payload->sub)) {
+                throw new UnauthorizedHttpException('无效的Token payload', StatusCode::NEED_LOGIN);
+            }
+            
+            $userId = $this->request->payload->sub;
+            if (empty($userId)) {
+                throw new UnauthorizedHttpException('用户ID不能为空', StatusCode::NEED_LOGIN);
+            }
+            
+            $member = $this->memberModel->findById($userId);
             if (empty($member)) {
                 throw new UnauthorizedHttpException('用户不存在', StatusCode::NEED_LOGIN);
             }
+            
             $this->setMember($member);
             $this->memberModel = $member;
+            
         } catch (Throwable $e) {
             throw new UnauthorizedHttpException($e->getMessage(), StatusCode::NEED_LOGIN);
         }
@@ -224,7 +262,9 @@ abstract class Service implements InterfaceService
 
     public function extendMemberInfo(): void
     {
-        $this->memberModel->roles = [$this->role];
+        if (!empty($this->memberModel)) {
+            $this->memberModel->roles = [$this->role];
+        }
     }
 
     /**
