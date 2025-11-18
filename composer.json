@@ -39,7 +39,7 @@
     "webman/console": "^2.1",
     "webman/think-orm": "^2.1",
     "webman/think-cache": "^2.1",
-    "php-di/php-di": "^7.0",
+
     "rocareer/webman-status-code": "^v1.0.0",
     "firebase/php-jwt": "^6.11",
     "phpmailer/phpmailer": "^v6.8.1",

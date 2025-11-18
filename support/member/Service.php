@@ -46,11 +46,19 @@ abstract class Service implements InterfaceService
 
     public function __construct()
     {
+        $this->request = request();
+    }
 
-        $this->request       = request();
-        $this->authenticator = Container::make('member.authenticator', []);
-        $this->memberModel   = Container::make('member.model', []);
-        $this->state         = Container::make('member.state', []);
+    /**
+     * 初始化依赖
+     */
+    protected function initializeDependencies()
+    {
+        if ($this->authenticator === null) {
+            $this->authenticator = Container::get('member.authenticator');
+            $this->memberModel   = Container::get('member.model');
+            $this->state         = Container::get('member.state');
+        }
     }
 
 
@@ -72,6 +80,7 @@ abstract class Service implements InterfaceService
      */
     public function initialization(): void
     {
+        $this->initializeDependencies();
         if (!empty(RequestContext::get('member'))) {
             //状态更新
             $this->stateUpdateLogin('success');

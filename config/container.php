@@ -12,12 +12,6 @@
  * @license   http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
-// return new Webman\Container;
-
-use DI\ContainerBuilder;
-
-$builder = new ContainerBuilder();
-$builder->addDefinitions(config('dependence', []));
-$builder->useAutowiring(true);
-// $builder->enableCompilation(runtime_path() . '/definitions');
-return $builder->build();
+$container = new Webman\Container;
+$container->addDefinitions(config('dependence', []));
+return $container;

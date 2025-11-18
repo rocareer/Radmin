@@ -47,8 +47,18 @@ abstract class Authenticator implements InterfaceAuthenticator
      */
     public function __construct()
     {
-        $this->config      = config('auth.login.' . $this->role);
-        $this->memberModel =Container::make('member.model',[]);
+        $this->config = config('auth.login.' . $this->role);
+        // 延迟初始化 memberModel
+    }
+
+    /**
+     * 初始化依赖
+     */
+    protected function initializeDependencies()
+    {
+        if ($this->memberModel === null) {
+            $this->memberModel = Container::get('member.model');
+        }
     }
 
     /**
@@ -165,7 +175,7 @@ abstract class Authenticator implements InterfaceAuthenticator
      */
     protected function findMember(): void
     {
-
+        $this->initializeDependencies();
         $user = $this->memberModel->findByName($this->credentials['username']);
         if (!$user) {
             throw new UnauthorizedHttpException('用户不存在', StatusCode::USER_NOT_FOUND);
@@ -191,6 +201,7 @@ abstract class Authenticator implements InterfaceAuthenticator
      */
     protected function verifyPassword(): void
     {
+        $this->initializeDependencies();
         $res = $this->memberModel->verifyPassword($this->credentials['password'], $this->memberModel);
         if (!$res) {
             throw new UnauthorizedHttpException('密码错误', StatusCode::PASSWORD_ERROR);
@@ -206,6 +217,7 @@ abstract class Authenticator implements InterfaceAuthenticator
      */
     protected function generateTokens(): void
     {
+        $this->initializeDependencies();
         $tokenData                = [
             'sub'  => $this->memberModel->id,
             'type' => 'access',
@@ -222,6 +234,7 @@ abstract class Authenticator implements InterfaceAuthenticator
 
     public function extendMemberInfo(): void
     {
+        $this->initializeDependencies();
         $this->memberModel->roles = [$this->role];
     }
 
@@ -300,6 +313,7 @@ abstract class Authenticator implements InterfaceAuthenticator
      */
     protected function validateRefreshToken(string $refreshToken): void
     {
+        $this->initializeDependencies();
         $payload = Token::verify($refreshToken);
         if (empty($payload['user_id'])) {
             throw new UnauthorizedHttpException('无效的刷新令牌', StatusCode::TOKEN_INVALID, true);
@@ -319,6 +333,7 @@ abstract class Authenticator implements InterfaceAuthenticator
     public function logout(): bool
     {
         try {
+            $this->initializeDependencies();
             if (!$this->memberModel) {
                 return true;
             }
@@ -359,6 +374,7 @@ abstract class Authenticator implements InterfaceAuthenticator
      */
     public function forceLogout(int $userId): bool
     {
+        $this->initializeDependencies();
         $user = $this->memberModel->find($userId);
         if (!$user) {
             throw new UnauthorizedHttpException('用户不存在', StatusCode::USER_NOT_FOUND);

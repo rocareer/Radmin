@@ -15,5 +15,6 @@
 use support\orm\Orm;
 
 return [
-   Orm::class,
+    Orm::class,
+    Webman\ThinkOrm\ThinkOrm::class,
 ];

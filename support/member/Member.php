@@ -37,7 +37,7 @@ class Member extends Facade
     public static function setCurrentRole($role): mixed
     {
         RequestContext::set('role', $role);
-        return Container::make('member.service',[]);
+        return Container::get('member.service');
     }
 
 
@@ -48,7 +48,7 @@ class Member extends Facade
      */
     protected static function getFacadeClass(): string
     {
-        return get_class(Container::make('member.service',[]));
+        return get_class(Container::get('member.service'));
     }
 }
 

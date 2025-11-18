@@ -11,7 +11,7 @@
  */
 
 use extend\ra\FileUtil;
-use Psr\Container\ContainerInterface;
+
 use support\Container;
 use support\Context;
 use support\RequestContext;
@@ -37,11 +37,19 @@ if (!function_exists('env')) {
 
 
 if (!function_exists('resolveByRole')) {
-    function resolveByRole(ContainerInterface $container, string $mapKey)
+    /**
+     * 根据角色解析服务
+     * @param        $container
+     * @param string $mapKey
+     * @return   mixed
+     * Author:   albert <albert@rocareer.com>
+     * Time:     2025/11/18 22:31
+     */
+    function resolveByRole($container, string $mapKey)
     {
         // Container::get('role');
         $role = RequestContext::get('role');
-        $map = $container->make($mapKey);
+        $map = $container->get($mapKey);
 
         if ($mapKey=='member.service.map'){
             // var_dump('Service map:', $map); // 调试信息，查看服务映射
@@ -51,7 +59,12 @@ if (!function_exists('resolveByRole')) {
             throw new RuntimeException("Role '$role' is not defined in $mapKey.");
         }
 
-        $service = $container->make($map[$role]);
+        $serviceClass = $map[$role];
+        if (class_exists($serviceClass)) {
+            $service = new $serviceClass();
+        } else {
+            $service = $container->get($serviceClass);
+        }
         if ($mapKey=='member.service.map'){
             // var_dump('Resolved service:', $service); // 调试信息，查看解析的服务
         }

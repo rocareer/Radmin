@@ -49,8 +49,18 @@ class State implements InterfaceState
 
     public function __construct()
     {
-        $this->memberModel = Container::make('member.model',[]);
-        $this->config      = config('auth');
+        $this->config = config('auth');
+        // 延迟初始化 memberModel
+    }
+
+    /**
+     * 初始化依赖
+     */
+    protected function initializeDependencies()
+    {
+        if ($this->memberModel === null) {
+            $this->memberModel = Container::get('member.model');
+        }
     }
 
 
@@ -80,6 +90,7 @@ class State implements InterfaceState
      */
     protected function checkLoginFailures(): bool
     {
+        $this->initializeDependencies();
         if ($this->memberModel->login_failure >= $this->config['login'][$this->role]['login_failure_retry']) {
             $lockTime   = $this->config['login'][$this->role]['login_lock_time'];
             $unlockTime = $this->memberModel->last_login_time + $lockTime;
@@ -157,6 +168,7 @@ class State implements InterfaceState
     public function forceLogout(int $userId): bool
     {
         try {
+            $this->initializeDependencies();
             $user = $this->memberModel->find($userId);
             if (!$user) {
                 throw new BusinessException('用户不存在', StatusCode::USER_NOT_FOUND);
@@ -181,6 +193,7 @@ class State implements InterfaceState
      */
     protected function detectMemberRole(): string
     {
+        $this->initializeDependencies();
         if (property_exists($this->memberModel, 'role')) {
             return $this->memberModel->role;
         }
@@ -194,6 +207,7 @@ class State implements InterfaceState
      */
     protected function getStateCacheKey(): string
     {
+        $this->initializeDependencies();
         return $this->cachePrefix . "{$this->memberModel->id}";
     }
 
@@ -204,6 +218,7 @@ class State implements InterfaceState
      */
     protected function initCachePrefix(): void
     {
+        $this->initializeDependencies();
         $type              = strtolower(class_basename($this->memberModel));
         $this->cachePrefix = $this->config['state']['prefix'] . "{$type}-";
     }
