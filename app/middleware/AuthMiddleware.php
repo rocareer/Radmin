@@ -60,7 +60,7 @@ class AuthMiddleware implements MiddlewareInterface
                 Member::initialization();
                 
             } catch (TokenExpiredException) {
-                throw new TokenException('Token已过期', StatusCode::TOKEN_SHOULD_REFRESH);
+                throw new TokenException('', StatusCode::TOKEN_SHOULD_REFRESH);
             } catch (Throwable $e) {
                 throw new TokenException('Token验证失败: ' . $e->getMessage(), StatusCode::TOKEN_INVALID);
             }
