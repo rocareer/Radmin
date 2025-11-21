@@ -6,6 +6,7 @@ use app\admin\model\DataRecycleLog as DataRecycleLogModel;
 use app\common\controller\Backend;
 use extend\ba\TableManager;
 use support\orm\Db;
+use support\Response;
 use Throwable;
 
 class DataRecycleLog extends Backend

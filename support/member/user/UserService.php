@@ -32,35 +32,6 @@ class UserService extends Service
         parent::extendMemberInfo();
     }
 
-    /**
-     * 获取前台用户菜单 - 重写基类方法，确保正确获取前台菜单
-     * @param int|null $uid 用户ID
-     * @return array
-     */
-    public function getMenus(?int $uid = null): array
-    {
-        try {
-            // 确保用户已登录
-            if (empty($this->memberModel) && !empty($uid)) {
-                $this->memberModel = $this->createModel($this->role);
-                $this->memberModel = $this->memberModel->findById($uid);
-            }
-            
-            if (empty($this->memberModel)) {
-                return [];
-            }
-            
-            return parent::getMenus($uid);
-            
-        } catch (\Throwable $e) {
-            // 记录错误日志但不抛出异常，避免影响用户体验
-            \Webman\Event\Event::emit('user.menu.get.error', [
-                'uid' => $uid,
-                'error' => $e->getMessage(),
-                'role' => $this->role
-            ]);
-            return [];
-        }
-    }
+
 
 }
