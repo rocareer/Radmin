@@ -98,25 +98,46 @@ class Index extends Frontend
      */
     private function handleLogin(array $params): array
     {
+        // 验证码验证
+        $this->validateCaptcha($params);
+        
+        // 构建登录凭证
+        $credentials = $this->buildLoginCredentials($params);
+        
+        return Member::login($credentials, !empty($params['keep']));
+    }
+
+    /**
+     * 验证验证码
+     * @param array $params
+     * @throws \InvalidArgumentException
+     */
+    private function validateCaptcha(array $params): void
+    {
         $captchaSwitch = config('buildadmin.user_login_captcha');
         
-        // 验证码验证
         if ($captchaSwitch) {
             $captchaObj = new ClickCaptcha();
             if (!$captchaObj->check($params['captchaId'], $params['captchaInfo'])) {
                 throw new \InvalidArgumentException(__('Captcha error'));
             }
         }
+    }
 
-        $credentials = [
+    /**
+     * 构建登录凭证
+     * @param array $params
+     * @return array
+     */
+    private function buildLoginCredentials(array $params): array
+    {
+        return [
             'username'      => $params['username'],
             'password'      => $params['password'],
             'captchaId'     => $params['captchaId'] ?? '',
             'captchaInfo'   => $params['captchaInfo'] ?? '',
-            'captchaSwitch' => $captchaSwitch,
+            'captchaSwitch' => config('buildadmin.user_login_captcha'),
         ];
-
-        return Member::login($credentials, !empty($params['keep']));
     }
 
     /**

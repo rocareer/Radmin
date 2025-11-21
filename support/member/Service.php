@@ -278,8 +278,7 @@ abstract class Service
     }
 
     /**
-     * 用户:用户信息初始化
-     * By albert  2025/05/06 17:35:46
+     * 用户信息初始化
      * @param string|null $token
      * @throws UnauthorizedHttpException
      */
@@ -288,34 +287,13 @@ abstract class Service
         try {
             $this->request = request();
             
-            // 安全检查：确保payload存在且包含必要字段
-            if (!isset($this->request->payload) || !isset($this->request->payload->sub)) {
-                // 如果没有payload，尝试从Token中获取
-                $token = $token ?? $this->request->token();
-                if (!$token) {
-                    throw new UnauthorizedHttpException('请先登录', StatusCode::NEED_LOGIN);
-                }
-                
-                // 验证Token并获取payload
-                $payload = \support\token\Token::verify($token);
-                if (!$payload || !isset($payload->sub)) {
-                    throw new UnauthorizedHttpException('无效的Token', StatusCode::NEED_LOGIN);
-                }
-                
-                // 设置payload到请求对象
-                $this->request->payload = $payload;
-            }
+            // 获取并验证Token
+            $payload = $this->getValidatedTokenPayload($token);
             
-            $userId = $this->request->payload->sub;
-            if (empty($userId)) {
-                throw new UnauthorizedHttpException('用户ID不能为空', StatusCode::NEED_LOGIN);
-            }
+            // 验证用户存在性
+            $member = $this->validateUserExists($payload->sub);
             
-            $member = $this->memberModel->findById($userId);
-            if (empty($member)) {
-                throw new UnauthorizedHttpException('用户不存在', StatusCode::NEED_LOGIN);
-            }
-            
+            // 设置用户信息
             $this->setMember($member);
             $this->memberModel = $member;
             
@@ -324,6 +302,55 @@ abstract class Service
         } catch (Throwable $e) {
             throw new UnauthorizedHttpException($e->getMessage(), StatusCode::NEED_LOGIN);
         }
+    }
+
+    /**
+     * 获取并验证Token载荷
+     * @param string|null $token
+     * @return object
+     * @throws UnauthorizedHttpException
+     */
+    private function getValidatedTokenPayload(?string $token): object
+    {
+        // 优先使用请求中的payload
+        if (isset($this->request->payload) && isset($this->request->payload->sub)) {
+            return $this->request->payload;
+        }
+        
+        // 从Token中获取payload
+        $token = $token ?? $this->request->token();
+        if (!$token) {
+            throw new UnauthorizedHttpException('请先登录', StatusCode::NEED_LOGIN);
+        }
+        
+        $payload = \support\token\Token::verify($token);
+        if (!$payload || !isset($payload->sub)) {
+            throw new UnauthorizedHttpException('无效的Token', StatusCode::NEED_LOGIN);
+        }
+        
+        // 缓存payload到请求对象
+        $this->request->payload = $payload;
+        return $payload;
+    }
+
+    /**
+     * 验证用户存在性
+     * @param mixed $userId
+     * @return object
+     * @throws UnauthorizedHttpException
+     */
+    private function validateUserExists($userId): object
+    {
+        if (empty($userId)) {
+            throw new UnauthorizedHttpException('用户ID不能为空', StatusCode::NEED_LOGIN);
+        }
+        
+        $member = $this->memberModel->findById($userId);
+        if (empty($member)) {
+            throw new UnauthorizedHttpException('用户不存在', StatusCode::NEED_LOGIN);
+        }
+        
+        return $member;
     }
 
     public function extendMemberInfo(): void

@@ -132,7 +132,7 @@ class InstallData extends AbstractMigration
                 'title' => 'Record number',
                 'tip'   => '域名备案号',
                 'type'  => 'string',
-                'value' => '渝ICP备8888888号-1',
+                'value' => '京ICP备8888888号-1',
             ],
             [
                 'id'    => 4,

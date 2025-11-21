@@ -62,7 +62,6 @@ abstract class Authenticator
 
     /**
      * 认证用户
-     * By albert  2025/05/06 01:49:43
      * @param array $credentials
      * @return object
      * @throws UnauthorizedHttpException
@@ -186,23 +185,28 @@ abstract class Authenticator
 
     /**
      * 生成令牌
-     * By albert  2025/05/06 02:06:25
      * @return void
      * @throws
      */
     protected function generateTokens(): void
     {
         $this->initializeDependencies();
-        $tokenData                = [
-            'sub'  => $this->memberModel->id,
-            'type' => 'access',
-            'keep'=>false,
-            'role' => $this->role,
-            'roles' => $this->memberModel->roles
+        
+        // 基础Token数据
+        $tokenData = [
+            'sub'   => $this->memberModel->id,
+            'type'  => 'access',
+            'keep'  => false,
+            'role'  => $this->role,
+            'roles' => $this->memberModel->roles ?? [$this->role]
         ];
+        
+        // 生成访问令牌
         $this->memberModel->token = Token::encode($tokenData);
-        if ($this->credentials['keep']) {
-            $tokenData['keep']=true;
+        
+        // 根据需要生成刷新令牌
+        if (!empty($this->credentials['keep'])) {
+            $tokenData['keep'] = true;
             $this->memberModel->refresh_token = Token::encode($tokenData);
         }
     }

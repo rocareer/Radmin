@@ -44,21 +44,30 @@ class Frontend extends Api
 
         if ($needLogin) {
             // 需要登录的方法：强制初始化并验证
-            Member::initialization();
-            $this->member = RequestContext::get('member');
-            if (empty($this->member)) {
-                throw new UnauthorizedHttpException('请先登录', StatusCode::NEED_LOGIN);
-            }
-            if (!action_in_arr($this->noNeedPermission)) {
-                $routePath = (str_replace('/user/', '', $this->request->path()) ?? '');
-                if (!Member::check($routePath)) {
-                    throw new UnauthorizedHttpException('没有权限', StatusCode::NO_PERMISSION);
-                }
-            }
+            $this->requireAuthentication();
         }
 
         // 会员验权和登录标签位
         // Event::trigger('frontendInit', $this->auth);
+    }
+
+    /**
+     * 强制要求用户认证
+     * @throws Throwable
+     */
+    protected function requireAuthentication(): void
+    {
+        Member::initialization();
+        $this->member = RequestContext::get('member');
+        if (empty($this->member)) {
+            throw new UnauthorizedHttpException('请先登录', StatusCode::NEED_LOGIN);
+        }
+        if (!action_in_arr($this->noNeedPermission)) {
+            $routePath = (str_replace('/user/', '', $this->request->path()) ?? '');
+            if (!Member::check($routePath)) {
+                throw new UnauthorizedHttpException('没有权限', StatusCode::NO_PERMISSION);
+            }
+        }
     }
 
     /**
