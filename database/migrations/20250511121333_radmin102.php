@@ -112,7 +112,7 @@ class Radmin102 extends AbstractMigration
                 'type'      => 'radio',
                 'value'     => 'sha256',
                 'content'   => '{"md5 ":"MD5","sha256":"SHA-256","whirlpool":"Whirlpool","ripemd256":"RIPEMD-256","gost":"GOST"}',
-                'rule'      => 'integer',
+                'rule'      => 'required',
                 'extend'    => '',
                 'allow_del' => 0,
                 'weigh'     => 971
@@ -136,7 +136,7 @@ class Radmin102 extends AbstractMigration
                 'type'      => 'radio',
                 'value'     => 'HS256',
                 'content'   => '{"HS256":"HS256","HS384":"HS384","HS512":"HS512"}',
-                'rule'      => 'integer',
+                'rule'      => 'required',
                 'extend'    => '',
                 'allow_del' => 0,
                 'weigh'     => 980
