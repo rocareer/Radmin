@@ -146,8 +146,59 @@ class Index extends Frontend
      */
     private function handleRegister(array $params)
     {
+        return $this->registerUser($params);
+    }
+
+    /**
+     * 用户注册接口
+     */
+    public function register(): Response
+    {
+        try {
+            if (!$this->isMemberCenterEnabled()) {
+                return $this->error(__('Member center disabled'));
+            }
+
+            if (!$this->request->isPost()) {
+                return $this->error(__('Method not allowed'));
+            }
+
+            $params = $this->request->only(['username', 'password', 'mobile', 'email', 'captcha', 'registerType']);
+            
+            // 使用Member类进行注册
+            $result = $this->registerUser($params);
+            
+            return $this->success(__('Registration successful'), [
+                'userInfo' => $result
+            ]);
+            
+        } catch (Throwable $e) {
+            return $this->error($e->getMessage() ?: __('Registration failed'));
+        }
+    }
+
+    /**
+     * 统一的用户注册方法
+     * @param array $params
+     * @return array
+     * @throws Throwable
+     */
+    private function registerUser(array $params): array
+    {
+        // 数据验证
+        $validate = new UserValidate();
+        $validate->scene('register')->check($params);
+
+        // 验证码验证
         $this->validateRegisterCaptcha($params);
-        return $this->performRegistration($params);
+
+        // 使用Member类进行注册（Service中已包含数据唯一性验证）
+        return Member::register([
+            'username' => $params['username'],
+            'password' => $params['password'],
+            'mobile'   => $params['mobile'] ?? '',
+            'email'    => $params['email'] ?? ''
+        ]);
     }
 
     /**
@@ -217,26 +268,23 @@ class Index extends Frontend
      */
     private function validateRegisterCaptcha(array $params): void
     {
+        // 检查验证码参数是否存在
+        if (empty($params['captcha'])) {
+            throw new \InvalidArgumentException(__('Please enter verification code'));
+        }
+        
+        // 检查注册类型参数是否存在
+        if (empty($params['registerType'])) {
+            throw new \InvalidArgumentException(__('Invalid registration type'));
+        }
+        
         $captchaObj = new Captcha();
         $captchaKey = $params[$params['registerType']] . 'user_register';
+        
         if (!$captchaObj->check($params['captcha'], $captchaKey)) {
             throw new \InvalidArgumentException(__('Please enter the correct verification code'));
         }
     }
 
-    /**
-     * 执行注册操作
-     * @param array $params
-     * @return mixed
-     * @throws Throwable
-     */
-    private function performRegistration(array $params)
-    {
-        return Member::register([
-            'username' => $params['username'],
-            'password' => $params['password'],
-            'mobile'   => $params['mobile'],
-            'email'    => $params['email']
-        ]);
-    }
+
 }

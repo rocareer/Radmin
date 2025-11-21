@@ -199,6 +199,104 @@ abstract class Service
     }
 
     /**
+     * 验证注册凭证
+     * @param array $credentials
+     * @throws \InvalidArgumentException
+     */
+    private function validateRegisterCredentials(array $credentials): void
+    {
+        if (empty($credentials['username'])) {
+            throw new \InvalidArgumentException('用户名不能为空');
+        }
+        
+        if (empty($credentials['password'])) {
+            throw new \InvalidArgumentException('密码不能为空');
+        }
+        
+        if (strlen($credentials['username']) < 3) {
+            throw new \InvalidArgumentException('用户名长度不能少于3位');
+        }
+        
+        if (strlen($credentials['password']) < 6) {
+            throw new \InvalidArgumentException('密码长度不能少于6位');
+        }
+    }
+
+    /**
+     * 验证注册数据唯一性
+     * @param array $credentials
+     * @throws \InvalidArgumentException
+     */
+    private function validateRegisterData(array $credentials): void
+    {
+        // 检查用户名是否已存在
+        if ($this->getUserByUsername($credentials['username'])) {
+            throw new \InvalidArgumentException('用户名已存在');
+        }
+        
+        // 检查邮箱是否已存在
+        if (!empty($credentials['email']) && $this->getUserByEmail($credentials['email'])) {
+            throw new \InvalidArgumentException('邮箱已存在');
+        }
+        
+        // 检查手机号是否已存在
+        if (!empty($credentials['mobile']) && $this->getUserByMobile($credentials['mobile'])) {
+            throw new \InvalidArgumentException('手机号已存在');
+        }
+    }
+
+    /**
+     * 执行注册操作
+     * @param array $credentials
+     * @return object
+     * @throws Throwable
+     */
+    private function performRegistration(array $credentials): object
+    {
+        // 密码加密 - 使用 common.php 中的 hash_password 函数
+        $credentials['password'] = hash_password($credentials['password']);
+        
+        // 创建用户
+        $member = $this->memberModel->create($credentials);
+        
+        if (empty($member)) {
+            throw new \RuntimeException('用户注册失败');
+        }
+        
+        return $member;
+    }
+
+    /**
+     * 根据用户名获取用户
+     * @param string $username
+     * @return object|null
+     */
+    private function getUserByUsername(string $username): ?object
+    {
+        return $this->memberModel->where('username', $username)->find();
+    }
+
+    /**
+     * 根据邮箱获取用户
+     * @param string $email
+     * @return object|null
+     */
+    private function getUserByEmail(string $email): ?object
+    {
+        return $this->memberModel->where('email', $email)->find();
+    }
+
+    /**
+     * 根据手机号获取用户
+     * @param string $mobile
+     * @return object|null
+     */
+    private function getUserByMobile(string $mobile): ?object
+    {
+        return $this->memberModel->where('mobile', $mobile)->find();
+    }
+
+    /**
      * 注销登录 - 支持多角色隔离注销
      * By albert  2025/05/08 04:28:10
      * @return bool
@@ -251,9 +349,35 @@ abstract class Service
         $this->memberModel = null;
     }
 
-    public function register()
+    /**
+     * 用户注册
+     * @param array $credentials
+     * @return array
+     * @throws Throwable
+     */
+    public function register(array $credentials): array
     {
-
+        try {
+            // 确保依赖已初始化
+            $this->initializeDependencies();
+            
+            // 参数验证
+            $this->validateRegisterCredentials($credentials);
+            
+            // 数据唯一性验证
+            $this->validateRegisterData($credentials);
+            
+            // 执行注册
+            $member = $this->performRegistration($credentials);
+            
+            // 设置用户信息
+            $this->setMember($member);
+            
+            return $member->toArray();
+            
+        } catch (Throwable $e) {
+            throw $e;
+        }
     }
 
     public function resetPassword()

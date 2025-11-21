@@ -41,10 +41,34 @@ class Config extends Backend
 
         $list           = [];
         $newConfigGroup = [];
-        foreach ($configGroup as $item) {
-            $list[$item['key']]['name']   = $item['key'];
-            $list[$item['key']]['title']  = __($item['value']);
-            $newConfigGroup[$item['key']] = $list[$item['key']]['title'];
+        
+        // 处理配置分组数据，确保是数组格式
+        if (!empty($configGroup) && is_string($configGroup)) {
+            // 如果是JSON字符串，尝试解析
+            $decodedConfig = json_decode($configGroup, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decodedConfig)) {
+                $configGroup = $decodedConfig;
+            } else {
+                // 如果不是JSON，尝试按逗号分隔解析
+                $configGroup = explode(',', $configGroup);
+                $configGroup = array_map('trim', $configGroup);
+                // 转换为标准格式
+                $tempGroup = [];
+                foreach ($configGroup as $key => $value) {
+                    $tempGroup[] = ['key' => $key, 'value' => $value];
+                }
+                $configGroup = $tempGroup;
+            }
+        }
+        
+        if (is_array($configGroup)) {
+            foreach ($configGroup as $item) {
+                if (is_array($item) && isset($item['key']) && isset($item['value'])) {
+                    $list[$item['key']]['name']   = $item['key'];
+                    $list[$item['key']]['title']  = __($item['value']);
+                    $newConfigGroup[$item['key']] = $list[$item['key']]['title'];
+                }
+            }
         }
         foreach ($config as $item) {
             if (array_key_exists($item['group'], $newConfigGroup)) {

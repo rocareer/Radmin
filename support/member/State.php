@@ -80,7 +80,7 @@ class State
         if ($ssoConfig) {
             // 单点登录模式下，检查是否在其他地方登录
             $cacheKey = $this->getStateCacheKey();
-            $stateData = cache($cacheKey);
+            $stateData = \think\facade\Cache::get($cacheKey);
             
             if ($stateData && isset($stateData['token']) && $stateData['token'] !== request()->token) {
                 throw new BusinessException('账号已在其他地方登录', StatusCode::USER_LOGGED_IN_ELSEWHERE, true);
@@ -125,6 +125,12 @@ class State
     public function updateLoginState($member, string $success): bool
     {
         try {
+            // 检查member参数是否有效
+            if (!$member) {
+                Log::error('更新登录状态失败：member参数为空');
+                return false;
+            }
+            
             $this->memberModel = $member;
             $this->memberModel->startTrans();
 
@@ -151,7 +157,10 @@ class State
             $this->memberModel->commit();
             return true;
         } catch (Throwable $e) {
-            $this->memberModel->rollback();
+            // 只有在事务已启动时才回滚
+            if ($this->memberModel && method_exists($this->memberModel, 'rollback')) {
+                $this->memberModel->rollback();
+            }
             Log::error('更新登录状态失败：' . $e->getMessage());
             return false;
         }
@@ -172,7 +181,8 @@ class State
             'role' => $this->role
         ];
         
-        cache($cacheKey, $stateData, $cacheTime);
+        // 使用 think-cache 的缓存函数
+        \think\facade\Cache::set($cacheKey, $stateData, $cacheTime);
     }
 
 
@@ -180,6 +190,12 @@ class State
     {
         try {
             $tableName = $this->getLoginLogTableName();
+            
+            // 检查表是否存在，如果不存在则跳过记录
+            if (!$this->tableExists($tableName)) {
+                return;
+            }
+            
             Db::name($tableName)->insert([
                 'user_id'     => $this->memberModel->id,
                 'username'    => $this->memberModel->username,
@@ -190,6 +206,19 @@ class State
             ]);
         } catch (Throwable $e) {
             Log::error('记录登录日志失败：' . $e->getMessage());
+        }
+    }
+    
+    /**
+     * 检查表是否存在
+     */
+    protected function tableExists(string $tableName): bool
+    {
+        try {
+            $result = Db::query("SHOW TABLES LIKE '{$tableName}'");
+            return !empty($result);
+        } catch (Throwable $e) {
+            return false;
         }
     }
 
@@ -218,7 +247,7 @@ class State
             // 清除状态缓存
             $this->memberModel = $user;
             $cacheKey = $this->getStateCacheKey();
-            cache($cacheKey, null);
+            \think\facade\Cache::delete($cacheKey);
 
             // 清除刷新令牌
             $user->refresh_token = null;

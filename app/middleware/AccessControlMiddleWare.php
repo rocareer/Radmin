@@ -44,8 +44,10 @@ class AccessControlMiddleWare implements MiddlewareInterface
             $header['Content-Type'] = 'text/event-stream';
         }
 
-        // 给响应添加跨域相关的HTTP头
-        $response->withHeaders($header);
+        // 给响应添加跨域相关的HTTP头（确保response不为null）
+        if ($response) {
+            $response->withHeaders($header);
+        }
 		
         return $response;
     }

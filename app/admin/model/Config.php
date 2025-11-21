@@ -18,8 +18,6 @@ use Throwable;
  */
 class Config extends BaseModel
 {
-    public static string $cacheTag = 'sys_config';
-
     protected $autoWriteTimestamp=false;
 
     protected array $append = [
@@ -66,8 +64,19 @@ class Config extends BaseModel
      */
     public static function onAfterWrite(): void
     {
-        // 清理配置缓存
-        Cache::tag(self::$cacheTag)->clear();
+        // 清理配置缓存 - 不使用标签方式
+        // 删除全部配置缓存
+        Cache::delete('sys_config_all');
+        // 删除分组配置缓存（需要遍历所有分组）
+        $groups = self::distinct()->column('group');
+        foreach ($groups as $group) {
+            Cache::delete('sys_config_group_' . $group);
+        }
+        // 删除单个配置项缓存（需要遍历所有配置项）
+        $configs = self::column('name');
+        foreach ($configs as $name) {
+            Cache::delete('sys_config_' . $name);
+        }
     }
 
     public function getValueAttr($value, $row)
