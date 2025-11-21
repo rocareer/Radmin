@@ -88,18 +88,18 @@ function createAxios<Data = any, T = ApiPromise<Data>>(axiosConfig: AxiosRequest
                 }
             }
 
-            // 自动携带token - 区分前后台Token头
+            // 自动携带token - 统一前后台Token头配置
             if (config.headers) {
                 const token = adminInfo.getToken()
                 const userToken = options.anotherToken || userInfo.getToken()
                 
-                // 后台请求使用标准Authorization头
+                // 后台请求使用X-Token头（与后端配置保持一致）
                 if (token && config.url?.includes('/admin/')) {
-                    (config.headers as anyObj).Authorization = `Bearer ${token}`
+                    (config.headers as anyObj)['X-Token'] = token
                 }
-                // 前台请求使用X-Token头
+                // 前台请求使用Authorization头（标准JWT Bearer格式）
                 else if (userToken && !config.url?.includes('/admin/')) {
-                    (config.headers as anyObj)['X-Token'] = userToken
+                    (config.headers as anyObj).Authorization = `Bearer ${userToken}`
                 }
             }
 

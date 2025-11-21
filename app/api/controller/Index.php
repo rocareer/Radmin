@@ -19,66 +19,112 @@ class Index extends Frontend
         parent::initialize();
     }
 
+
     /**
-     * 前台和会员中心的初始化请求
-     *
-     * @throws Throwable
+     * 初始化接口
+     * @return   \support\Response|null
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     * Author:   albert <albert@rocareer.com>
+     * Time:     2025/11/21 17:51
      */
     public function index()
     {
-        $menus = [];
-
-        //登录用户
-        if (!empty($this->member)) {
-            $rules     = [];
-            $userMenus = Member::getMenus($this->member->id);
-
-            // 首页加载的规则，验权，但过滤掉会员中心菜单
-            foreach ($userMenus as $item) {
-                if ($item['type'] == 'menu_dir') {
-                    $menus[] = $item;
-                } elseif ($item['type'] != 'menu') {
-                    $rules[] = $item;
-                }
-            }
-            var_dump(1);
+        // 尝试初始化用户信息（仅在api/index/index中检测）
+        $this->tryInitializeMember();
+        
+        // 检查是否需要登录
+        $requiredLogin = $this->request->input('requiredLogin', false);
+        if ($requiredLogin && empty($this->member)) {
+            return $this->error(__('Please login first'), [
+                'type' => 'need login',
+            ], 303);
         }
-        else {
-            //未登录用户
-            $requiredLogin = $this->request->input('requiredLogin', false);
-            if ($requiredLogin) {
-                if (empty($this->member)) {
-                    return $this->error(__('Please login first'), [
-                        'type' => 'need login',
-                    ], 303);
-                }
-            }
 
-            $rules         = Db::name('user_rule')
+        // 获取用户菜单和规则
+        list($menus, $rules) = $this->getUserMenusAndRules();
+
+        // 构建响应数据
+        $data = $this->buildResponseData($menus, $rules);
+
+        return $this->success('Init', $data);
+    }
+
+
+    /**
+     * 获取用户菜单和规则
+     * @return   array
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     * Author:   albert <albert@rocareer.com>
+     * Time:     2025/11/21 17:51
+     */
+    protected function getUserMenusAndRules(): array
+    {
+        $menus = [];
+        $rules = [];
+
+        if (!empty($this->member)) {
+            try {
+                // 登录用户：获取用户菜单并过滤
+                $userMenus = Member::getMenus($this->member->id);
+                
+                foreach ($userMenus as $item) {
+                    if ($item['type'] == 'menu_dir') {
+                        $menus[] = $item;
+                    } elseif ($item['type'] != 'menu') {
+                        $rules[] = $item;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // 如果获取菜单失败，记录错误日志并返回空菜单
+                \Webman\Event\Event::emit('api.menu.get.error', [
+                    'uid' => $this->member->id,
+                    'error' => $e->getMessage(),
+                    'role' => $this->member->role ?? 'user'
+                ]);
+                
+                // 返回空菜单，但确保用户信息正常返回
+                $menus = [];
+                $rules = [];
+            }
+        } else {
+            // 未登录用户：获取公共规则
+            $rules = Db::name('user_rule')
                 ->where('status', '1')
                 ->where('no_login_valid', 1)
-                ->where('type', 'in', [
-                    'route',
-                    'nav',
-                    'button',
-                ])
+                ->where('type', 'in', ['route', 'nav', 'button'])
                 ->order('weigh', 'desc')
                 ->select()
                 ->toArray();
 
-            $rules         = Tree::instance()
-                ->assembleChild($rules);
-            $data['rules'] = array_values($rules);
+            $rules = Tree::instance()->assembleChild($rules);
         }
 
+        return [$menus, array_values($rules)];
+    }
 
-        $data = [
-            'site'             => [
+    /**
+     * 构建响应数据
+     * @param array $menus
+     * @param array $rules
+     * @return   array
+     * Author:   albert <albert@rocareer.com>
+     * Time:     2025/11/21 17:51
+     */
+    protected function buildResponseData(array $menus, array $rules): array
+    {
+        $uploadConfig = get_upload_config();
+        
+        return [
+            'site' => [
                 'siteName'     => SystemUtil::get_sys_config('site_name'),
                 'recordNumber' => SystemUtil::get_sys_config('record_number'),
                 'version'      => SystemUtil::get_sys_config('version'),
                 'cdnUrl'       => full_url(),
-                'upload'       => keys_to_camel_case(get_upload_config(), [
+                'upload'       => keys_to_camel_case($uploadConfig, [
                     'max_size',
                     'save_name',
                     'allowed_suffixes',
@@ -88,10 +134,7 @@ class Index extends Frontend
             'openMemberCenter' => config('buildadmin.open_member_center'),
             'userInfo'         => $this->member,
             'menus'            => $menus,
-            'rules'            => array_values($rules),
-
+            'rules'            => $rules,
         ];
-
-        return $this->success('Init', $data);
     }
 }

@@ -78,7 +78,7 @@ class Mysql implements TokenInterface
      * @return stdClass
      * @throws TokenException
      */
-    public function Verify(string $token): stdClass
+    public function verify(string $token): stdClass
     {
         try {
             $tokenData = $this->decode($token);
@@ -86,7 +86,7 @@ class Mysql implements TokenInterface
                 throw new TokenException('凭证验证失败', StatusCode::TOKEN_VERIFY_FAILED);
             }
             if ($this->expired($token, $tokenData)) {
-                throw new TokenException('凭证需续期', StatusCode::TOKEN_EXPIRED, ['type' => 'should refresh']);
+                throw new TokenException('凭证需续期', StatusCode::TOKEN_SHOULD_REFRESH, ['type' => 'should refresh']);
             }
             return $tokenData;
         } catch (Throwable $e) {

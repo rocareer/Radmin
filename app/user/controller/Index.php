@@ -49,53 +49,57 @@ class Index extends Frontend
             return $this->error(__('Member center disabled'));
         }
 
-        $userLoginCaptchaSwitch = config('buildadmin.user_login_captcha');
-
         if ($this->request->isPost()) {
-            try {
-                $params = $this->request->only(['tab', 'email', 'mobile', 'username', 'password', 'keep', 'captcha', 'captchaId', 'captchaInfo', 'registerType']);
-
-                // 验证操作类型
-                if (!in_array($params['tab'] ?? '', ['login', 'register'])) {
-                    return $this->error(__('Unknown operation'));
-                }
-
-                // 数据验证
-                $validate = new UserValidate();
-                $validate->scene($params['tab'])->check($params);
-
-                if ($params['tab'] == 'login') {
-                    $res = $this->handleLogin($params, $userLoginCaptchaSwitch);
-                } else {
-                    $res = $this->handleRegister($params);
-                }
-
-                return $this->success(__('Login succeeded!'), [
-                    'userInfo'  => $res,
-                    'routePath' => '/user'
-                ]);
-
-            } catch (Throwable $e) {
-                // 统一错误处理
-                return $this->error($e->getMessage() ?: __('Check in failed, please try again or contact the website administrator~'));
-            }
+            return $this->handlePostLogin();
         }
 
         return $this->success('', [
-            'userLoginCaptchaSwitch'  => $userLoginCaptchaSwitch,
+            'userLoginCaptchaSwitch'  => config('buildadmin.user_login_captcha'),
             'accountVerificationType' => get_account_verification_type()
         ]);
     }
 
     /**
+     * 处理POST登录请求
+     */
+    private function handlePostLogin(): Response
+    {
+        try {
+            $params = $this->request->only(['tab', 'email', 'mobile', 'username', 'password', 'keep', 'captcha', 'captchaId', 'captchaInfo', 'registerType']);
+            
+            // 验证操作类型
+            if (!in_array($params['tab'] ?? '', ['login', 'register'])) {
+                return $this->error(__('Unknown operation'));
+            }
+
+            // 数据验证
+            $validate = new UserValidate();
+            $validate->scene($params['tab'])->check($params);
+
+            $res = $params['tab'] == 'login' 
+                ? $this->handleLogin($params) 
+                : $this->handleRegister($params);
+
+            return $this->success(__('Login succeeded!'), [
+                'userInfo'  => $res,
+                'routePath' => '/user'
+            ]);
+
+        } catch (Throwable $e) {
+            return $this->error($e->getMessage() ?: __('Check in failed, please try again or contact the website administrator~'));
+        }
+    }
+
+    /**
      * 处理登录逻辑
      * @param array $params
-     * @param bool $captchaSwitch
      * @return array
      * @throws Throwable
      */
-    private function handleLogin(array $params, bool $captchaSwitch): array
+    private function handleLogin(array $params): array
     {
+        $captchaSwitch = config('buildadmin.user_login_captcha');
+        
         // 验证码验证
         if ($captchaSwitch) {
             $captchaObj = new ClickCaptcha();
@@ -140,7 +144,7 @@ class Index extends Frontend
         if ($this->request->isPost()) {
             $refreshToken = $this->request->post('refreshToken', '');
             
-            // 只销毁当前角色的refreshToken
+            // 销毁当前角色的refreshToken
             if ($refreshToken) {
                 try {
                     $payload = Token::verify((string)$refreshToken);
@@ -154,10 +158,6 @@ class Index extends Frontend
             
             // 执行用户角色注销
             Member::logout();
-            
-            // 记录多角色注销状态
-            $loginStatus = \support\member\MultiRoleManager::getLoginStatus();
-            Event::emit('log.authentication.user.logout.complete', $loginStatus);
             
             return $this->success();
         }

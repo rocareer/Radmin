@@ -81,21 +81,19 @@ class Cache implements TokenInterface
      * 验证凭证
      * By albert  2025/05/06 17:17:11
      * @param string $token
-     * @return bool|stdClass
+     * @return stdClass
      */
-    public function Verify(string $token): bool|stdClass
+    public function verify(string $token): stdClass
     {
         try {
             $tokenData = $this->decode($token);
             if (!$tokenData) {
-                throw new TokenException('凭证验证失败', StatusCode:: TOKEN_VERIFY_FAILED);
+                throw new TokenException('凭证验证失败', StatusCode::TOKEN_VERIFY_FAILED);
             }
             if ($this->expired($token, $tokenData)) {
-                throw new TokenExpirationException('凭证需续期', StatusCode::TOKEN_SHOULD_REFRESH, ['type' => 'should refresh']);
+                throw new TokenException('凭证需续期', StatusCode::TOKEN_SHOULD_REFRESH, ['type' => 'should refresh']);
             }
             return $tokenData;
-        } catch (TokenExpirationException $e) {
-            throw new TokenExpirationException('凭证需续期', StatusCode::TOKEN_SHOULD_REFRESH, ['type' => 'should refresh']);
         } catch (Throwable $e) {
             throw new TokenException($e->getMessage(), StatusCode::TOKEN_VERIFY_FAILED);
         }

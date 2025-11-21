@@ -26,12 +26,13 @@ class RoleIsolationMiddleWare implements MiddlewareInterface
     public function process(Request $request, callable $handler)
     {
         try {
-            // 1. 检测请求路径，确定角色
-            $role = $this->detectRoleByPath($request->path());
+            // 1. 获取已在RequestMiddleWare中设置的角色
+            $role = $request->role;
             
-            // 2. 设置请求角色
-            $request->role = $role;
-            RequestContext::set('role', $role);
+            // 2. 验证角色有效性
+            if (!$role || !in_array($role, ['admin', 'user'])) {
+                throw new UnauthorizedHttpException('无效的角色类型', StatusCode::ACCESS_DENIED);
+            }
             
             // 3. 初始化角色上下文
             $this->initializeRoleContext($role);
@@ -56,16 +57,7 @@ class RoleIsolationMiddleWare implements MiddlewareInterface
         }
     }
     
-    /**
-     * 根据请求路径检测角色
-     */
-    private function detectRoleByPath(string $path): string
-    {
-        if (str_starts_with($path, '/admin/')) {
-            return 'admin';
-        }
-        return 'user';
-    }
+
     
     /**
      * 初始化角色上下文
@@ -76,7 +68,6 @@ class RoleIsolationMiddleWare implements MiddlewareInterface
         $context = RequestContext::get('member_context');
         if (!$context) {
             $context = new Context();
-            RequestContext::set('member_context', $context);
         }
         
         // 切换到指定角色上下文
@@ -94,10 +85,10 @@ class RoleIsolationMiddleWare implements MiddlewareInterface
             
             if ($payload->role !== $expectedRole) {
                 // 检查是否是其他角色的Token，如果是，记录日志但不阻止访问
-                $activeRoles = MultiRoleManager::getActiveRoles();
+                $activeRoles = \support\member\RoleManager::getInstance()->getActiveRoles();
                 if (in_array($payload->role, $activeRoles)) {
                     // Token角色与请求路径不匹配，但属于活跃角色，记录日志
-                    Event::emit('member.role_consistency.mismatch', [
+                    \Webman\Event\Event::emit('member.role_consistency.mismatch', [
                         'token_role' => $payload->role,
                         'expected_role' => $expectedRole,
                         'request_path' => $request->path(),
@@ -133,9 +124,7 @@ class RoleIsolationMiddleWare implements MiddlewareInterface
             $context->saveRoleContext();
         }
         
-        // 清理请求上下文中的临时数据
-        RequestContext::set('member', null);
-        RequestContext::set('current_role', null);
+        // 成员信息清理由 RoleManager 统一处理
     }
     
     /**
@@ -143,11 +132,7 @@ class RoleIsolationMiddleWare implements MiddlewareInterface
      */
     public static function getActiveRoles(): array
     {
-        $context = RequestContext::get('member_context');
-        if ($context) {
-            return $context->getActiveRoles();
-        }
-        return [];
+        return \support\member\RoleManager::getInstance()->getActiveRoles();
     }
     
     /**
@@ -155,11 +140,6 @@ class RoleIsolationMiddleWare implements MiddlewareInterface
      */
     public static function forceClearRoleContext(string $role): bool
     {
-        $context = RequestContext::get('member_context');
-        if ($context && $context->hasRoleContext($role)) {
-            unset($context->roleContexts[$role]);
-            return true;
-        }
-        return false;
+        return \support\member\RoleManager::getInstance()->cleanupRoleContext($role);
     }
 }

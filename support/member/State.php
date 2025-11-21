@@ -42,7 +42,7 @@ class State
 
     public function __construct()
     {
-        $this->config = config('auth');
+        $this->config = config('roles.state', []);
     }
 
 
@@ -66,9 +66,6 @@ class State
         // 检查单点登录状态
         $this->checkSsoStatus();
         
-        // 检查扩展状态
-        $this->checkExtendStatus();
-        
         return true;
     }
     
@@ -78,7 +75,8 @@ class State
      */
     protected function checkSsoStatus(): void
     {
-        $ssoConfig = $this->config['login'][$this->role]['sso'] ?? false;
+        $roleConfig = config('roles.roles.' . $this->role, []);
+        $ssoConfig = $roleConfig['login']['sso'] ?? false;
         if ($ssoConfig) {
             // 单点登录模式下，检查是否在其他地方登录
             $cacheKey = $this->getStateCacheKey();
@@ -98,8 +96,11 @@ class State
      */
     protected function checkLoginFailures(): bool
     {
-        if ($this->memberModel->login_failure >= $this->config['login'][$this->role]['login_failure_retry']) {
-            $lockTime   = $this->config['login'][$this->role]['login_lock_time'];
+        $roleConfig = config('roles.roles.' . $this->role, []);
+        $maxRetry = $roleConfig['login']['max_retry'] ?? 10;
+        $lockTime = $roleConfig['login']['lock_time'] ?? 3600;
+        
+        if ($this->memberModel->login_failure >= $maxRetry) {
             $unlockTime = $this->memberModel->last_login_time + $lockTime;
 
             if (time() < $unlockTime) {
@@ -178,7 +179,8 @@ class State
     protected function recordLoginLog(bool $success): void
     {
         try {
-            Db::name($this->getLoginLogTable())->insert([
+            $tableName = $this->getLoginLogTableName();
+            Db::name($tableName)->insert([
                 'user_id'     => $this->memberModel->id,
                 'username'    => $this->memberModel->username,
                 'ip'          => request()->getRealIp(),
@@ -189,6 +191,14 @@ class State
         } catch (Throwable $e) {
             Log::error('记录登录日志失败：' . $e->getMessage());
         }
+    }
+
+    /**
+     * 获取登录日志表名
+     */
+    protected function getLoginLogTableName(): string
+    {
+        return $this->role . '_login_log';
     }
 
 
@@ -276,12 +286,5 @@ class State
         }
     }
 
-    /**
-     * 检查扩展状态
-     * @throws AuthException
-     */
-    protected function checkExtendStatus(): void
-    {
-        // 简化状态检查
-    }
+
 }

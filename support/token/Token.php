@@ -45,7 +45,7 @@ class Token extends Facade
     // 这里可以重写父类的方法，以确保使用实例方法
 
     /**
-     * __callStatic
+     * __callStatic（优化版本，使用单例模式）
      * @param $method
      * @param $params
      * @return   mixed
@@ -54,8 +54,11 @@ class Token extends Facade
      */
     public static function __callStatic($method, $params)
     {
-        // 每次调用时都创建一个新的 TokenManager 实例
-        $tokenService = new TokenManager();
+        // 使用单例模式，避免重复创建TokenManager实例
+        static $tokenService = null;
+        if ($tokenService === null) {
+            $tokenService = new TokenManager();
+        }
         return $tokenService->$method(...$params);
     }
 

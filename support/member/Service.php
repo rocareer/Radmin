@@ -95,33 +95,30 @@ abstract class Service
     }
 
     /**
-     * @return   void
+     * 用户信息初始化
      * @throws BusinessException
-     * Author:   albert <albert@rocareer.com>
-     * Time:     2025/6/4 13:35
      */
     public function initialization(): void
     {
         $this->initializeDependencies();
+        
+        // 如果用户信息已存在，直接返回
         if (!empty(RequestContext::get('member'))) {
-            //状态更新
-            $this->stateUpdateLogin('success');
             return;
         }
+        
         try {
-            //用户信息初始化
+            // 用户信息初始化
             $this->memberInitialization();
-            //用户信息扩展
+            
+            // 用户信息扩展
             $this->extendMemberInfo();
-            //用户状态检查
+            
+            // 用户状态检查
             $this->stateCheckStatus();
-            //缓存用户信息
-            //更新登录状态
-            $this->stateUpdateLogin('success');
-            RequestContext::set('member', $this->memberModel);
+            
         } catch (Exception $e) {
-            //状态更新
-            $this->stateUpdateLogin('failure');
+            Event::emit("state.updateLogin.failure", $this->memberModel);
             throw $e;
         }
     }
@@ -150,7 +147,6 @@ abstract class Service
 
     /**
      * 用户登录
-     * By albert  2025/05/06 17:37:22
      * @param array $credentials
      * @param bool  $keep
      * @return array
@@ -174,15 +170,12 @@ abstract class Service
                 throw new UnauthorizedHttpException('认证失败', StatusCode::NEED_LOGIN);
             }
             
-            // 设置用户信息并记录日志
+            // 设置用户信息
             $this->setMember($this->memberModel);
-            Event::emit("log.authentication.{$this->role}.login.success", $this->memberModel);
             
             return $this->memberModel->toArray();
             
         } catch (Throwable $e) {
-            // 记录失败日志
-            Event::emit("log.authentication.{$this->role}.login.failure", $this->memberModel ?? null);
             throw $e;
         }
     }
@@ -213,20 +206,15 @@ abstract class Service
         try {
             $currentToken = request()->token;
             
-            // 只销毁当前角色的Token，不影响其他角色
+            // 销毁当前角色的Token
             if (!empty($currentToken)) {
-                // 验证Token角色与当前角色一致
-                $payload = Token::verify($currentToken);
-                if ($payload->role === $this->role) {
-                    Token::destroy($currentToken);
-                } else {
-                    // Token角色不匹配，可能是其他角色的Token
-                    // 记录日志但不销毁，避免影响其他角色
-                    Event::emit("log.authentication.{$this->role}.logout.token_mismatch", [
-                        'current_role' => $this->role,
-                        'token_role' => $payload->role,
-                        'token' => $currentToken
-                    ]);
+                try {
+                    $payload = Token::verify($currentToken);
+                    if ($payload->role === $this->role) {
+                        Token::destroy($currentToken);
+                    }
+                } catch (\Throwable $e) {
+                    // Token验证失败，继续执行注销逻辑
                 }
             }
             
@@ -255,8 +243,7 @@ abstract class Service
             $context->clearRoleContext($this->role);
         }
         
-        // 清理请求上下文中的当前角色成员信息
-        RequestContext::set('member', null);
+        // 成员信息清理由 RoleManager 统一处理
         
         // 重置当前服务的成员信息
         $this->memberModel = null;
@@ -303,7 +290,20 @@ abstract class Service
             
             // 安全检查：确保payload存在且包含必要字段
             if (!isset($this->request->payload) || !isset($this->request->payload->sub)) {
-                throw new UnauthorizedHttpException('无效的Token payload', StatusCode::NEED_LOGIN);
+                // 如果没有payload，尝试从Token中获取
+                $token = $token ?? $this->request->token();
+                if (!$token) {
+                    throw new UnauthorizedHttpException('请先登录', StatusCode::NEED_LOGIN);
+                }
+                
+                // 验证Token并获取payload
+                $payload = \support\token\Token::verify($token);
+                if (!$payload || !isset($payload->sub)) {
+                    throw new UnauthorizedHttpException('无效的Token', StatusCode::NEED_LOGIN);
+                }
+                
+                // 设置payload到请求对象
+                $this->request->payload = $payload;
             }
             
             $userId = $this->request->payload->sub;
@@ -319,6 +319,8 @@ abstract class Service
             $this->setMember($member);
             $this->memberModel = $member;
             
+        } catch (\support\token\TokenExpiredException $e) {
+            throw new UnauthorizedHttpException('Token已过期', StatusCode::TOKEN_SHOULD_REFRESH);
         } catch (Throwable $e) {
             throw new UnauthorizedHttpException($e->getMessage(), StatusCode::NEED_LOGIN);
         }

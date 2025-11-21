@@ -44,7 +44,7 @@ abstract class Authenticator
      */
     public function __construct()
     {
-        $this->config = config('auth.login.' . $this->role);
+        $this->config = config('roles.roles.' . $this->role . '.login', []);
         $this->initializeDependencies();
     }
     

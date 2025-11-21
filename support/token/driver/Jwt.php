@@ -90,7 +90,7 @@ class Jwt implements TokenInterface
      * @return stdClass
      * @throws TokenException
      */
-    public function Verify(string $token): stdClass
+    public function verify(string $token): stdClass
     {
         return $this->jwt->Verify($token);
     }

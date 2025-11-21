@@ -94,11 +94,16 @@ class TokenManager
      */
     protected function getDriverConfig(string $driver, ?string $name = null, $default = null): array|string
     {
-        if ($config = $this->config) {
-            return Arr::get($config, $name, $default);
+        if (empty($this->config)) {
+            throw new InvalidArgumentException("Driver [$driver] not found.");
         }
-
-        throw new InvalidArgumentException("Driver [$driver] not found.");
+        
+        // 优化配置获取逻辑
+        if ($name === null) {
+            return $this->config;
+        }
+        
+        return Arr::get($this->config, $name, $default);
     }
 
     /**
@@ -164,13 +169,9 @@ class TokenManager
     public function driver(?string $name = null): TokenInterface
     {
         $name = $name ?: $this->defaultDriver;
-
-        if (!isset($this->drivers[$name])) {
-            throw new RuntimeException("Token driver [{$name}] not found.");
-        }
-
-        $config = $this->config['drivers'][$name] ?? [];
-        return $this->drivers[$name]($config);
+        
+        // 直接使用 getDriver 方法，避免重复逻辑
+        return $this->getDriver($name);
     }
 
     /**
@@ -187,7 +188,7 @@ class TokenManager
     }
 
     /**
-     * 验证
+     * 验证（优化版本，支持缓存）
      * @param string $token
      * @return   stdClass
      * Author:   albert <albert@rocareer.com>
@@ -195,7 +196,21 @@ class TokenManager
      */
     public function verify(string $token): stdClass
     {
-        return $this->getDriver()->verify($token);
+        // 检查缓存中是否有已验证的Token
+        $cache = TokenCache::getInstance();
+        $cachedPayload = $cache->getVerifiedPayload($token);
+        
+        if ($cachedPayload !== null) {
+            return $cachedPayload;
+        }
+        
+        // 缓存中没有，进行实际验证
+        $payload = $this->getDriver()->verify($token);
+        
+        // 缓存验证结果
+        $cache->cacheVerifiedPayload($token, $payload);
+        
+        return $payload;
     }
 
     /**

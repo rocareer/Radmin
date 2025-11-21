@@ -40,10 +40,10 @@ class Frontend extends Api
     {
         parent::initialize();
 
-
         $needLogin = !action_in_arr($this->noNeedLogin);
 
         if ($needLogin) {
+            // 需要登录的方法：强制初始化并验证
             Member::initialization();
             $this->member = RequestContext::get('member');
             if (empty($this->member)) {
@@ -59,5 +59,22 @@ class Frontend extends Api
 
         // 会员验权和登录标签位
         // Event::trigger('frontendInit', $this->auth);
+    }
+
+    /**
+     * 尝试初始化用户信息（用于免登录方法中检测用户状态）
+     * @return bool 是否成功初始化用户信息
+     */
+    protected function tryInitializeMember(): bool
+    {
+        try {
+            Member::initialization();
+            $this->member = RequestContext::get('member');
+            return !empty($this->member);
+        } catch (\Throwable $e) {
+            // 初始化失败（如Token无效），保持member为空
+            $this->member = null;
+            return false;
+        }
     }
 }

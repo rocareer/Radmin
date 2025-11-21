@@ -133,11 +133,8 @@ class Context
         // 切换到新角色
         $this->role($newRole);
         
-        // 更新请求上下文中的角色
-        RequestContext::set('role', $newRole);
-        
         // 记录角色切换日志
-        Event::emit('member.context.role_switched', [
+        \Webman\Event\Event::emit('member.context.role_switched', [
             'from_role' => $this->role,
             'to_role' => $newRole,
             'active_roles' => $this->getActiveRoles()
@@ -149,9 +146,8 @@ class Context
      */
     public function clearRoleContext(string $role): void
     {
-        if (isset($this->roleContexts[$role])) {
-            unset($this->roleContexts[$role]);
-        }
+        // 使用 RoleManager 统一清理
+        \support\member\RoleManager::getInstance()->cleanupRoleContext($role);
         
         // 如果当前角色是被清除的角色，重置当前上下文
         if ($this->role === $role) {
@@ -164,6 +160,12 @@ class Context
      */
     public function clearAllRoleContexts(): void
     {
+        // 清理所有活跃角色
+        $activeRoles = $this->getActiveRoles();
+        foreach ($activeRoles as $role) {
+            \support\member\RoleManager::getInstance()->cleanupRoleContext($role);
+        }
+        
         $this->roleContexts = [];
         $this->clear();
     }
@@ -190,7 +192,7 @@ class Context
      */
     public function getActiveRoles(): array
     {
-        return array_keys($this->roleContexts);
+        return \support\member\RoleManager::getInstance()->getActiveRoles();
     }
     
     /**
@@ -198,6 +200,6 @@ class Context
      */
     public function hasRoleContext(string $role): bool
     {
-        return isset($this->roleContexts[$role]);
+        return \support\member\RoleManager::getInstance()->isRoleActive($role);
     }
 }

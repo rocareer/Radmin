@@ -130,8 +130,11 @@ abstract class Model extends ThinkModel implements InterfaceModel
         }
 
         // 检查登录失败次数
-        $maxFailures = config('auth.max_login_failures', 10);
-        $lockTime    = config('auth.login_lock_time', 900);
+        $role = request()->role;
+        $roleConfig = config('roles.roles.' . $role, []);
+        $loginConfig = $roleConfig['login'] ?? [];
+        $maxFailures = $loginConfig['max_retry'] ?? 10;
+        $lockTime    = $loginConfig['lock_time'] ?? 900;
 
         if (($this->login_failure ?? 0) >= $maxFailures) {
             $lastLoginTime = $this->last_login_time ?? 0;

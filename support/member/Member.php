@@ -35,7 +35,7 @@ class Member extends Facade
      */
     public static function setCurrentRole($role): mixed
     {
-        RequestContext::set('role', $role);
+        \support\member\RoleManager::getInstance()->setCurrentRole($role);
         return static::instance();
     }
 

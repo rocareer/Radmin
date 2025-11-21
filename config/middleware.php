@@ -15,36 +15,33 @@ use app\middleware\AdminSecurity;
 use app\middleware\AuthMiddleware;
 use app\middleware\RequestContextMiddleWare;
 use app\middleware\RequestMiddleWare;
-use app\middleware\RoleIsolationMiddleWare;
+use app\middleware\RoleAuthMiddleware;
 
 return [
     ''      => [
-        // 全局跨域
+        // 1. 全局跨域处理
         AccessControlMiddleWare::class,
-        // 请求预处理
+        // 2. 请求预处理（角色检测、Token提取）
         RequestMiddleWare::class,
-        // 上下文初始化
+        // 3. 请求上下文初始化
         RequestContextMiddleWare::class,
-        // 角色隔离
-        RoleIsolationMiddleWare::class,
-        // 鉴权
-        AuthMiddleware::class,
-        // 请求清理（确保在最后执行）
+        // 4. 统一角色鉴权（合并RoleIsolationMiddleWare和AuthMiddleware功能）
+        RoleAuthMiddleware::class,
+        // 5. 请求清理（确保在最后执行）
         \app\middleware\RequestCleanupMiddleWare::class,
 
     ],
     'api'   => [
-
+        // API专用中间件
     ],
     'admin' => [
-
         // 管理员操作日志
         AdminLog::class,
         // 数据安全
         AdminSecurity::class,
     ],
     'user'  => [
-
+        // 用户专用中间件
     ],
 
 ];

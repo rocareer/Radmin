@@ -38,7 +38,7 @@ class Request extends \Webman\Http\Request
     }
 
     /**
-     * 获取Token
+     * 获取Token（优化版本，避免重复提取）
      * @return      string|null
      * @throws      Exception
      * Author:   albert <albert@rocareer.com>
@@ -46,7 +46,21 @@ class Request extends \Webman\Http\Request
      */
     public function token(): ?string
     {
+        // 如果已经提取过token，直接返回缓存值
+        if ($this->token !== null) {
+            return $this->token;
+        }
+        
         $this->token = getTokenFromRequest($this);
+        
+        // 记录token提取日志
+        if ($this->token) {
+            \Webman\Event\Event::emit('request.token_extracted', [
+                'token_length' => strlen($this->token),
+                'request_path' => $this->path()
+            ]);
+        }
+        
         return $this->token;
     }
 
@@ -64,29 +78,25 @@ class Request extends \Webman\Http\Request
             return $this->role;
         }
         
-        $this->role = $role ?? $this->input('x-role') ?? $this->app;
-        
-        // 如果仍然没有角色，尝试从请求上下文中获取
-        if (!$this->role) {
-            $this->role = RequestContext::get('role');
-        }
-        
-        // 如果还是没有角色，根据路径自动识别（作为最后的手段）
-        if (!$this->role) {
-            $path = $this->path();
-            if (str_starts_with($path, '/admin/')) {
-                $this->role = 'admin';
-            } elseif (str_starts_with($path, '/user/') || str_starts_with($path, '/api/')) {
-                $this->role = 'user';
-            } else {
-                $this->role = 'user'; // 默认用户角色
+        // 优先使用传入的角色参数
+        if ($role) {
+            $this->role = $role;
+        } else {
+            // 使用角色管理器检测角色
+            try {
+                $roleManager = \support\member\RoleManager::getInstance();
+                $this->role = $roleManager->detectRoleByRequest($this);
+            } catch (\Throwable $e) {
+                // 降级处理：使用默认角色
+                $this->role = config('roles.default', 'guest');
             }
         }
         
-        // 只在角色发生变化时更新上下文
-        if ($this->role !== RequestContext::get('role')) {
-            RequestContext::set('role', $this->role);
-        }
+        // 记录角色获取日志
+        \Webman\Event\Event::emit('request.role_retrieved', [
+            'role' => $this->role,
+            'request_path' => $this->path()
+        ]);
         
         return $this->role;
     }

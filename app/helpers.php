@@ -187,7 +187,7 @@ if (!function_exists('getDbPrefix')) {
      * Author:   albert <albert@rocareer.com>
      * Time:     2025/5/17 02:34
      */
-    function getDbPrefix()
+    function getDbPrefix(): mixed
     {
         return env('MYSQL_PREFIX') ?? config('think-orm.connections.mysql.prefix');
     }
@@ -249,7 +249,7 @@ if (!function_exists('shouldExclude')) {
     function shouldExclude(?string $path = null): bool
     {
         $path          = $path ?? request()->path();
-        $excludeRoutes = config('auth.exclude', []);
+        $excludeRoutes = config('roles.exclude', []);
 
         foreach ($excludeRoutes as $route) {
             if (strpos($route, '*') !== false) {
@@ -273,6 +273,8 @@ if (!function_exists('getEncryptedToken')) {
      * 获取加密后的token
      * By albert  2025/05/06 17:32:42
      * @param string $token
+     * @param string $algo
+     * @param string $key
      * @return string
      */
     function getEncryptedToken(string $token, $algo = 'sha256', $key = 'rocareer'): string
@@ -282,12 +284,12 @@ if (!function_exists('getEncryptedToken')) {
 }
 
 /**
- * 获取token
+ * 获取token - 统一认证头配置
  */
 if (!function_exists('getTokenFromRequest')) {
     /**
      * 从请求中获取token
-     * 统一使用标准 JWT Bearer Token 格式
+     * 统一前后台认证头配置：后台使用X-Token，前台使用Authorization
      * By albert  2025/05/06 17:30:58
      * @param null  $request
      * @param array $names
@@ -305,33 +307,68 @@ if (!function_exists('getTokenFromRequest')) {
         // 根据请求路径区分前后台Token
         $path = $request->path();
         
-        // 后台请求：优先从Authorization头获取
+        // 后台请求：优先从X-Token头获取
         if (str_starts_with($path, '/admin/')) {
-            $token = $request->header('Authorization');
-            if (!empty($token) && str_starts_with($token, 'Bearer ')) {
-                return extractBearerToken($token);
-            }
-            
-            // 后台备用Token头
-            $adminHeaders = config("auth.headers.admin", []);
-            foreach ($adminHeaders as $header) {
-                $token = $request->header($header);
-                if (!empty($token)) {
-                    return $token;
-                }
-            }
-            
-            return $request->input('batoken');
+            return getAdminToken($request);
         }
         
-        // 前台请求：优先从X-Token头获取
+        // 前台请求：优先从Authorization头获取
+        return getUserToken($request);
+    }
+
+
+    /**
+     * 获取后台Token
+     * By albert  2025/11/21 19:38:33
+     * @param $request
+     * @return string|null
+     */
+    function getAdminToken($request): ?string
+    {
+        // 1. 优先从X-Token头获取
         $token = $request->header('X-Token');
         if (!empty($token)) {
             return $token;
         }
         
-        // 前台备用Token头
-        $userHeaders = config("auth.headers.user", []);
+        // 2. 从配置的后台Token头获取
+        $adminHeaders = config("roles.roles.admin.headers", ['X-Admin-Token', 'Admin-Token']);
+        foreach ($adminHeaders as $header) {
+            $token = $request->header($header);
+            if (!empty($token)) {
+                return $token;
+            }
+        }
+        
+        // 3. 从配置的后台Token参数获取
+        $adminParams = config("roles.roles.admin.params", ['batoken', 'admin_token']);
+        foreach ($adminParams as $param) {
+            $token = $request->input($param);
+            if (!empty($token)) {
+                return $token;
+            }
+        }
+        
+        return null;
+    }
+
+
+    /**
+     * 获取前台Token
+     * By albert  2025/11/21 19:38:19
+     * @param $request
+     * @return string|null
+     */
+    function getUserToken($request): ?string
+    {
+        // 1. 优先从Authorization头获取Bearer Token
+        $token = $request->header('Authorization');
+        if (!empty($token) && str_starts_with($token, 'Bearer ')) {
+            return extractBearerToken($token);
+        }
+        
+        // 2. 从配置的前台Token头获取
+        $userHeaders = config("roles.roles.user.headers", ['User-Token', 'X-User-Token']);
         foreach ($userHeaders as $header) {
             $token = $request->header($header);
             if (!empty($token)) {
@@ -339,7 +376,16 @@ if (!function_exists('getTokenFromRequest')) {
             }
         }
         
-        return $request->input('api-token');
+        // 3. 从配置的前台Token参数获取
+        $userParams = config("roles.roles.user.params", ['api-token', 'user_token']);
+        foreach ($userParams as $param) {
+            $token = $request->input($param);
+            if (!empty($token)) {
+                return $token;
+            }
+        }
+        
+        return null;
     }
 
     /**
@@ -387,7 +433,7 @@ if (!function_exists('get_ba_token')) {
 if (!function_exists('arrayToObject')) {
     /**
      * 将数组转换为对象
-     * By albert  2025/05/05 02:29:14
+     * By albert  2025/11/21 19:37:52
      * @param array $array
      * @return object
      */
@@ -505,12 +551,9 @@ if (!function_exists('clean_xss')) {
 
 
 if (!function_exists('get_controller_list')) {
+
     /**
-     * 获取控制器列表
-     * By albert  2025/04/14 18:48:39
-     *
      * @param string $app
-     *
      * @return array
      */
     function get_controller_list(string $app = 'admin'): array
