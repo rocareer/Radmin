@@ -184,4 +184,66 @@ class Index extends Frontend
         }
         throw new UnauthorizedHttpException('Unauthorized', __('Unauthorized'),StatusCode::UNAUTHORIZED);
     }
+
+    /**
+     * 获取用户个人信息
+     */
+    public function profile(): Response
+    {
+        try {
+            // 检查用户是否已登录
+            if (!$this->member->isLogin()) {
+                return $this->error(__('Please login first'), StatusCode::NEED_LOGIN);
+            }
+
+            // 获取当前用户信息
+            $userInfo = $this->member->getUserInfo();
+            
+            return $this->success('', [
+                'userInfo' => $userInfo
+            ]);
+            
+        } catch (Throwable $e) {
+            return $this->error($e->getMessage() ?: __('Failed to get user profile'));
+        }
+    }
+
+    /**
+     * 用户注册
+     */
+    public function register(): Response
+    {
+        try {
+            // 检查会员中心是否开启
+            if (!config('buildadmin.open_member_center')) {
+                return $this->error(__('Member center disabled'));
+            }
+
+            if (!$this->request->isPost()) {
+                return $this->error(__('Method not allowed'));
+            }
+
+            $params = $this->request->only(['username', 'password', 'mobile', 'email', 'captcha', 'registerType']);
+            
+            // 数据验证
+            $validate = new UserValidate();
+            $validate->scene('register')->check($params);
+
+            // 验证码验证
+            $captchaObj = new Captcha();
+            if (!$captchaObj->check($params['captcha'], $params[$params['registerType']] . 'user_register')) {
+                throw new \InvalidArgumentException(__('Please enter the correct verification code'));
+            }
+
+            // 执行注册逻辑
+            $result = $this->auth->register($params['username'], $params['password'], $params['mobile'], $params['email']);
+            
+            return $this->success(__('Registration successful'), [
+                'userInfo' => $result
+            ]);
+            
+        } catch (Throwable $e) {
+            return $this->error($e->getMessage() ?: __('Registration failed'));
+        }
+    }
 }

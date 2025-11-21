@@ -4,6 +4,8 @@
 namespace app\api\controller;
 
 use app\common\controller\Api;
+use app\exception\TokenException;
+use app\exception\TokenExpiredException;
 use Exception;
 use extend\ba\Captcha;
 use extend\ba\ClickCaptcha;
@@ -61,23 +63,43 @@ class Common extends Api
     }
 
     /**
+     * Token刷新接口（优化版本）
      * @throws BusinessException
      */
     public function refreshToken(): Response
     {
         $refreshToken = $this->request->post('refreshToken');
         if (empty($refreshToken)) {
-            throw new BusinessException('登录已超时:请重新登录 ', StatusCode::NEED_LOGIN, true);
+            throw new BusinessException('刷新Token不能为空', StatusCode::NEED_LOGIN, true);
         }
+
         try {
-            $payload  = Token::verify($refreshToken);
+            // 验证刷新Token
+            $payload = Token::verify($refreshToken);
+            
+            // 检查Token类型
+            if ($payload->type !== 'refresh') {
+                throw new BusinessException('无效的刷新Token类型', StatusCode::TOKEN_INVALID, true);
+            }
+            
+            // 执行Token刷新
             $newToken = Token::refresh($refreshToken);
-        } catch (Exception) {
-            throw new BusinessException('登录已超时:请重新登录 ', StatusCode::NEED_LOGIN, true);
+            
+            // 返回新Token信息
+            return $this->success('', [
+                'type'           => $payload->role . '-refresh',
+                'token'          => $newToken,
+                'expiresIn'      => config('token.expire', 7200),
+                'tokenType'      => 'Bearer',
+                'refreshIn'      => config('token.refresh_expire', 2592000),
+            ]);
+            
+        } catch (TokenExpiredException $e) {
+            throw new BusinessException('刷新Token已过期，请重新登录', StatusCode::TOKEN_EXPIRED, true);
+        } catch (TokenException $e) {
+            throw new BusinessException('Token刷新失败: ' . $e->getMessage(), StatusCode::TOKEN_REFRESH_FAILED, true);
+        } catch (Exception $e) {
+            throw new BusinessException('系统错误，请稍后重试', StatusCode::SERVER_ERROR, true);
         }
-        return $this->success('', [
-            'type'  => $payload->role.'-refresh',
-            'token' => $newToken
-        ]);
     }
 }

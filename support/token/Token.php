@@ -22,7 +22,7 @@ use think\Facade;
  * @method static stdClass decode(string $token)
  * @method static bool destroy(string $token)
  * @method static string refresh(string $token)
- * @method static bool shouldRefresh(string $token) 检查是否需要刷新
+ * @method static bool shouldRefresh(string $token, int $threshold = 300) 检查是否需要刷新
  * @method static string keep(array $payload) 设置keep
  * @method static int ttl(string $token, stdClass|null $payload) 获取token剩余时间
  * @method static bool expired(string $token, stdClass|null $payload = null) 获取token过期状态

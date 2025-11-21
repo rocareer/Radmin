@@ -3,9 +3,9 @@
 
 namespace app\common\library;
 
-use Illuminate\Support\Facades\Lang;
 use PHPMailer\PHPMailer\PHPMailer;
 use extend\ra\SystemUtil;
+use support\lang\Lang;
 use Throwable;
 
 /**

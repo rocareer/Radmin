@@ -5,8 +5,10 @@ namespace support\member;
 
 use app\exception\UnauthorizedHttpException;
 use Exception;
-use support\Request;
 use support\RequestContext;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\DbException;
+use think\db\exception\ModelNotFoundException;
 use Webman\Event\Event;
 use app\exception\BusinessException;
 
@@ -396,6 +398,7 @@ abstract class Service
     {
         $uid             = $uid ?? $this->memberModel->id;
         $this->children  = [];
+
         $originAuthRules = $this->getOriginAuthRules($uid);
         foreach ($originAuthRules as $rule) {
             $this->children[$rule['pid']][] = $rule;

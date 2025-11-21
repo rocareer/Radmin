@@ -261,7 +261,7 @@ class Config extends Backend
             $mail->isSMTP();
             $mail->addAddress($data['testMail']);
             $mail->isHTML();
-            $mail->setSubject(__('This is a test email') . '-' . get_sys_config('site_name'));
+            $mail->setSubject(__('This is a test email') . '-' . SystemUtil::get_sys_config('site_name'));
             $mail->Body = __('Congratulations, receiving this email means that your email service has been configured correctly');
             $mail->send();
         } catch (PHPMailerException) {

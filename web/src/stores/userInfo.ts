@@ -59,6 +59,25 @@ export const useUserInfo = defineStore('userInfo', {
         getToken(type: 'auth' | 'refresh' = 'auth') {
             return type === 'auth' ? this.token : this.refresh_token
         },
+        /**
+         * 检查Token是否即将过期（前端检查）
+         * @param threshold 提前刷新时间阈值（秒）
+         */
+        shouldRefreshToken(threshold: number = 300): boolean {
+            if (!this.token) return false
+            
+            try {
+                // 解析JWT Token获取过期时间
+                const payload = JSON.parse(atob(this.token.split('.')[1]))
+                const currentTime = Math.floor(Date.now() / 1000)
+                const timeRemaining = payload.exp - currentTime
+                
+                return timeRemaining > 0 && timeRemaining < threshold
+            } catch (error) {
+                console.error('Token解析失败:', error)
+                return false
+            }
+        },
         getGenderIcon() {
             let icon = { name: 'fa fa-transgender-alt', color: 'var(--el-text-color-secondary)' }
             switch (this.gender) {

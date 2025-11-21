@@ -8,7 +8,12 @@ use extend\ba\Tree;
 use extend\ra\SystemUtil;
 use support\orm\Db;
 use support\member\Member;
+use support\Response;
+use think\db\exception\DataNotFoundException;
+use think\db\exception\DbException;
+use think\db\exception\ModelNotFoundException;
 use Throwable;
+use Webman\Event\Event;
 
 class Index extends Frontend
 {
@@ -22,14 +27,14 @@ class Index extends Frontend
 
     /**
      * 初始化接口
-     * @return   \support\Response|null
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @return   Response|null
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      * Author:   albert <albert@rocareer.com>
      * Time:     2025/11/21 17:51
      */
-    public function index()
+    public function index(): ?Response
     {
         // 尝试初始化用户信息（仅在api/index/index中检测）
         $this->tryInitializeMember();
@@ -55,9 +60,9 @@ class Index extends Frontend
     /**
      * 获取用户菜单和规则
      * @return   array
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @throws DataNotFoundException
+     * @throws DbException
+     * @throws ModelNotFoundException
      * Author:   albert <albert@rocareer.com>
      * Time:     2025/11/21 17:51
      */
@@ -70,7 +75,6 @@ class Index extends Frontend
             try {
                 // 登录用户：获取用户菜单并过滤
                 $userMenus = Member::getMenus($this->member->id);
-                
                 foreach ($userMenus as $item) {
                     if ($item['type'] == 'menu_dir') {
                         $menus[] = $item;
@@ -80,7 +84,7 @@ class Index extends Frontend
                 }
             } catch (\Throwable $e) {
                 // 如果获取菜单失败，记录错误日志并返回空菜单
-                \Webman\Event\Event::emit('api.menu.get.error', [
+                Event::emit('api.menu.get.error', [
                     'uid' => $this->member->id,
                     'error' => $e->getMessage(),
                     'role' => $this->member->role ?? 'user'

@@ -12,7 +12,6 @@ use PHPMailer\PHPMailer\Exception as PHPMailerException;
 use think\facade\Validate;
 use Throwable;
 
-use function plugin\radmin\app\api\controller\get_sys_config;
 
 class Ems extends Frontend
 {

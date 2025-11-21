@@ -123,52 +123,62 @@ function createAxios<Data = any, T = ApiPromise<Data>>(axiosConfig: AxiosRequest
                             window.tokenRefreshing = true
                             return refreshToken()
                                 .then((res) => {
-                                    if (res.data.type == 'admin-refresh') {
-                                        adminInfo.setToken(res.data.token, 'auth')
-                                        response.headers.Authorization = `Bearer ${res.data.token}`
-                                        window.requests.forEach((cb) => cb(res.data.token, 'admin-refresh'))
-                                    } else if (res.data.type == 'user-refresh') {
-                                        userInfo.setToken(res.data.token, 'auth')
-                                        response.headers.Authorization = `Bearer ${res.data.token}`
-                                        window.requests.forEach((cb) => cb(res.data.token, 'user-refresh'))
+                                    const tokenType = res.data.type
+                                    const newToken = res.data.token
+                                    
+                                    // 根据角色类型设置Token
+                                    if (tokenType == 'admin-refresh') {
+                                        adminInfo.setToken(newToken, 'auth')
+                                        response.headers.Authorization = `Bearer ${newToken}`
+                                    } else if (tokenType == 'user-refresh') {
+                                        userInfo.setToken(newToken, 'auth')
+                                        response.headers.Authorization = `Bearer ${newToken}`
                                     }
+                                    
+                                    // 执行等待中的请求
+                                    window.requests.forEach((cb) => cb(newToken, tokenType))
                                     window.requests = []
+                                    
+                                    // 重新发起当前请求
                                     return Axios(response.config)
                                 })
                                 .catch((err) => {
-                                    if (isAdminApp()) {
+                                    // 刷新失败，清理Token并跳转登录
+                                    const isAdminAppFlag = isAdminApp()
+                                    
+                                    if (isAdminAppFlag) {
                                         adminInfo.removeToken()
                                         if (router.currentRoute.value.name != 'adminLogin') {
                                             router.push({ name: 'adminLogin' })
                                             return Promise.reject(err)
-                                        } else {
-                                            response.headers.Authorization = ''
-                                            window.requests.forEach((cb) => cb('', 'admin-refresh'))
-                                            window.requests = []
-                                            return Axios(response.config)
                                         }
                                     } else {
                                         userInfo.removeToken()
                                         if (router.currentRoute.value.name != 'userLogin') {
                                             router.push({ name: 'userLogin' })
                                             return Promise.reject(err)
-                                        } else {
-                                            response.headers.Authorization = ''
-                                            window.requests.forEach((cb) => cb('', 'user-refresh'))
-                                            window.requests = []
-                                            return Axios(response.config)
                                         }
                                     }
+                                    
+                                    // 清理等待中的请求
+                                    window.requests.forEach((cb) => cb('', 'refresh-failed'))
+                                    window.requests = []
+                                    
+                                    return Promise.reject(err)
                                 })
                                 .finally(() => {
                                     window.tokenRefreshing = false
                                 })
                         } else {
+                            // Token正在刷新中，将请求加入等待队列
                             return new Promise((resolve) => {
-                                // 用函数形式将 resolve 存入，等待刷新后再执行
                                 window.requests.push((token: string, type: string) => {
-                                    response.headers.Authorization = `Bearer ${token}`
-                                    resolve(Axios(response.config))
+                                    if (token && type !== 'refresh-failed') {
+                                        response.headers.Authorization = `Bearer ${token}`
+                                        resolve(Axios(response.config))
+                                    } else {
+                                        resolve(Promise.reject(new Error('Token refresh failed')))
+                                    }
                                 })
                             })
                         }

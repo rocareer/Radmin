@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
+import router from '../router'
+import { postLogout } from '/@/api/frontend/user'
 import { ADMIN_INFO } from '/@/stores/constant/cacheKey'
 import type { AdminInfo } from '/@/stores/interface'
+import { Local } from '/@/utils/storage'
 
 export const useAdminInfo = defineStore('adminInfo', {
     state: (): AdminInfo => {
@@ -48,8 +51,35 @@ export const useAdminInfo = defineStore('adminInfo', {
         getToken(type: 'auth' | 'refresh' = 'auth') {
             return type === 'auth' ? this.token : this.refresh_token
         },
+        /**
+         * 检查Token是否即将过期（前端检查）
+         * @param threshold 提前刷新时间阈值（秒）
+         */
+        shouldRefreshToken(threshold: number = 300): boolean {
+            if (!this.token) return false
+
+            try {
+                // 解析JWT Token获取过期时间
+                const payload = JSON.parse(atob(this.token.split('.')[1]))
+                const currentTime = Math.floor(Date.now() / 1000)
+                const timeRemaining = payload.exp - currentTime
+
+                return timeRemaining > 0 && timeRemaining < threshold
+            } catch (error) {
+                console.error('Token解析失败:', error)
+                return false
+            }
+        },
         setSuper(val: boolean) {
             this.super = val
+        },
+        logout() {
+            postLogout().then((res) => {
+                if (res.code == 1) {
+                    Local.remove(ADMIN_INFO)
+                    router.go(0)
+                }
+            })
         },
         /**
          * 检查是否登录

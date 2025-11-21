@@ -238,15 +238,39 @@ class TokenManager
     }
 
     /**
-     * 刷新
+     * 刷新Token（优化版本，支持缓存清理）
      * @param string $token
-     * @return   string
-     * Author:   albert <albert@rocareer.com>
-     * Time:     2025/5/11 11:24
+     * @return string
      */
     public function refresh(string $token): string
     {
-        return $this->getDriver()->refresh($token);
+        // 清除旧Token的缓存
+        $cache = TokenCache::getInstance();
+        $cache->clearTokenCache($token);
+        
+        // 执行Token刷新
+        $newToken = $this->getDriver()->refresh($token);
+        
+        return $newToken;
+    }
+
+    /**
+     * 检查Token是否需要刷新
+     * @param string $token
+     * @param int $threshold 提前刷新时间阈值（秒）
+     * @return bool
+     */
+    public function shouldRefresh(string $token, int $threshold = 300): bool
+    {
+        try {
+            $payload = $this->verify($token);
+            $ttl = $this->getDriver()->ttl($token, $payload);
+            
+            // 当剩余时间小于阈值时，建议刷新
+            return $ttl > 0 && $ttl < $threshold;
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /**

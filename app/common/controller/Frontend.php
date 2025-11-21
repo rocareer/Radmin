@@ -52,8 +52,10 @@ class Frontend extends Api
     }
 
     /**
-     * 强制要求用户认证
-     * @throws Throwable
+     * 强制要求登录
+     * By albert  2025/11/21 20:34:39
+     * @return void
+     * @throws UnauthorizedHttpException
      */
     protected function requireAuthentication(): void
     {
@@ -76,6 +78,7 @@ class Frontend extends Api
      */
     protected function tryInitializeMember(): bool
     {
+
         try {
             Member::initialization();
             $this->member = RequestContext::get('member');

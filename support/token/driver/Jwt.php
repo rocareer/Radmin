@@ -145,13 +145,43 @@ class Jwt implements TokenInterface
      */
     public function refresh(string $token): string
     {
-        $payload = $this->decode($token);
+        // 验证Token有效性
+        $payload = $this->verify($token);
+        
+        // 检查Token类型
         if ($payload->type !== 'refresh') {
             throw new TokenException('Token 不能刷新', StatusCode::TOKEN_REFRESH_FAILED);
         }
-        $payload=(array)$payload;
-        unset($payload['exp'],$payload['jti'],$payload['type'],$payload['iat']);
-        return $this->encode($payload);
+        
+        // 检查Token是否过期
+        if ($this->expired($token, $payload)) {
+            throw new TokenException('刷新Token已过期', StatusCode::TOKEN_EXPIRED);
+        }
+        
+        // 构建新的Token载荷
+        $newPayload = $this->buildRefreshPayload($payload);
+        
+        // 生成新的访问Token
+        return $this->encode($newPayload);
+    }
+
+    /**
+     * 构建刷新后的Token载荷
+     * @param stdClass $payload 原始载荷
+     * @return array
+     */
+    protected function buildRefreshPayload(stdClass $payload): array
+    {
+        $payloadArray = (array)$payload;
+        
+        // 移除时间相关字段，重新生成
+        unset($payloadArray['exp'], $payloadArray['jti'], $payloadArray['type'], $payloadArray['iat']);
+        
+        // 确保生成访问Token而非刷新Token
+        $payloadArray['type'] = 'access';
+        $payloadArray['keep'] = false;
+        
+        return $payloadArray;
     }
 
 

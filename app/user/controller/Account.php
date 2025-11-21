@@ -168,7 +168,7 @@ class Account extends Frontend
                 return $this->error(__('Old password error'));
             }
 
-            $model = $this->request->member;
+            $model = new User();
             $model->startTrans();
             try {
                 $validate = new AccountValidate();
