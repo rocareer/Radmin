@@ -15,19 +15,22 @@ use app\middleware\AdminSecurity;
 use app\middleware\AuthMiddleware;
 use app\middleware\RequestContextMiddleWare;
 use app\middleware\RequestMiddleWare;
+use app\middleware\RoleIsolationMiddleWare;
 
 return [
     ''      => [
         // 全局跨域
         AccessControlMiddleWare::class,
-
         // 请求预处理
         RequestMiddleWare::class,
-
-        AuthMiddleware::class,
-
+        // 上下文初始化
         RequestContextMiddleWare::class,
-
+        // 角色隔离
+        RoleIsolationMiddleWare::class,
+        // 鉴权
+        AuthMiddleware::class,
+        // 请求清理（确保在最后执行）
+        \app\middleware\RequestCleanupMiddleWare::class,
 
     ],
     'api'   => [

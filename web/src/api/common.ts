@@ -87,13 +87,10 @@ export function fileUpload(fd: FormData, params: anyObj = {}, forceLocal = false
  * @param background 背景色,如:rgb(255,255,255)
  */
 export function buildSuffixSvgUrl(suffix: string, background = '') {
-    const adminInfo = useAdminInfo()
     return (
         getUrl() +
         (isAdminApp() ? adminBuildSuffixSvgUrl : apiBuildSuffixSvgUrl) +
-        '?batoken=' +
-        adminInfo.getToken() +
-        '&suffix=' +
+        '?suffix=' +
         suffix +
         (background ? '&background=' + background : '') +
         '&server=1'
@@ -181,9 +178,8 @@ export function postClearCache(type: string) {
  * 构建命令执行窗口url
  */
 export function buildTerminalUrl(commandKey: string, uuid: string, extend: string) {
-    const adminInfo = useAdminInfo()
     return (
-        getUrl() + terminalUrl + '?command=' + commandKey + '&uuid=' + uuid + '&extend=' + extend + '&batoken=' + adminInfo.getToken() + '&server=1'
+        getUrl() + terminalUrl + '?command=' + commandKey + '&uuid=' + uuid + '&extend=' + extend + '&server=1'
     )
 }
 

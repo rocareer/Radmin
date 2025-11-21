@@ -60,10 +60,11 @@ class AdminService extends Service
 
     public function extendMemberInfo(): void
     {
-        if ($this->isSuperAdmin($this->memberModel->id)) {
+        parent::extendMemberInfo();
+        
+        if ($this->memberModel && $this->isSuperAdmin($this->memberModel->id)) {
             $this->memberModel->roles = ['super', 'admin'];
             $this->memberModel->super = true;
-
         }
     }
 

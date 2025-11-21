@@ -5,7 +5,6 @@ namespace support\member;
 
 use app\exception\UnauthorizedHttpException;
 use Exception;
-use support\Container;
 use support\Request;
 use support\RequestContext;
 use Webman\Event\Event;
@@ -16,31 +15,35 @@ use support\token\Token;
 use support\StatusCode;
 use Throwable;
 
-abstract class Service implements InterfaceService
+abstract class Service
 {
+    use DependencyInjectionTrait;
     //common
-    /**
-     * 登录器
-     * @var InterfaceAuthenticator|mixed|null
-     */
-    protected ?InterfaceAuthenticator $authenticator;
-    protected mixed                   $state;
-
     /**
      * 角色
      * @var string
      */
     protected string $role = 'guest';
 
+    protected mixed $request;
+
     /**
-     *
-     * @var mixed|null
+     * 用户模型实例
+     * @var mixed
      */
-    protected mixed $children = null;
-    //instance
-    protected ?object $memberModel = null;
-    protected mixed   $context;
-    protected mixed   $request;
+    protected mixed $memberModel = null;
+
+    /**
+     * 认证器实例
+     * @var mixed
+     */
+    protected mixed $authenticator = null;
+
+    /**
+     * 状态管理器实例
+     * @var mixed
+     */
+    protected mixed $state = null;
 
     /**
      * 默认配置
@@ -59,19 +62,24 @@ abstract class Service implements InterfaceService
     }
 
     /**
-     * 初始化依赖
+     * 初始化依赖组件
+     * @return void
      */
-    protected function initializeDependencies()
+    protected function initializeDependencies(): void
     {
-        // 使用反射检查属性是否已初始化
-        $reflection            = new \ReflectionClass($this);
-        $authenticatorProperty = $reflection->getProperty('authenticator');
-        $authenticatorProperty->setAccessible(true);
-
-        if (!$authenticatorProperty->isInitialized($this)) {
-            $this->authenticator = Container::get('member.authenticator');
-            $this->memberModel   = Container::get('member.model');
-            $this->state         = Container::get('member.state');
+        // 初始化用户模型
+        if (!$this->memberModel) {
+            $this->memberModel = $this->createModel($this->role);
+        }
+        
+        // 初始化认证器
+        if (!$this->authenticator) {
+            $this->authenticator = $this->createAuthenticator($this->role);
+        }
+        
+        // 初始化状态管理器
+        if (!$this->state) {
+            $this->state = $this->createState($this->role);
         }
     }
 
@@ -141,7 +149,7 @@ abstract class Service implements InterfaceService
 
 
     /**
-     * 登录 todo 参数修剪
+     * 用户登录
      * By albert  2025/05/06 17:37:22
      * @param array $credentials
      * @param bool  $keep
@@ -152,50 +160,106 @@ abstract class Service implements InterfaceService
     public function login(array $credentials, bool $keep = false): array
     {
         try {
-            // 验证必要参数
-            if (empty($credentials['username']) || empty($credentials['password'])) {
-                throw new \InvalidArgumentException('用户名和密码不能为空');
-            }
+            // 参数验证
+            $this->validateLoginCredentials($credentials);
             
+            // 设置保持登录状态
             $credentials['keep'] = $keep;
-            $this->memberModel   = $this->authenticator->authenticate($credentials);//设置用户信息
+            
+            // 执行认证
+            $this->memberModel = $this->authenticator->authenticate($credentials);
             
             // 验证认证结果
             if (empty($this->memberModel)) {
                 throw new UnauthorizedHttpException('认证失败', StatusCode::NEED_LOGIN);
             }
             
+            // 设置用户信息并记录日志
             $this->setMember($this->memberModel);
             Event::emit("log.authentication.{$this->role}.login.success", $this->memberModel);
             
             return $this->memberModel->toArray();
             
         } catch (Throwable $e) {
+            // 记录失败日志
             Event::emit("log.authentication.{$this->role}.login.failure", $this->memberModel ?? null);
             throw $e;
         }
     }
 
     /**
-     *
-     * By albert  2025/05/08 04:28:10
-     * @return
+     * 验证登录凭证
+     * @param array $credentials
+     * @throws \InvalidArgumentException
      */
-    public function logout(): void
+    private function validateLoginCredentials(array $credentials): void
+    {
+        if (empty($credentials['username'])) {
+            throw new \InvalidArgumentException('用户名不能为空');
+        }
+        
+        if (empty($credentials['password'])) {
+            throw new \InvalidArgumentException('密码不能为空');
+        }
+    }
+
+    /**
+     * 注销登录 - 支持多角色隔离注销
+     * By albert  2025/05/08 04:28:10
+     * @return bool
+     */
+    public function logout(): bool
     {
         try {
             $currentToken = request()->token;
+            
+            // 只销毁当前角色的Token，不影响其他角色
             if (!empty($currentToken)) {
-                Token::destroy($currentToken);
+                // 验证Token角色与当前角色一致
+                $payload = Token::verify($currentToken);
+                if ($payload->role === $this->role) {
+                    Token::destroy($currentToken);
+                } else {
+                    // Token角色不匹配，可能是其他角色的Token
+                    // 记录日志但不销毁，避免影响其他角色
+                    Event::emit("log.authentication.{$this->role}.logout.token_mismatch", [
+                        'current_role' => $this->role,
+                        'token_role' => $payload->role,
+                        'token' => $currentToken
+                    ]);
+                }
             }
             
-            Event::emit("log.authentication.{$this->role}.logout.success", $this->memberModel);
-            $this->resetMember();
+            // 清理当前角色的上下文数据
+            $this->cleanupCurrentRoleContext();
             
-        } catch (Exception $e) {
-            Event::emit("log.authentication.{$this->role}.logout.failure", $this->memberModel);
+            Event::emit("log.authentication.{$this->role}.logout.success", $this->memberModel);
+            
+            return true;
+            
+        } catch (\Throwable $e) {
+            Event::emit("log.authentication.{$this->role}.logout.failure", $this->memberModel ?? null);
             // 登出失败不抛出异常，避免影响用户体验
+            return false;
         }
+    }
+    
+    /**
+     * 清理当前角色的上下文数据
+     */
+    protected function cleanupCurrentRoleContext(): void
+    {
+        // 清理成员上下文中的当前角色数据
+        $context = RequestContext::get('member_context');
+        if ($context) {
+            $context->clearRoleContext($this->role);
+        }
+        
+        // 清理请求上下文中的当前角色成员信息
+        RequestContext::set('member', null);
+        
+        // 重置当前服务的成员信息
+        $this->memberModel = null;
     }
 
     public function register()

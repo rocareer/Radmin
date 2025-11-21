@@ -8,7 +8,6 @@
  */
 
 namespace support\member;
-use support\Container;
 use support\RequestContext;
 use think\Facade;
 
@@ -37,7 +36,7 @@ class Member extends Facade
     public static function setCurrentRole($role): mixed
     {
         RequestContext::set('role', $role);
-        return Container::get('member.service');
+        return static::instance();
     }
 
 
@@ -48,7 +47,13 @@ class Member extends Facade
      */
     protected static function getFacadeClass(): string
     {
-        return get_class(Container::get('member.service'));
+        $role = request()->role ?? RequestContext::get('role') ?? 'user';
+        
+        if ($role === 'admin') {
+            return 'support\member\admin\AdminService';
+        }
+        
+        return 'support\member\user\UserService';
     }
 }
 

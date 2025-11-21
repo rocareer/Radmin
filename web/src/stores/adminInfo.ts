@@ -13,6 +13,7 @@ export const useAdminInfo = defineStore('adminInfo', {
             token: '',
             refresh_token: '',
             super: false,
+            role: 'admin', // 明确标识角色类型
         }
     },
     actions: {
@@ -49,6 +50,18 @@ export const useAdminInfo = defineStore('adminInfo', {
         },
         setSuper(val: boolean) {
             this.super = val
+        },
+        /**
+         * 检查是否登录
+         */
+        isLogin() {
+            return this.id > 0 && this.token !== ''
+        },
+        /**
+         * 完全清除状态
+         */
+        clear() {
+            this.$reset()
         },
     },
     persist: {

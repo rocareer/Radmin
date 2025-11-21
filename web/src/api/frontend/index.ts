@@ -14,7 +14,7 @@ export const indexUrl = '/api/index/'
  * 1. 首次初始化携带了会员token时，一共只初始化一次
  * 2. 首次初始化未带会员token，将在登录后再初始化一次
  */
-export function initialize(callback?: (res: ApiResponse) => void, requiredLogin?: boolean) {
+export function initialize(callback?: (res: ApiResponse) => void) {
     debounce(() => {
         if (router.currentRoute.value.meta.initialize === false) return
 
@@ -27,10 +27,7 @@ export function initialize(callback?: (res: ApiResponse) => void, requiredLogin?
 
         createAxios({
             url: indexUrl + 'index',
-            method: 'get',
-            params: {
-                requiredLogin: requiredLogin ? 1 : 0,
-            },
+            method: 'get'
         }).then((res) => {
             handleFrontendRoute(res.data.rules, res.data.menus)
             siteConfig.dataFill(res.data.site)

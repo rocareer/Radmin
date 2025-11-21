@@ -3,7 +3,6 @@
 
 namespace support\member;
 
-use support\Container;
 use app\exception\BusinessException;
 use app\exception\UnauthorizedHttpException;
 
@@ -17,13 +16,12 @@ use think\db\exception\ModelNotFoundException;
 use Throwable;
 use Webman\Event\Event;
 
-use function DI\get;
-
 /**
  * 认证器抽象基类
  */
-abstract class Authenticator implements InterfaceAuthenticator
+abstract class Authenticator
 {
+    use DependencyInjectionTrait;
     /**
      * @var string 用户模型类型
      */
@@ -40,7 +38,6 @@ abstract class Authenticator implements InterfaceAuthenticator
     protected array $config = [];
 
     protected object|null $memberModel = null;
-    //instance
 
     /**
      * @throws BusinessException
@@ -48,16 +45,18 @@ abstract class Authenticator implements InterfaceAuthenticator
     public function __construct()
     {
         $this->config = config('auth.login.' . $this->role);
-        // 延迟初始化 memberModel
+        $this->initializeDependencies();
     }
-
+    
     /**
-     * 初始化依赖
+     * 初始化依赖组件
+     * @return void
      */
-    protected function initializeDependencies()
+    protected function initializeDependencies(): void
     {
-        if ($this->memberModel === null) {
-            $this->memberModel = Container::get('member.model');
+        // 初始化用户模型
+        if (!$this->memberModel) {
+            $this->memberModel = $this->createModel($this->role);
         }
     }
 
@@ -75,63 +74,40 @@ abstract class Authenticator implements InterfaceAuthenticator
         try {
             Db::startTrans();
 
-            // 1. 验证基本凭证
-            $this->validateCredentials();
-
-            // 2. 验证验证码
-            $this->validateCaptcha();
-
-
-            // 3. 验证用户
-            $this->findMember();
-
-            // 5. 检查用户状态
-            $this->checkMemberStatus();
-
-            // 6. 验证密码
-            $this->verifyPassword();
-
-            // 9. 附加最终输出信息
-            $this->extendMemberInfo();
-
-            // 7. 生成令牌
-            $this->generateTokens();
-
-            // 8. 更新登录状态
-            $this->updateLoginState('success');
-
-
-
-
-            // 9. 缓存用户状态
-            // $this->cacheState();
-
-
-            // // 9. 记录操作日志
-            // $this->recordOperationLog([
-            //     'action'      => 'login',
-            //     'description' => '用户登录',
-            //     'type'        => $this->role,
-            //     'data'        => [
-            //         'ip'   => request()->getRealIp(),
-            //         'keep' => !empty($credentials['keep'])
-            //     ]
-            // ]);
+            // 认证流程
+            $this->validateCredentials();      // 1. 验证基本凭证
+            $this->validateCaptcha();         // 2. 验证验证码
+            $this->findMember();               // 3. 查找用户
+            $this->checkMemberStatus();        // 4. 检查用户状态
+            $this->verifyPassword();           // 5. 验证密码
+            $this->generateTokens();           // 6. 生成令牌
+            $this->extendMemberInfo();         // 7. 扩展用户信息
+            $this->updateLoginState('success'); // 8. 更新登录状态
 
             Db::commit();
             return $this->memberModel;
 
         } catch (UnauthorizedHttpException $e) {
-            Db::rollback();
-            $this->updateLoginState('false');
-            Db::commit();
-            throw new UnauthorizedHttpException($e->getMessage(), StatusCode::AUTHENTICATION_FAILED);
+            $this->handleAuthenticationFailure($e);
+            throw $e;
         } catch (Throwable $e) {
+            $this->handleAuthenticationFailure($e);
+            Log::error('认证异常：' . $e->getMessage());
+            throw new UnauthorizedHttpException('系统错误，请稍后重试', StatusCode::AUTHENTICATION_FAILED, [], $e);
+        }
+    }
+
+    /**
+     * 处理认证失败
+     * @param Throwable $e
+     */
+    private function handleAuthenticationFailure(Throwable $e): void
+    {
+        try {
             Db::rollback();
             $this->updateLoginState('false');
-            Db::commit();
-            Log::error('认证异常：' . $e->getMessage());
-            throw new UnauthorizedHttpException($e->getMessage(), StatusCode::AUTHENTICATION_FAILED,[],$e);
+        } catch (Throwable $rollbackError) {
+            Log::error('认证失败回滚异常：' . $rollbackError->getMessage());
         }
     }
 
@@ -175,7 +151,6 @@ abstract class Authenticator implements InterfaceAuthenticator
      */
     protected function findMember(): void
     {
-        $this->initializeDependencies();
         $user = $this->memberModel->findByName($this->credentials['username']);
         if (!$user) {
             throw new UnauthorizedHttpException('用户不存在', StatusCode::USER_NOT_FOUND);
@@ -342,8 +317,8 @@ abstract class Authenticator implements InterfaceAuthenticator
             $this->memberModel->refresh_token = null;
             $this->memberModel->save();
 
-            // 清除缓存
-            // $this->stateManager->clearCache();
+            // 清除状态缓存
+            $this->clearStateCache();
 
             // 记录操作日志
             $this->recordOperationLog([
@@ -360,6 +335,25 @@ abstract class Authenticator implements InterfaceAuthenticator
             ]);
             throw new BusinessException('注销失败，请稍后重试', StatusCode::SERVER_ERROR);
         }
+    }
+    
+    /**
+     * 清除状态缓存
+     */
+    protected function clearStateCache(): void
+    {
+        $cacheKey = $this->getStateCacheKey();
+        cache($cacheKey, null);
+    }
+    
+    /**
+     * 获取状态缓存键
+     */
+    protected function getStateCacheKey(): string
+    {
+        $config = config('auth.state');
+        $prefix = $config['prefix'] ?? 'state-';
+        return $prefix . $this->role . '-' . $this->memberModel->id;
     }
 
 

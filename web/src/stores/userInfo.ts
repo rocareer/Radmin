@@ -24,6 +24,7 @@ export const useUserInfo = defineStore('userInfo', {
             motto: '',
             token: '',
             refresh_token: '',
+            role: 'user', // 明确标识角色类型
         }
     },
     actions: {
@@ -79,7 +80,13 @@ export const useUserInfo = defineStore('userInfo', {
             })
         },
         isLogin() {
-            return this.id && this.token
+            return this.id > 0 && this.token !== ''
+        },
+        /**
+         * 完全清除状态
+         */
+        clear() {
+            this.$reset()
         },
     },
     persist: {

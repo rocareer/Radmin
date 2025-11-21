@@ -11,9 +11,6 @@
  */
 
 use extend\ra\FileUtil;
-
-use support\Container;
-use support\Context;
 use support\RequestContext;
 use think\helper\Str;
 
@@ -36,42 +33,7 @@ if (!function_exists('env')) {
 }
 
 
-if (!function_exists('resolveByRole')) {
-    /**
-     * 根据角色解析服务
-     * @param        $container
-     * @param string $mapKey
-     * @return   mixed
-     * Author:   albert <albert@rocareer.com>
-     * Time:     2025/11/18 22:31
-     */
-    function resolveByRole($container, string $mapKey)
-    {
-        // Container::get('role');
-        $role = RequestContext::get('role');
-        $map = $container->get($mapKey);
 
-        if ($mapKey=='member.service.map'){
-            // var_dump('Service map:', $map); // 调试信息，查看服务映射
-        }
-
-        if (!isset($map[$role])) {
-            throw new RuntimeException("Role '$role' is not defined in $mapKey.");
-        }
-
-        $serviceClass = $map[$role];
-        if (class_exists($serviceClass)) {
-            $service = new $serviceClass();
-        } else {
-            $service = $container->get($serviceClass);
-        }
-        if ($mapKey=='member.service.map'){
-            // var_dump('Resolved service:', $service); // 调试信息，查看解析的服务
-        }
-        return $service;
-    }
-
-}
 
 if (!function_exists('var_export_short')) {
     /**
@@ -325,7 +287,7 @@ if (!function_exists('getEncryptedToken')) {
 if (!function_exists('getTokenFromRequest')) {
     /**
      * 从请求中获取token
-     * 新增 api-token 为前端下载等用
+     * 统一使用标准 JWT Bearer Token 格式
      * By albert  2025/05/06 17:30:58
      * @param null  $request
      * @param array $names
@@ -340,28 +302,44 @@ if (!function_exists('getTokenFromRequest')) {
 
         $request = $request ?? request();
 
-        // 从 Authorization 头获取 Bearer Token
-        $token = $request->header('Authorization');
-        if (!empty($token) && str_starts_with($token, 'Bearer ')) {
-            return extractBearerToken($token);
+        // 根据请求路径区分前后台Token
+        $path = $request->path();
+        
+        // 后台请求：优先从Authorization头获取
+        if (str_starts_with($path, '/admin/')) {
+            $token = $request->header('Authorization');
+            if (!empty($token) && str_starts_with($token, 'Bearer ')) {
+                return extractBearerToken($token);
+            }
+            
+            // 后台备用Token头
+            $adminHeaders = config("auth.headers.admin", []);
+            foreach ($adminHeaders as $header) {
+                $token = $request->header($header);
+                if (!empty($token)) {
+                    return $token;
+                }
+            }
+            
+            return $request->input('batoken');
         }
-        $type = RequestContext::get('role');
-        // 从配置的 headers 中获取 Token
-        $headers = config("auth.headers.{$type}", []);
-        foreach ($headers as $header) {
+        
+        // 前台请求：优先从X-Token头获取
+        $token = $request->header('X-Token');
+        if (!empty($token)) {
+            return $token;
+        }
+        
+        // 前台备用Token头
+        $userHeaders = config("auth.headers.user", []);
+        foreach ($userHeaders as $header) {
             $token = $request->header($header);
             if (!empty($token)) {
                 return $token;
             }
         }
-
-
-        /**
-         * api-token 给前端 下载等用
-         * 从 query 参数或 body 获取 Token
-         */
-
-        return $request->input('api-token') ?? $request->input('batoken');
+        
+        return $request->input('api-token');
     }
 
     /**

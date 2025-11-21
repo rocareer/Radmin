@@ -41,6 +41,7 @@ class Index extends Frontend
                     $rules[] = $item;
                 }
             }
+            var_dump(1);
         }
         else {
             //未登录用户

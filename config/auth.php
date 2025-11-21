@@ -53,38 +53,37 @@ return [
     'exclude' => [
         //
         '/install',
+        // 后台用户登录
+        '/admin/Index/login',
+        // 前台用户登录
+        '/user/Index/login',
         '/api/install/*',
-        // '/api/index/index',
         '/api/install/envBaseCheck',
         '/api/install/envNpmCheck',
-
+        //点击验证码
+        '/api/common/clickCaptcha',
+        // 检查点击验证码
+        '/api/common/checkClickCaptcha',
         // API免认证路径
-        '/api/common/checkClickCaptcha',    // 验证码
+
+        '/api/index/index',
         '/api/common/refreshToken',         // 刷新token
 
-        '/api/common/checkClickCaptcha',    // 验证码
-
         // 终端免验证
-        '/admin/ajax/terminal'
+        '/admin/ajax/terminal',
+
     ],
 
 
     'headers' => [
         'admin' => [
-            'Authorization',
-            'batoken',
-            'Batoken',
-            'ba-token',
-            'Ba-token',
+            'X-Token',
         ],
         'user'  => [
-            'Ba-user-token',
-            'ba-user-token',
-            'X-Token'
+            'Authorization',
         ],
-        'api'  => [
-            'Ba-user-token',
-            'ba-user-token'
+        'api'   => [
+            'Authorization',
         ]
     ],
 

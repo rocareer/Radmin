@@ -12,77 +12,103 @@
  * @license   http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
-use support\member\admin\AdminAuthenticator;
 use support\member\admin\AdminModel;
 use support\member\admin\AdminService;
-use support\member\admin\AdminState;
-use support\member\InterfaceAuthenticator;
-use support\member\InterfaceModel;
-use support\member\InterfaceService;
-use support\member\InterfaceState;
-use support\member\user\UserAuthenticator;
 use support\member\user\UserModel;
 use support\member\user\UserService;
-use support\member\user\UserState;
+use support\member\admin\AdminAuthenticator;
+use support\member\user\UserAuthenticator;
+use support\member\State;
 
 return [
-    // request
-
-    // member
-    'member.roles'             => [
-        'admin', 'user'
-    ],
-
-    // member map
-    'member.service.map'       => function ($container) {
-        return [
-            'admin' => AdminService::class,
-            'user'  => UserService::class,
-        ];
+    // 成员服务工厂
+    'member.service.factory' => function ($container) {
+        return new class($container) {
+            private $container;
+            
+            public function __construct($container)
+            {
+                $this->container = $container;
+            }
+            
+            /**
+             * 创建服务实例
+             */
+            public function createService(string $role): object
+            {
+                $serviceMap = [
+                    'admin' => AdminService::class,
+                    'user' => UserService::class,
+                ];
+                
+                $serviceClass = $serviceMap[$role] ?? UserService::class;
+                return $this->container->make($serviceClass);
+            }
+            
+            /**
+             * 根据请求上下文创建服务实例
+             */
+            public function createServiceFromRequest(): object
+            {
+                $role = request()->role ?? 'user';
+                return $this->createService($role);
+            }
+        };
     },
-    'member.state.map'         => function ($container) {
-        return [
-            'admin' => AdminState::class,
-            'user'  => UserState::class,
-        ];
+    
+    // 模型工厂
+    'member.model.factory' => function ($container) {
+        return new class {
+            /**
+             * 创建模型实例
+             */
+            public function createModel(string $role): object
+            {
+                $modelMap = [
+                    'admin' => AdminModel::class,
+                    'user' => UserModel::class,
+                ];
+                
+                $modelClass = $modelMap[$role] ?? UserModel::class;
+                return new $modelClass();
+            }
+        };
     },
-    'member.model.map'         => function ($container) {
-        return [
-            'admin' => AdminModel::class,
-            'user'  => UserModel::class,
-        ];
+    
+    // 认证器工厂
+    'member.authenticator.factory' => function ($container) {
+        return new class {
+            /**
+             * 创建认证器实例
+             */
+            public function createAuthenticator(string $role): object
+            {
+                $authenticatorMap = [
+                    'admin' => AdminAuthenticator::class,
+                    'user' => UserAuthenticator::class,
+                ];
+                
+                $authenticatorClass = $authenticatorMap[$role] ?? UserAuthenticator::class;
+                return new $authenticatorClass();
+            }
+        };
     },
-    'member.authenticator.map' => function ($container) {
-        return [
-            'admin' => AdminAuthenticator::class,
-            'user'  => UserAuthenticator::class,
-        ];
+    
+    // 状态管理器工厂
+    'member.state.factory' => function ($container) {
+        return new class {
+            /**
+             * 创建状态管理器实例
+             */
+            public function createState(string $role): object
+            {
+                return new State();
+            }
+        };
     },
-
-    // 别名
-    'member.service'           => function ($container) {
-        return $container->get(InterfaceService::class);
-    },
-    'member.model'             => function ($container) {
-        return $container->get(InterfaceModel::class);
-    },
-    'member.state'             => function ($container) {
-        return $container->get(InterfaceState::class);
-    },
-    'member.authenticator'     => function ($container) {
-        return $container->get(InterfaceAuthenticator::class);
-    },
-
-    InterfaceService::class       => function($container) {
-        return resolveByRole($container, 'member.service.map');
-    },
-    InterfaceState::class         => function($container) {
-        return resolveByRole($container, 'member.state.map');
-    },
-    InterfaceModel::class         => function($container) {
-        return resolveByRole($container, 'member.model.map');
-    },
-    InterfaceAuthenticator::class => function($container) {
-        return resolveByRole($container, 'member.authenticator.map');
+    
+    // 统一成员服务（保持向后兼容）
+    'member.service' => function ($container) {
+        return $container->get('member.service.factory')->createServiceFromRequest();
     },
 ];

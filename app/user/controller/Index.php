@@ -44,72 +44,40 @@ class Index extends Frontend
      */
     public function login(): Response
     {
-
-        $openMemberCenter =  config('buildadmin.open_member_center');
-        if (!$openMemberCenter) {
+        // 检查会员中心是否开启
+        if (!config('buildadmin.open_member_center')) {
             return $this->error(__('Member center disabled'));
         }
 
-        // 检查登录态
-        // if ($this->auth->isLogin()) {
-        //     return $this->success(__('You have already logged in. There is no need to log in again~'), [
-        //         'type' => $this->Member::LOGGED_IN
-        //     ], $this->Member::LOGIN_RESPONSE_CODE);
-        // }
-
-        $userLoginCaptchaSwitch =  config('buildadmin.user_login_captcha');
+        $userLoginCaptchaSwitch = config('buildadmin.user_login_captcha');
 
         if ($this->request->isPost()) {
-            $params = $this->request->only(['tab', 'email', 'mobile', 'username', 'password', 'keep', 'captcha', 'captchaId', 'captchaInfo', 'registerType']);
-
-            // 提前检查 tab ，然后将以 tab 值作为数据验证场景
-            if (!in_array($params['tab'] ?? '', ['login', 'register'])) {
-                return $this->error(__('Unknown operation'));
-            }
-
-            $validate = new UserValidate();
             try {
+                $params = $this->request->only(['tab', 'email', 'mobile', 'username', 'password', 'keep', 'captcha', 'captchaId', 'captchaInfo', 'registerType']);
+
+                // 验证操作类型
+                if (!in_array($params['tab'] ?? '', ['login', 'register'])) {
+                    return $this->error(__('Unknown operation'));
+                }
+
+                // 数据验证
+                $validate = new UserValidate();
                 $validate->scene($params['tab'])->check($params);
-            } catch (Throwable $e) {
-                return $this->error($e->getMessage());
-            }
 
-            if ($params['tab'] == 'login') {
-                if ($userLoginCaptchaSwitch) {
-                    $captchaObj = new ClickCaptcha();
-                    if (!$captchaObj->check($params['captchaId'], $params['captchaInfo'])) {
-                        return $this->error(__('Captcha error'));
-                    }
+                if ($params['tab'] == 'login') {
+                    $res = $this->handleLogin($params, $userLoginCaptchaSwitch);
+                } else {
+                    $res = $this->handleRegister($params);
                 }
-                $captchaSwitch =  config('buildadmin.user_login_captcha');
-                $credentials = [
-                    'username'      => $this->request->post('username'),
-                    'password'      => $this->request->post('password'),
-                    'captchaId'     => $this->request->post('captchaId'),
-                    'captchaInfo'   => $this->request->post('captchaInfo'),
-                    'captchaSwitch' => $captchaSwitch,
-                ];
 
-                $res = Member::login($credentials, !empty($params['keep']));
-
-
-            } elseif ($params['tab'] == 'register') {
-                $captchaObj = new Captcha();
-                if (!$captchaObj->check($params['captcha'], $params[$params['registerType']] . 'user_register')) {
-                    return $this->error(__('Please enter the correct verification code'));
-                }
-                $res = $this->auth->register($params['username'], $params['password'], $params['mobile'], $params['email']);
-            }
-
-            if ($res) {
                 return $this->success(__('Login succeeded!'), [
                     'userInfo'  => $res,
                     'routePath' => '/user'
                 ]);
-            } else {
 
-                $msg =  __('Check in failed, please try again or contact the website administrator~');
-                return $this->error($msg);
+            } catch (Throwable $e) {
+                // 统一错误处理
+                return $this->error($e->getMessage() ?: __('Check in failed, please try again or contact the website administrator~'));
             }
         }
 
@@ -120,14 +88,77 @@ class Index extends Frontend
     }
 
     /**
+     * 处理登录逻辑
+     * @param array $params
+     * @param bool $captchaSwitch
+     * @return array
+     * @throws Throwable
+     */
+    private function handleLogin(array $params, bool $captchaSwitch): array
+    {
+        // 验证码验证
+        if ($captchaSwitch) {
+            $captchaObj = new ClickCaptcha();
+            if (!$captchaObj->check($params['captchaId'], $params['captchaInfo'])) {
+                throw new \InvalidArgumentException(__('Captcha error'));
+            }
+        }
+
+        $credentials = [
+            'username'      => $params['username'],
+            'password'      => $params['password'],
+            'captchaId'     => $params['captchaId'] ?? '',
+            'captchaInfo'   => $params['captchaInfo'] ?? '',
+            'captchaSwitch' => $captchaSwitch,
+        ];
+
+        return Member::login($credentials, !empty($params['keep']));
+    }
+
+    /**
+     * 处理注册逻辑
+     * @param array $params
+     * @return mixed
+     * @throws Throwable
+     */
+    private function handleRegister(array $params)
+    {
+        $captchaObj = new Captcha();
+        if (!$captchaObj->check($params['captcha'], $params[$params['registerType']] . 'user_register')) {
+            throw new \InvalidArgumentException(__('Please enter the correct verification code'));
+        }
+
+        return $this->auth->register($params['username'], $params['password'], $params['mobile'], $params['email']);
+    }
+
+    /**
+     * 用户注销 - 支持多角色隔离注销
      * @throws UnauthorizedHttpException
      */
     public function logout(): Response
     {
         if ($this->request->isPost()) {
             $refreshToken = $this->request->post('refreshToken', '');
-            if ($refreshToken) Token::destroy((string)$refreshToken);
+            
+            // 只销毁当前角色的refreshToken
+            if ($refreshToken) {
+                try {
+                    $payload = Token::verify((string)$refreshToken);
+                    if ($payload->role === 'user') {
+                        Token::destroy((string)$refreshToken);
+                    }
+                } catch (\Throwable $e) {
+                    // Token验证失败，继续执行注销逻辑
+                }
+            }
+            
+            // 执行用户角色注销
             Member::logout();
+            
+            // 记录多角色注销状态
+            $loginStatus = \support\member\MultiRoleManager::getLoginStatus();
+            Event::emit('log.authentication.user.logout.complete', $loginStatus);
+            
             return $this->success();
         }
         throw new UnauthorizedHttpException('Unauthorized', __('Unauthorized'),StatusCode::UNAUTHORIZED);

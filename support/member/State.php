@@ -3,7 +3,6 @@
 
 namespace support\member;
 
-use support\Container;
 use app\exception\BusinessException;
 
 use support\Log;
@@ -14,10 +13,8 @@ use Throwable;
 /**
  * 基础状态管理器
  */
-class State implements InterfaceState
+class State
 {
-
-
     public bool $login = false;
 
     /**
@@ -42,25 +39,10 @@ class State implements InterfaceState
 
     //instance
     protected mixed $memberModel;
-    //instance
-    protected InterfaceService       $service;
-    protected InterfaceAuthenticator $authenticator;
-    private mixed                    $context;
 
     public function __construct()
     {
         $this->config = config('auth');
-        // 延迟初始化 memberModel
-    }
-
-    /**
-     * 初始化依赖
-     */
-    protected function initializeDependencies()
-    {
-        if ($this->memberModel === null) {
-            $this->memberModel = Container::get('member.model');
-        }
     }
 
 
@@ -72,14 +54,40 @@ class State implements InterfaceState
     public function checkStatus($member): bool
     {
         $this->memberModel = $member;
+        
+        // 检查账号状态
         if ($this->memberModel->status !== 'enable') {
             throw new BusinessException('账号已被禁用', StatusCode::USER_DISABLED, true);
         }
+        
         // 检查登录失败次数
         $this->checkLoginFailures();
+        
+        // 检查单点登录状态
+        $this->checkSsoStatus();
+        
         // 检查扩展状态
         $this->checkExtendStatus();
+        
         return true;
+    }
+    
+    /**
+     * 检查单点登录状态
+     * @throws BusinessException
+     */
+    protected function checkSsoStatus(): void
+    {
+        $ssoConfig = $this->config['login'][$this->role]['sso'] ?? false;
+        if ($ssoConfig) {
+            // 单点登录模式下，检查是否在其他地方登录
+            $cacheKey = $this->getStateCacheKey();
+            $stateData = cache($cacheKey);
+            
+            if ($stateData && isset($stateData['token']) && $stateData['token'] !== request()->token) {
+                throw new BusinessException('账号已在其他地方登录', StatusCode::USER_LOGGED_IN_ELSEWHERE, true);
+            }
+        }
     }
 
     /**
@@ -90,7 +98,6 @@ class State implements InterfaceState
      */
     protected function checkLoginFailures(): bool
     {
-        $this->initializeDependencies();
         if ($this->memberModel->login_failure >= $this->config['login'][$this->role]['login_failure_retry']) {
             $lockTime   = $this->config['login'][$this->role]['login_lock_time'];
             $unlockTime = $this->memberModel->last_login_time + $lockTime;
@@ -122,16 +129,23 @@ class State implements InterfaceState
 
             if ($success === 'state.updateLogin.success') {
                 $this->memberModel->login_failure = 0;
+                
+                // 登录成功时更新状态缓存
+                $this->updateStateCache();
+                
+                // 记录登录日志
+                $this->recordLoginLog(true);
             } else {
                 $this->memberModel->login_failure++;
+                
+                // 登录失败时记录日志
+                $this->recordLoginLog(false);
             }
 
             $this->memberModel->last_login_time = time();
             $this->memberModel->last_login_ip   = request()->getRealIp();
 
             $this->memberModel->save();
-
-            // 记录登录日志
 
             $this->memberModel->commit();
             return true;
@@ -140,6 +154,24 @@ class State implements InterfaceState
             Log::error('更新登录状态失败：' . $e->getMessage());
             return false;
         }
+    }
+    
+    /**
+     * 更新状态缓存
+     */
+    protected function updateStateCache(): void
+    {
+        $cacheKey = $this->getStateCacheKey();
+        $cacheTime = $this->config['state']['cache_time'] ?? 86400;
+        
+        $stateData = [
+            'user_id' => $this->memberModel->id,
+            'token' => request()->token,
+            'last_activity' => time(),
+            'role' => $this->role
+        ];
+        
+        cache($cacheKey, $stateData, $cacheTime);
     }
 
 
@@ -168,21 +200,42 @@ class State implements InterfaceState
     public function forceLogout(int $userId): bool
     {
         try {
-            $this->initializeDependencies();
             $user = $this->memberModel->find($userId);
             if (!$user) {
                 throw new BusinessException('用户不存在', StatusCode::USER_NOT_FOUND);
             }
 
+            // 清除状态缓存
+            $this->memberModel = $user;
+            $cacheKey = $this->getStateCacheKey();
+            cache($cacheKey, null);
+
+            // 清除刷新令牌
             $user->refresh_token = null;
-            // $user->save();
-            // $this->clearState();
+            $user->save();
 
             return true;
         } catch (BusinessException $e) {
             throw $e;
         } catch (Throwable) {
             throw new BusinessException('操作失败，请稍后重试', StatusCode::SERVER_ERROR);
+        }
+    }
+    
+    /**
+     * 清除指定角色的所有状态缓存
+     * @param string $role
+     * @return bool
+     */
+    public function clearRoleStates(string $role): bool
+    {
+        try {
+            $pattern = $this->config['state']['prefix'] . "{$role}-*";
+            // 这里需要根据具体的缓存驱动实现清除逻辑
+            // 例如使用 Redis 的 keys 命令或 scan 命令
+            return true;
+        } catch (Throwable) {
+            return false;
         }
     }
 
@@ -207,8 +260,8 @@ class State implements InterfaceState
      */
     protected function getStateCacheKey(): string
     {
-        $this->initializeDependencies();
-        return $this->cachePrefix . "{$this->memberModel->id}";
+        $this->initCachePrefix();
+        return $this->cachePrefix . "{$this->role}-{$this->memberModel->id}";
     }
 
     /**
@@ -218,9 +271,9 @@ class State implements InterfaceState
      */
     protected function initCachePrefix(): void
     {
-        $this->initializeDependencies();
-        $type              = strtolower(class_basename($this->memberModel));
-        $this->cachePrefix = $this->config['state']['prefix'] . "{$type}-";
+        if (empty($this->cachePrefix)) {
+            $this->cachePrefix = $this->config['state']['prefix'] ?? 'state-';
+        }
     }
 
     /**

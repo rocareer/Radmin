@@ -56,32 +56,33 @@ class Index extends Backend
     {
         // 检查登录态
         if (RequestContext::get('member')) {
-         return $this->success(__('You have already logged in. There is no need to log in again~'), [
+            return $this->success(__('You have already logged in. There is no need to log in again~'), [
                 'type' => 'logged in'
             ], 303);
         }
 
         $captchaSwitch = config('buildadmin.admin_login_captcha');
 
-        // 检查提交
         if ($this->request->isPost()) {
-
-            $credentials = [
-                'username'      => $this->request->post('username'),
-                'password'      => $this->request->post('password'),
-                'captchaId'     => $this->request->post('captchaId'),
-                'captchaInfo'   => $this->request->post('captchaInfo'),
-                'captchaSwitch' => $captchaSwitch,
-            ];
+            try {
+                $credentials = [
+                    'username'      => $this->request->post('username'),
+                    'password'      => $this->request->post('password'),
+                    'captchaId'     => $this->request->post('captchaId'),
+                    'captchaInfo'   => $this->request->post('captchaInfo'),
+                    'captchaSwitch' => $captchaSwitch,
+                ];
 
                 $res = Member::login($credentials, (bool)$this->request->post('keep'));
                 return $this->success(__('Login succeeded!'), [
                     'userInfo' => $res
                 ]);
 
+            } catch (Throwable $e) {
+                // 统一错误处理
                 $msg = $e->getMessage() ?: __('Incorrect user name or password!');
-                throw new BusinessException($e->getMessage(),0,$e);
-
+                return $this->error($msg);
+            }
         }
 
         return $this->success('', [

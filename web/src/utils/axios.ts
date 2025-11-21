@@ -88,12 +88,19 @@ function createAxios<Data = any, T = ApiPromise<Data>>(axiosConfig: AxiosRequest
                 }
             }
 
-            // 自动携带token
+            // 自动携带token - 区分前后台Token头
             if (config.headers) {
                 const token = adminInfo.getToken()
-                if (token) (config.headers as anyObj).batoken = token
                 const userToken = options.anotherToken || userInfo.getToken()
-                if (userToken) (config.headers as anyObj)['ba-user-token'] = userToken
+                
+                // 后台请求使用标准Authorization头
+                if (token && config.url?.includes('/admin/')) {
+                    (config.headers as anyObj).Authorization = `Bearer ${token}`
+                }
+                // 前台请求使用X-Token头
+                else if (userToken && !config.url?.includes('/admin/')) {
+                    (config.headers as anyObj)['X-Token'] = userToken
+                }
             }
 
             return config
@@ -118,11 +125,11 @@ function createAxios<Data = any, T = ApiPromise<Data>>(axiosConfig: AxiosRequest
                                 .then((res) => {
                                     if (res.data.type == 'admin-refresh') {
                                         adminInfo.setToken(res.data.token, 'auth')
-                                        response.headers.batoken = `${res.data.token}`
+                                        response.headers.Authorization = `Bearer ${res.data.token}`
                                         window.requests.forEach((cb) => cb(res.data.token, 'admin-refresh'))
                                     } else if (res.data.type == 'user-refresh') {
                                         userInfo.setToken(res.data.token, 'auth')
-                                        response.headers['ba-user-token'] = `${res.data.token}`
+                                        response.headers.Authorization = `Bearer ${res.data.token}`
                                         window.requests.forEach((cb) => cb(res.data.token, 'user-refresh'))
                                     }
                                     window.requests = []
@@ -135,7 +142,7 @@ function createAxios<Data = any, T = ApiPromise<Data>>(axiosConfig: AxiosRequest
                                             router.push({ name: 'adminLogin' })
                                             return Promise.reject(err)
                                         } else {
-                                            response.headers.batoken = ''
+                                            response.headers.Authorization = ''
                                             window.requests.forEach((cb) => cb('', 'admin-refresh'))
                                             window.requests = []
                                             return Axios(response.config)
@@ -146,7 +153,7 @@ function createAxios<Data = any, T = ApiPromise<Data>>(axiosConfig: AxiosRequest
                                             router.push({ name: 'userLogin' })
                                             return Promise.reject(err)
                                         } else {
-                                            response.headers['ba-user-token'] = ''
+                                            response.headers.Authorization = ''
                                             window.requests.forEach((cb) => cb('', 'user-refresh'))
                                             window.requests = []
                                             return Axios(response.config)
@@ -160,11 +167,7 @@ function createAxios<Data = any, T = ApiPromise<Data>>(axiosConfig: AxiosRequest
                             return new Promise((resolve) => {
                                 // 用函数形式将 resolve 存入，等待刷新后再执行
                                 window.requests.push((token: string, type: string) => {
-                                    if (type == 'admin-refresh') {
-                                        response.headers.batoken = `${token}`
-                                    } else {
-                                        response.headers['ba-user-token'] = `${token}`
-                                    }
+                                    response.headers.Authorization = `Bearer ${token}`
                                     resolve(Axios(response.config))
                                 })
                             })
@@ -330,11 +333,20 @@ function getPendingKey(config: AxiosRequestConfig) {
     let { data } = config
     const { url, method, params, headers } = config
     if (typeof data === 'string') data = JSON.parse(data) // response里面返回的config.data是个字符串对象
+    
+    // 从Authorization头中提取token用于请求去重
+    let token = ''
+    if (headers && (headers as anyObj).Authorization) {
+        const authHeader = (headers as anyObj).Authorization as string
+        if (authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7) // 去掉'Bearer '前缀
+        }
+    }
+    
     return [
         url,
         method,
-        headers && (headers as anyObj).batoken ? (headers as anyObj).batoken : '',
-        headers && (headers as anyObj)['ba-user-token'] ? (headers as anyObj)['ba-user-token'] : '',
+        token,
         JSON.stringify(params),
         JSON.stringify(data),
     ].join('&')

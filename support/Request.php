@@ -38,7 +38,7 @@ class Request extends \Webman\Http\Request
     }
 
     /**
-     *
+     * 获取Token
      * @return      string|null
      * @throws      Exception
      * Author:   albert <albert@rocareer.com>
@@ -51,7 +51,7 @@ class Request extends \Webman\Http\Request
     }
 
     /**
-     *
+     * 获取角色
      * @param string|null $role
      * @return   mixed|string|null
      * Author:   albert <albert@rocareer.com>
@@ -59,8 +59,35 @@ class Request extends \Webman\Http\Request
      */
     public function role(?string $role = null): mixed
     {
+        // 如果已经设置了角色，直接返回
+        if ($this->role) {
+            return $this->role;
+        }
+        
         $this->role = $role ?? $this->input('x-role') ?? $this->app;
-        RequestContext::set('role', $this->role);
+        
+        // 如果仍然没有角色，尝试从请求上下文中获取
+        if (!$this->role) {
+            $this->role = RequestContext::get('role');
+        }
+        
+        // 如果还是没有角色，根据路径自动识别（作为最后的手段）
+        if (!$this->role) {
+            $path = $this->path();
+            if (str_starts_with($path, '/admin/')) {
+                $this->role = 'admin';
+            } elseif (str_starts_with($path, '/user/') || str_starts_with($path, '/api/')) {
+                $this->role = 'user';
+            } else {
+                $this->role = 'user'; // 默认用户角色
+            }
+        }
+        
+        // 只在角色发生变化时更新上下文
+        if ($this->role !== RequestContext::get('role')) {
+            RequestContext::set('role', $this->role);
+        }
+        
         return $this->role;
     }
 

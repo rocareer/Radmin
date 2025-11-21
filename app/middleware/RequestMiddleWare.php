@@ -32,7 +32,11 @@ class RequestMiddleWare implements MiddlewareInterface
         //     Log::channel(config('app.request.log.channel'))->info('Request', $logContent);
         // }
 
-
+        // 获取角色
+        $request->role();
+        // 获取token
+        $request->token();
+        // 穿越洋葱
         return $handler($request);
     }
 
