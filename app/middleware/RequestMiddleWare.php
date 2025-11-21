@@ -8,6 +8,7 @@ namespace app\middleware;
 use Exception;
 use support\Request;
 use support\member\RoleManager;
+use Webman\Event\Event;
 
 class RequestMiddleWare implements MiddlewareInterface
 {
@@ -49,7 +50,7 @@ class RequestMiddleWare implements MiddlewareInterface
                     $request->role = $payload->role;
                     
                     // 记录Token角色检测日志
-                    \Webman\Event\Event::emit('request.role_detected', [
+                    Event::emit('request.role_detected', [
                         'role' => $request->role,
                         'request_path' => $request->path(),
                         'method' => $request->method(),
@@ -66,7 +67,7 @@ class RequestMiddleWare implements MiddlewareInterface
         $request->role = $roleManager->detectRoleByRequest($request);
         
         // 记录路径角色检测日志
-        \Webman\Event\Event::emit('request.role_detected', [
+        Event::emit('request.role_detected', [
             'role' => $request->role,
             'request_path' => $request->path(),
             'method' => $request->method(),

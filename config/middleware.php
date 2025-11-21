@@ -12,7 +12,7 @@
 use app\middleware\AccessControlMiddleWare;
 use app\middleware\AdminLog;
 use app\middleware\AdminSecurity;
-use app\middleware\AuthMiddleware;
+use app\middleware\RequestCleanupMiddleWare;
 use app\middleware\RequestContextMiddleWare;
 use app\middleware\RequestMiddleWare;
 use app\middleware\RoleAuthMiddleware;
@@ -28,7 +28,7 @@ return [
         // 4. 统一角色鉴权（合并RoleIsolationMiddleWare和AuthMiddleware功能）
         RoleAuthMiddleware::class,
         // 5. 请求清理（确保在最后执行）
-        \app\middleware\RequestCleanupMiddleWare::class,
+        RequestCleanupMiddleWare::class,
 
     ],
     'api'   => [

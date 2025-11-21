@@ -81,7 +81,7 @@ class RoleManager
     /**
      * 验证角色有效性
      */
-    protected function validateRole(string $role): string
+    public function validateRole(string $role): string
     {
         if (!isset($this->config['roles'][$role])) {
             throw new UnauthorizedHttpException("无效的角色类型: {$role}", StatusCode::ACCESS_DENIED);
