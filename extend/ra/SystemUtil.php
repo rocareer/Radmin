@@ -28,7 +28,8 @@ class SystemUtil
             if ($config) $config = $config['value'];
         } else {
             if ($group) {
-                $temp = configModel::cache('group' . $group, null, configModel::$cacheTag)->where('group', $group)->select()->toArray();
+                // 避免缓存干扰，直接查询数据库
+                $temp = configModel::where('group', $group)->order('weigh desc')->select()->toArray();
             } else {
                 $temp = configModel::cache('sys_config_all', null, configModel::$cacheTag)->order('weigh desc')->select()->toArray();
             }

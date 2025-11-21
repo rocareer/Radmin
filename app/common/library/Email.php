@@ -49,11 +49,13 @@ class Email extends PHPMailer
 
         $sysMailConfig    = SystemUtil::get_sys_config('', 'mail');
         $this->configured = true;
+        var_dump($sysMailConfig);
         foreach ($sysMailConfig as $item) {
             if (!$item) {
                 $this->configured = false;
             }
         }
+
         if ($this->configured) {
             $this->Host       = $sysMailConfig['smtp_server'];
             $this->SMTPAuth   = true;

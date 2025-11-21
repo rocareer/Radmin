@@ -35,7 +35,6 @@ class Index extends Frontend
     public function initialize():void
     {
         parent::initialize();
-
     }
 
     /**
@@ -44,8 +43,7 @@ class Index extends Frontend
      */
     public function login(): Response
     {
-        // 检查会员中心是否开启
-        if (!config('buildadmin.open_member_center')) {
+        if (!$this->isMemberCenterEnabled()) {
             return $this->error(__('Member center disabled'));
         }
 
@@ -148,12 +146,8 @@ class Index extends Frontend
      */
     private function handleRegister(array $params)
     {
-        $captchaObj = new Captcha();
-        if (!$captchaObj->check($params['captcha'], $params[$params['registerType']] . 'user_register')) {
-            throw new \InvalidArgumentException(__('Please enter the correct verification code'));
-        }
-
-        return $this->auth->register($params['username'], $params['password'], $params['mobile'], $params['email']);
+        $this->validateRegisterCaptcha($params);
+        return $this->performRegistration($params);
     }
 
     /**
@@ -209,41 +203,40 @@ class Index extends Frontend
     }
 
     /**
-     * 用户注册
+     * 检查会员中心是否开启
      */
-    public function register(): Response
+    private function isMemberCenterEnabled(): bool
     {
-        try {
-            // 检查会员中心是否开启
-            if (!config('buildadmin.open_member_center')) {
-                return $this->error(__('Member center disabled'));
-            }
+        return config('buildadmin.open_member_center');
+    }
 
-            if (!$this->request->isPost()) {
-                return $this->error(__('Method not allowed'));
-            }
-
-            $params = $this->request->only(['username', 'password', 'mobile', 'email', 'captcha', 'registerType']);
-            
-            // 数据验证
-            $validate = new UserValidate();
-            $validate->scene('register')->check($params);
-
-            // 验证码验证
-            $captchaObj = new Captcha();
-            if (!$captchaObj->check($params['captcha'], $params[$params['registerType']] . 'user_register')) {
-                throw new \InvalidArgumentException(__('Please enter the correct verification code'));
-            }
-
-            // 执行注册逻辑
-            $result = $this->auth->register($params['username'], $params['password'], $params['mobile'], $params['email']);
-            
-            return $this->success(__('Registration successful'), [
-                'userInfo' => $result
-            ]);
-            
-        } catch (Throwable $e) {
-            return $this->error($e->getMessage() ?: __('Registration failed'));
+    /**
+     * 验证注册验证码
+     * @param array $params
+     * @throws \InvalidArgumentException
+     */
+    private function validateRegisterCaptcha(array $params): void
+    {
+        $captchaObj = new Captcha();
+        $captchaKey = $params[$params['registerType']] . 'user_register';
+        if (!$captchaObj->check($params['captcha'], $captchaKey)) {
+            throw new \InvalidArgumentException(__('Please enter the correct verification code'));
         }
+    }
+
+    /**
+     * 执行注册操作
+     * @param array $params
+     * @return mixed
+     * @throws Throwable
+     */
+    private function performRegistration(array $params)
+    {
+        return Member::register([
+            'username' => $params['username'],
+            'password' => $params['password'],
+            'mobile'   => $params['mobile'],
+            'email'    => $params['email']
+        ]);
     }
 }

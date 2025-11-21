@@ -79,7 +79,7 @@ class AdminSecurity implements MiddlewareInterface
 
             foreach ($recycleData as $recycleDatum) {
                 $recycleDataArr[] = [
-                    'admin_id'    => $request->member->id,
+                    'admin_id'    => $request->member ? $request->member->id : 0,
                     'recycle_id'  => $recycle['id'],
                     'data'        => json_encode($recycleDatum, JSON_UNESCAPED_UNICODE),
                     'connection'  => $recycle['connection'],
@@ -144,7 +144,7 @@ class AdminSecurity implements MiddlewareInterface
                     }
 
                     $sensitiveDataLog[] = [
-                        'admin_id'     => $request->member->id,
+                        'admin_id'     => $request->member ? $request->member->id : 0,
                         'sensitive_id' => $sensitiveData['id'],
                         'connection'   => $sensitiveData['connection'],
                         'data_table'   => $sensitiveData['data_table'],

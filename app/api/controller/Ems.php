@@ -8,7 +8,9 @@ use app\common\library\Email;
 use app\common\model\User;
 use extend\ba\Captcha;
 use extend\ba\ClickCaptcha;
+use extend\ra\SystemUtil;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
+use support\StatusCode;
 use think\facade\Validate;
 use Throwable;
 
@@ -30,7 +32,7 @@ class Ems extends Frontend
      */
     public function send()
     {
-        $params = $this->request->post(['email', 'event', 'captchaId', 'captchaInfo']);
+        $params = $this->request->post();
         $mail   = new Email();
         if (!$mail->configured) {
             return $this->error(__('Mail sending service unavailable'));
@@ -76,22 +78,26 @@ class Ems extends Frontend
 
         // 通过邮箱验证账户
         if ($params['event'] == 'user_email_verify') {
-            if (!$this->auth->isLogin()) {
-                return $this->error(__('Please login first'));
+            if (!$this->member->isLogin()) {
+                return $this->error(__('Please login first'), StatusCode::NEED_LOGIN);
             }
-            if ($this->auth->email != $params['email']) {
+            
+            // 获取当前登录用户信息
+            $currentUser = $this->member->getUserInfo();
+            if (!$currentUser || $currentUser['email'] != $params['email']) {
                 return $this->error(__('Please use the account registration email to send the verification code'));
             }
+            
             // 验证账户密码
             $password = $this->request->post('password');
-            if ($this->auth->password != encrypt_password($password, $this->auth->salt)) {
+            if (!$this->member->checkPassword($password)) {
                 return $this->error(__('Password error'));
             }
         }
 
         // 生成一个验证码
         $code    = $captchaObj->create($params['email'] . $params['event']);
-        $subject = __($params['event']) . '-' . get_sys_config('site_name');
+        $subject = __($params['event']) . '-' . SystemUtil::get_sys_config('site_name');
         $body    = __('Your verification code is: %s', [$code]);
 
         try {

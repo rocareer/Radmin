@@ -184,6 +184,10 @@ class Config extends Backend
                     }
                 }
                 $result = $this->model->saveAll($configValue);
+                
+                // 强制更新系统配置缓存
+                $this->forceUpdateSystemConfigCache();
+                
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
@@ -268,5 +272,41 @@ class Config extends Backend
          return $this->error($mail->ErrorInfo);
         }
      return $this->success(__('Test mail sent successfully~'));
+    }
+
+    /**
+     * 强制更新系统配置缓存
+     * 确保配置保存后立即生效
+     */
+    private function forceUpdateSystemConfigCache(): void
+    {
+        try {
+            // 清理配置模型缓存标签
+            \support\cache\Cache::tag(ConfigModel::$cacheTag)->clear();
+            
+            // 重新加载所有配置到缓存
+            $allConfigs = $this->model->order('weigh desc')->select()->toArray();
+            
+            // 按分组缓存配置
+            $configGroups = [];
+            foreach ($allConfigs as $config) {
+                $configGroups[$config['group']][$config['name']] = $config['value'];
+                
+                // 缓存单个配置项（与SystemUtil::get_sys_config()保持一致）
+                \support\cache\Cache::tag(ConfigModel::$cacheTag)->set($config['name'], $config['value']);
+            }
+            
+            // 缓存分组配置（与SystemUtil::get_sys_config()保持一致）
+            foreach ($configGroups as $group => $configs) {
+                \support\cache\Cache::tag(ConfigModel::$cacheTag)->set('group' . $group, $configs);
+            }
+            
+            // 缓存完整配置
+            \support\cache\Cache::tag(ConfigModel::$cacheTag)->set('sys_config_all', $configGroups);
+            
+        } catch (\Throwable $e) {
+            // 缓存更新失败不影响主流程，记录日志即可
+            error_log('系统配置缓存更新失败: ' . $e->getMessage());
+        }
     }
 }
