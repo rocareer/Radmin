@@ -4,6 +4,7 @@
 /.idea
 /.vscode
 /.git
+/.codebuddy
 /public/assets
 /vendor
 *.log

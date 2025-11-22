@@ -38,7 +38,6 @@ class Index extends Frontend
     {
         // 尝试初始化用户信息（仅在api/index/index中检测）
         $this->tryInitializeMember();
-        
         // 检查是否需要登录
         $requiredLogin = $this->request->input('requiredLogin', false);
         if ($requiredLogin && empty($this->member)) {
@@ -70,15 +69,17 @@ class Index extends Frontend
     {
         $menus = [];
         $rules = [];
-
         if (!empty($this->member)) {
             try {
                 // 登录用户：获取用户菜单并过滤
+
                 $userMenus = Member::getMenus($this->member->id);
                 foreach ($userMenus as $item) {
-                    if ($item['type'] == 'menu_dir') {
+                    if (in_array($item['type'], ['menu_dir', 'menu'])) {
+                        // 菜单目录和菜单项都作为菜单返回
                         $menus[] = $item;
-                    } elseif ($item['type'] != 'menu') {
+                    } else {
+                        // 其他类型作为规则返回
                         $rules[] = $item;
                     }
                 }

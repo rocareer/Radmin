@@ -32,15 +32,17 @@ use extend\ra\SystemUtil;
 
 
 if (!function_exists('__')) {
+
     /**
-     * 语言翻译
+     * 翻译函数
+     * @author Albert <albert@rocareer.com>
+     * @time   2025/11/22 19:36
      *
-     * @param string $name 被翻译字符
-     * @param array  $vars 替换字符数组
-     * @param string $lang 翻译语言
+     * @param array  $vars
+     * @param string $lang
+     * @param string $name
      *
      * @return mixed
-     * @变更说明：保持原功能，仅替换Lang类引用
      */
     function __(string $name, array $vars = [], string $lang = ''): mixed
     {
@@ -62,6 +64,7 @@ if (!function_exists('filter')) {
      * @return string
      * @变更说明：无需修改，无框架依赖
      */
+
     function filter(string $string): string
     {
         $string = trim($string);

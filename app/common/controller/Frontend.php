@@ -44,7 +44,7 @@ class Frontend extends Api
 
         if ($needLogin) {
             // 需要登录的方法：强制初始化并验证
-            $this->requireAuthentication();
+            // $this->requireAuthentication();
         }
 
         // 会员验权和登录标签位
@@ -78,12 +78,12 @@ class Frontend extends Api
      */
     protected function tryInitializeMember(): bool
     {
-
         try {
             Member::initialization();
             $this->member = RequestContext::get('member');
             return !empty($this->member);
         } catch (\Throwable $e) {
+            var_dump($e->getMessage());
             // 初始化失败（如Token无效），保持member为空
             $this->member = null;
             return false;
