@@ -82,7 +82,13 @@ abstract class Authenticator
             $this->verifyPassword();           // 5. 验证密码
             $this->generateTokens();           // 6. 生成令牌
             $this->extendMemberInfo();         // 7. 扩展用户信息
-            $this->updateLoginState('success'); // 8. 更新登录状态
+            
+            // 登录成功事件
+            Event::emit("state.login_success", [
+                'member' => $this->memberModel,
+                'role' => $this->role,
+                'success' => true
+            ]);
 
             Db::commit();
             return $this->memberModel;
@@ -105,7 +111,13 @@ abstract class Authenticator
     {
         try {
             Db::rollback();
-            $this->updateLoginState('false');
+            
+            // 登录失败事件
+            Event::emit("state.login_failure", [
+                'member' => $this->memberModel,
+                'role' => $this->role,
+                'success' => false
+            ]);
         } catch (Throwable $rollbackError) {
             Log::error('认证失败回滚异常：' . $rollbackError->getMessage());
         }
@@ -221,14 +233,7 @@ abstract class Authenticator
         $this->memberModel->roles = [$this->role];
     }
 
-    /**
-     * 更新登录状态
-     * @param string $success
-     */
-    protected function updateLoginState(string $success): void
-    {
-        Event::emit("state.updateLogin.$success", $this->memberModel);
-    }
+
 
 
     /**
