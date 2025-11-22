@@ -504,8 +504,24 @@ abstract class Service
      */
     public function hasRole($role, $roles = null): bool
     {
-        $payloadRoles = $roles ?? request()->member->roles ?? [];
-        return in_array($role, $payloadRoles);
+        // 如果提供了角色数组，直接检查
+        if ($roles !== null) {
+            return in_array($role, (array)$roles);
+        }
+        
+        // 从当前成员模型中获取角色信息
+        if (!empty($this->memberModel) && isset($this->memberModel->roles)) {
+            return in_array($role, (array)$this->memberModel->roles);
+        }
+        
+        // 从请求上下文中获取角色信息
+        $member = request()->member ?? null;
+        if ($member && isset($member->roles)) {
+            return in_array($role, (array)$member->roles);
+        }
+        
+        // 默认返回当前服务角色的检查
+        return $role === $this->role;
     }
 
     /**

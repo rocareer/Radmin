@@ -339,7 +339,7 @@ class Group extends Backend
         }
 
         // 超管获取所有分组
-        if (Member::hasRole('super')) {
+        if (!Member::hasRole('super')) {
             $authGroups = Member::getAllAuthGroups($this->authMethod, $where);
             if (!$absoluteAuth) $authGroups = array_merge($this->adminGroups, $authGroups);
             $where[] = ['id', 'in', $authGroups];

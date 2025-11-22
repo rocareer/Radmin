@@ -68,18 +68,6 @@ class AdminService extends Service
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
     /**
      * 获取管理员所在分组的所有子级分组
      * @return array
