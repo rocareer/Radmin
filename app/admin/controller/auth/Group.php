@@ -66,8 +66,8 @@ class Group extends Backend
         parent::initialize();
         $this->model = new AdminGroup();
         $this->tree  = Tree::instance();
-        $isTree          = $this->request->input('isTree', true);
-        $this->initValue = $this->request->input("initValue", []);
+        $isTree          = $this->request->input('isTree/b', false);
+        $this->initValue = $this->request->input("initValue/a", []);
 
         $this->initValue = array_filter($this->initValue);
         $this->keyword   = $this->request->input("quickSearch", '');
@@ -322,6 +322,7 @@ class Group extends Backend
         $pk      = $this->model->getPk();
         $initKey = $this->request->input("initKey", $pk);
 
+
         // 下拉选择时只获取：拥有所有权限并且有额外权限的分组
         $absoluteAuth = $this->request->input('absoluteAuth', false);
 
@@ -332,11 +333,13 @@ class Group extends Backend
             }
         }
 
+
         if ($this->initValue) {
             $where[] = [$initKey, 'in', $this->initValue];
         }
 
-        if (!Member::hasRole('super')) {
+        // 超管获取所有分组
+        if (Member::hasRole('super')) {
             $authGroups = Member::getAllAuthGroups($this->authMethod, $where);
             if (!$absoluteAuth) $authGroups = array_merge($this->adminGroups, $authGroups);
             $where[] = ['id', 'in', $authGroups];
@@ -377,5 +380,6 @@ class Group extends Backend
             $this->error(__($this->authMethod == 'allAuth' ? 'You need to have all permissions of this group to operate this group~' : 'You need to have all the permissions of the group and have additional permissions before you can operate the group~'));
         }
     }
+
 
 }
