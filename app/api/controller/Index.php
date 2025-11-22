@@ -74,6 +74,7 @@ class Index extends Frontend
                 // 登录用户：获取用户菜单并过滤
 
                 $userMenus = Member::getMenus($this->member->id);
+
                 foreach ($userMenus as $item) {
                     if (in_array($item['type'], ['menu_dir', 'menu'])) {
                         // 菜单目录和菜单项都作为菜单返回

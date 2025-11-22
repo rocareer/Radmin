@@ -81,9 +81,11 @@ class Frontend extends Api
         try {
             Member::initialization();
             $this->member = RequestContext::get('member');
+
             return !empty($this->member);
         } catch (\Throwable $e) {
-            var_dump($e->getMessage());
+
+            throw $e;
             // 初始化失败（如Token无效），保持member为空
             $this->member = null;
             return false;

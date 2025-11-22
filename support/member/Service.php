@@ -11,6 +11,7 @@ use think\db\exception\DbException;
 use think\db\exception\ModelNotFoundException;
 use Webman\Event\Event;
 use app\exception\BusinessException;
+use app\exception\TokenException;
 
 use support\orm\Db;
 use support\token\Token;
@@ -48,6 +49,12 @@ abstract class Service
     protected mixed $state = null;
 
     /**
+     * 子节点
+     * @var mixed|null
+     */
+    protected mixed $children = null;
+
+    /**
      * 默认配置
      * @var array|string[]
      */
@@ -64,25 +71,15 @@ abstract class Service
     }
 
     /**
-     * 初始化依赖组件
+     * 初始化依赖组件（优化版）
      * @return void
      */
     protected function initializeDependencies(): void
     {
-        // 初始化用户模型
-        if (!$this->memberModel) {
-            $this->memberModel = $this->createModel($this->role);
-        }
-        
-        // 初始化认证器
-        if (!$this->authenticator) {
-            $this->authenticator = $this->createAuthenticator($this->role);
-        }
-        
-        // 初始化状态管理器
-        if (!$this->state) {
-            $this->state = $this->createState($this->role);
-        }
+        // 优化：减少重复初始化检查
+        $this->memberModel = $this->memberModel ?: $this->createModel($this->role);
+        $this->authenticator = $this->authenticator ?: $this->createAuthenticator($this->role);
+        $this->state = $this->state ?: $this->createState($this->role);
     }
 
 
@@ -424,7 +421,7 @@ abstract class Service
             $this->memberModel = $member;
             
         } catch (\support\token\TokenExpiredException $e) {
-            throw new UnauthorizedHttpException('Token已过期', StatusCode::TOKEN_SHOULD_REFRESH);
+            throw new TokenException('Token已过期', StatusCode::TOKEN_EXPIRED);
         } catch (Throwable $e) {
             throw new UnauthorizedHttpException($e->getMessage(), StatusCode::NEED_LOGIN);
         }
@@ -524,6 +521,7 @@ abstract class Service
         $this->children  = [];
 
         $originAuthRules = $this->getOriginAuthRules($uid);
+
         foreach ($originAuthRules as $rule) {
             $this->children[$rule['pid']][] = $rule;
         }
@@ -577,11 +575,12 @@ abstract class Service
      * @return array
      * @throws Throwable
      */
-    public function getRuleIds(?int $id = null): array
+    public function getRuleIds(?int $uid = null): array
     {
-        $id = $id ?? $this->memberModel->id;
+        $uid = $uid ?? $this->memberModel->id;
         // 用户的组别和规则ID
-        $groups = $this->getGroups($id);
+        $groups = $this->getGroups($uid);
+
         $ids    = [];
         foreach ($groups as $g) {
             $ids = array_merge($ids, explode(',', trim($g['rules'], ',')));

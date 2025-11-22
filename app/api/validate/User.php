@@ -15,11 +15,9 @@ class User extends Validate
         'registerType' => 'require|in:email,mobile',
         'email'        => 'email|unique:user|requireIf:registerType,email',
         'mobile'       => 'mobile|unique:user|requireIf:registerType,mobile',
-        // 注册邮箱或手机验证码
-        'captcha'      => 'require',
-        // 登录点选验证码
-        'captchaId'    => 'require',
-        'captchaInfo'  => 'require',
+        'captcha'      => 'require', // 注册验证码
+        'captchaId'    => 'require', // 登录验证码ID
+        'captchaInfo'  => 'require', // 登录验证码信息
     ];
 
     /**
@@ -27,18 +25,18 @@ class User extends Validate
      */
     protected $scene = [
         'register' => ['username', 'password', 'registerType', 'email', 'mobile', 'captcha'],
+        'login'    => ['username', 'password'], // 基础登录字段
     ];
 
     /**
-     * 登录验证场景
+     * 登录验证场景（动态添加验证码字段）
      */
     public function sceneLogin(): User
     {
         $fields = ['username', 'password'];
 
-        // 根据系统配置的登录验证码开关调整验证场景的字段
-        $userLoginCaptchaSwitch =  config('buildadmin.user_login_captcha');
-        if ($userLoginCaptchaSwitch) {
+        // 根据系统配置动态添加验证码字段
+        if (config('buildadmin.user_login_captcha', false)) {
             $fields[] = 'captchaId';
             $fields[] = 'captchaInfo';
         }
@@ -48,7 +46,7 @@ class User extends Validate
 
     public function __construct()
     {
-        $this->field   = [
+        $this->field = [
             'username'     => __('username'),
             'email'        => __('email'),
             'mobile'       => __('mobile'),
@@ -58,10 +56,12 @@ class User extends Validate
             'captchaInfo'  => __('captcha'),
             'registerType' => __('Register type'),
         ];
+        
         $this->message = array_merge($this->message, [
             'username.regex' => __('Please input correct username'),
             'password.regex' => __('Please input correct password')
         ]);
+        
         parent::__construct();
     }
 }

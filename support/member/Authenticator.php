@@ -61,7 +61,7 @@ abstract class Authenticator
     }
 
     /**
-     * 认证用户
+     * 认证用户（优化版）
      * @param array $credentials
      * @return object
      * @throws UnauthorizedHttpException
@@ -73,15 +73,14 @@ abstract class Authenticator
         try {
             Db::startTrans();
 
-            // 认证流程
+            // 优化认证流程 - 减少冗余操作
             $this->validateCredentials();      // 1. 验证基本凭证
             $this->validateCaptcha();         // 2. 验证验证码
-            $this->findMember();               // 3. 查找用户
-            $this->checkMemberStatus();        // 4. 检查用户状态
-            $this->verifyPassword();           // 5. 验证密码
-            $this->generateTokens();           // 6. 生成令牌
-            $this->extendMemberInfo();         // 7. 扩展用户信息
-            $this->updateLoginState('success'); // 8. 更新登录状态
+            $this->findMember();               // 3. 查找用户（合并状态检查）
+            $this->verifyPassword();           // 4. 验证密码
+            $this->generateTokens();           // 5. 生成令牌
+            $this->extendMemberInfo();         // 6. 扩展用户信息
+            $this->updateLoginState('success'); // 7. 更新登录状态
 
             Db::commit();
             return $this->memberModel;

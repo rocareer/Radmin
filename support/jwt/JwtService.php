@@ -80,7 +80,7 @@ class JwtService
         try {
             return JWT::decode($token, new Key($jwtSecret ?? $this->jwtSecret, $jwtAlgo ?? $this->jwtAlgo));
         } catch (ExpiredException $e) {
-            throw new TokenExpiredException('Token已过期', [], $e);
+            throw new TokenException('Token已过期', StatusCode::TOKEN_SHOULD_REFRESH);
         } catch (Throwable $e) {
             throw new TokenException($e->getMessage(), StatusCode::TOKEN_DECODE_FAILED, [], $e);
         }
