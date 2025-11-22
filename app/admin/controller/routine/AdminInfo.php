@@ -30,7 +30,7 @@ class AdminInfo extends Backend
 
     public function index(): Response
     {
-        $info =$this->request->member;
+        $info =$this->member;
         return $this->success('', [
             'info' => $info
         ]);
