@@ -178,36 +178,16 @@ abstract class Model extends ThinkModel implements InterfaceModel
 
 
     /**
-     * 记录登录失败
+     * 记录登录失败（已统一到State类中处理）
      * @param string|null $reason 失败原因
      * @return bool
      */
     public function recordLoginFailure(?string $reason = null): bool
     {
-        try {
-            $this->startTrans();
-
-            $loginFailure = $this->login_failure ?? 0;
-            $this->login_failure   = (int)$loginFailure + 1;
-            $this->last_login_time = time();
-            $this->last_login_ip   = request()->getRealIp();
-            $this->save();
-
-            // 记录登录日志
-            $this->recordLoginLog([
-                'user_id'  => $this->id,
-                'username' => $this->username,
-                'success'  => false,
-                'message'  => $reason
-            ]);
-
-            $this->commit();
-            return true;
-        } catch (Throwable $e) {
-            $this->rollback();
-            Log::error('记录登录失败信息失败：' . $e->getMessage());
-            return false;
-        }
+        // 统一使用State类处理登录状态
+        $state = new State();
+        $state->role = $this->role;
+        return $state->recordLoginFailure($this, $reason);
     }
 
 

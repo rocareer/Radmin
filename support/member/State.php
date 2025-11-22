@@ -4,15 +4,14 @@
 namespace support\member;
 
 use app\exception\BusinessException;
-
 use support\Log;
 use support\orm\Db;
 use support\StatusCode;
 use Throwable;
-use support\cache\Cache;
+use support\cache\Cache as WebmanCache;
 
 /**
- * 基础状态管理器
+ * 统一状态管理器 - 负责所有登录状态检查和处理
  */
 class State
 {
@@ -48,8 +47,9 @@ class State
 
 
     /**
-     * 检查用户状态
-     * By albert  2025/05/06 01:41:07
+     * 统一检查用户状态
+     * @param mixed $member 用户模型
+     * @return bool
      * @throws BusinessException
      */
     public function checkStatus($member): bool
@@ -69,6 +69,38 @@ class State
         
         return true;
     }
+
+    /**
+     * 统一记录登录失败
+     * @param mixed $member 用户模型
+     * @param string|null $reason 失败原因
+     * @return bool
+     */
+    public function recordLoginFailure($member, ?string $reason = null): bool
+    {
+        try {
+            $this->memberModel = $member;
+            $this->memberModel->startTrans();
+
+            $loginFailure = $this->memberModel->login_failure ?? 0;
+            $this->memberModel->login_failure = (int)$loginFailure + 1;
+            $this->memberModel->last_login_time = time();
+            $this->memberModel->last_login_ip = request()->getRealIp();
+            $this->memberModel->save();
+
+            // 记录登录日志
+            $this->recordLoginLog(false, $reason);
+
+            $this->memberModel->commit();
+            return true;
+        } catch (Throwable $e) {
+            if ($this->memberModel && method_exists($this->memberModel, 'rollback')) {
+                $this->memberModel->rollback();
+            }
+            Log::error('记录登录失败信息失败：' . $e->getMessage());
+            return false;
+        }
+    }
     
     /**
      * 检查单点登录状态
@@ -81,7 +113,7 @@ class State
         if ($ssoConfig) {
             // 单点登录模式下，检查是否在其他地方登录
             $cacheKey = $this->getStateCacheKey();
-            $stateData =Cache::get($cacheKey);
+            $stateData = WebmanCache::get($cacheKey);
             
             if ($stateData && isset($stateData['token']) && $stateData['token'] !== request()->token) {
                 throw new BusinessException('账号已在其他地方登录', StatusCode::USER_LOGGED_IN_ELSEWHERE, true);
@@ -188,11 +220,11 @@ class State
         ];
         
        //cache 的缓存函数
-       Cache::set($cacheKey, $stateData, $cacheTime);
+       WebmanCache::set($cacheKey, $stateData, $cacheTime);
     }
 
 
-    protected function recordLoginLog(bool $success): void
+    protected function recordLoginLog(bool $success, ?string $reason = null): void
     {
         try {
             $tableName = $this->getLoginLogTableName();
@@ -202,14 +234,20 @@ class State
                 return;
             }
             
-            Db::name($tableName)->insert([
+            $logData = [
                 'user_id'     => $this->memberModel->id,
                 'username'    => $this->memberModel->username,
                 'ip'          => request()->getRealIp(),
                 'user_agent'  => request()->header('user-agent'),
                 'success'     => $success,
                 'create_time' => time()
-            ]);
+            ];
+            
+            if (!$success && $reason) {
+                $logData['message'] = $reason;
+            }
+            
+            Db::name($tableName)->insert($logData);
         } catch (Throwable $e) {
             Log::error('记录登录日志失败：' . $e->getMessage());
         }
@@ -253,7 +291,7 @@ class State
             // 清除状态缓存
             $this->memberModel = $user;
             $cacheKey = $this->getStateCacheKey();
-           Cache::delete($cacheKey);
+           WebmanCache::delete($cacheKey);
 
             // 清除刷新令牌
             $user->refresh_token = null;
