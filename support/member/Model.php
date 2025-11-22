@@ -187,7 +187,8 @@ abstract class Model extends ThinkModel implements InterfaceModel
         try {
             $this->startTrans();
 
-            $this->login_failure   = (int)($this->login_failure ?? 0) + 1;
+            $loginFailure = $this->login_failure ?? 0;
+            $this->login_failure   = (int)$loginFailure + 1;
             $this->last_login_time = time();
             $this->last_login_ip   = request()->getRealIp();
             $this->save();

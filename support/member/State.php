@@ -101,8 +101,11 @@ class State
         $maxRetry = $roleConfig['login']['max_retry'] ?? 10;
         $lockTime = $roleConfig['login']['lock_time'] ?? 3600;
         
-        if ((int)($this->memberModel->login_failure ?? 0) >= $maxRetry) {
-            $unlockTime = $this->memberModel->last_login_time + $lockTime;
+        $loginFailure = $this->memberModel->login_failure ?? 0;
+        $lastLoginTime = $this->memberModel->last_login_time ?? 0;
+        
+        if ((int)$loginFailure >= $maxRetry) {
+            $unlockTime = (int)$lastLoginTime + $lockTime;
 
             if (time() < $unlockTime) {
                 throw new BusinessException(
@@ -145,7 +148,8 @@ class State
                 $this->recordLoginLog(true);
             } else {
                 // 安全处理登录失败次数，避免非数值错误
-                $this->memberModel->login_failure = (int)($this->memberModel->login_failure ?? 0) + 1;
+                $loginFailure = $this->memberModel->login_failure ?? 0;
+                $this->memberModel->login_failure = (int)$loginFailure + 1;
                 
                 // 登录失败时记录日志
                 $this->recordLoginLog(false);
