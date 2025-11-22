@@ -26,8 +26,10 @@ class SystemUtil
         // 使用缓存键名而不是标签
         if ($name) {
             return self::getSingleConfig($name);
+        } elseif ($group) {
+            return self::getGroupConfig($group, $concise);
         } else {
-            return self::getConfigList($group, $concise);
+            return self::getConfigList($concise);
         }
     }
 
@@ -49,26 +51,32 @@ class SystemUtil
     }
 
     /**
+     * 获取分组配置
+     */
+    private static function getGroupConfig(string $group, bool $concise = true): array
+    {
+        // 分组配置缓存
+        $cacheKey = 'sys_config_group_' . $group;
+        $temp = Cache::get($cacheKey);
+        if (!$temp) {
+            $temp = ConfigModel::where('group', $group)->order('weigh desc')->select()->toArray();
+            Cache::set($cacheKey, $temp, 3600); // 缓存1小时
+        }
+        
+        return $concise ? self::formatConfigConcise($temp) : $temp;
+    }
+
+    /**
      * 获取配置列表
      */
-    private static function getConfigList(string $group = '', bool $concise = true): array
+    private static function getConfigList(bool $concise = true): array
     {
-        if ($group) {
-            // 分组配置缓存
-            $cacheKey = 'sys_config_group_' . $group;
-            $temp = Cache::get($cacheKey);
-            if (!$temp) {
-                $temp = ConfigModel::where('group', $group)->order('weigh desc')->select()->toArray();
-                Cache::set($cacheKey, $temp, 3600); // 缓存1小时
-            }
-        } else {
-            // 全部配置缓存
-            $cacheKey = 'sys_config_all';
-            $temp = Cache::get($cacheKey);
-            if (!$temp) {
-                $temp = ConfigModel::order('weigh desc')->select()->toArray();
-                Cache::set($cacheKey, $temp, 3600); // 缓存1小时
-            }
+        // 全部配置缓存
+        $cacheKey = 'sys_config_all';
+        $temp = Cache::get($cacheKey);
+        if (!$temp) {
+            $temp = ConfigModel::order('weigh desc')->select()->toArray();
+            Cache::set($cacheKey, $temp, 3600); // 缓存1小时
         }
         
         return $concise ? self::formatConfigConcise($temp) : $temp;

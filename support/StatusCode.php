@@ -54,6 +54,7 @@ class StatusCode
     const AUTHENTICATION_FAILED     = 10044;           // 未知错误
     const STATE_CACHE_FIND_FAILED   = 10045;           // 未知错误
     const ACCESS_DENIED             = 10046;            // 访问权限不足
+    const TOKEN_GENERATE_FAILED     = 10047;            // 访问权限不足
 
 
     // 状态码消息定义
@@ -102,6 +103,7 @@ class StatusCode
         self::AUTHENTICATION_FAILED     => '未知错误',
         self::STATE_CACHE_FIND_FAILED   => '未知错误',
         self::ACCESS_DENIED             => '访问权限不足',
+        self::TOKEN_GENERATE_FAILED     => 'Token生成失败',
     ];
 
 

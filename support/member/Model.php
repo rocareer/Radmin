@@ -119,42 +119,6 @@ abstract class Model extends ThinkModel implements InterfaceModel
 
 
     /**
-     * 检查用户状态
-     * @throws BusinessException
-     */
-    public function checkStatus(): void
-    {
-        // 检查基本状态
-        if ($this->status !== 'enable') {
-            throw new BusinessException('账号已被禁用', StatusCode::USER_DISABLED);
-        }
-
-        // 检查登录失败次数
-        $role = request()->role;
-        $roleConfig = config('roles.roles.' . $role, []);
-        $loginConfig = $roleConfig['login'] ?? [];
-        $maxFailures = $loginConfig['max_retry'] ?? 10;
-        $lockTime    = $loginConfig['lock_time'] ?? 900;
-
-        if (($this->login_failure ?? 0) >= $maxFailures) {
-            $lastLoginTime = $this->last_login_time ?? 0;
-            $unlockTime    = $lastLoginTime + $lockTime;
-
-            if (time() < $unlockTime) {
-                $remainingTime = $unlockTime - time();
-                throw new BusinessException(
-                    "账号已锁定，请在{$remainingTime}秒后重试",
-                    StatusCode::LOGIN_ACCOUNT_LOCKED
-                );
-            }
-
-            // 锁定时间已过，重置失败次数
-            $this->login_failure = 0;
-            $this->save();
-        }
-    }
-
-    /**
      * 查找并验证用户
      * By albert  2025/05/06 00:01:06
      * @param string $username
@@ -189,11 +153,20 @@ abstract class Model extends ThinkModel implements InterfaceModel
     public function verifyPassword(string $inputPassword, $member): bool
     {
         // 处理对象形式的用户密码
-        $hash = is_object($member) ? $member->password : $member;
-
+        if (is_object($member)) {
+            $hash = $member->password;
+        }
         // 处理数组形式的用户密码
-        if (is_array($member)) {
+        elseif (is_array($member)) {
             $hash = $member['password'] ?? $member['password_hash'] ?? '';
+        }
+        // 处理字符串形式的用户密码（直接传入密码哈希值）
+        elseif (is_string($member)) {
+            $hash = $member;
+        }
+        // 其他类型，默认为空
+        else {
+            $hash = '';
         }
 
         // 获取salt等额外参数
@@ -214,7 +187,7 @@ abstract class Model extends ThinkModel implements InterfaceModel
         try {
             $this->startTrans();
 
-            $this->login_failure   = ($this->login_failure ?? 0) + 1;
+            $this->login_failure   = (int)($this->login_failure ?? 0) + 1;
             $this->last_login_time = time();
             $this->last_login_ip   = request()->getRealIp();
             $this->save();

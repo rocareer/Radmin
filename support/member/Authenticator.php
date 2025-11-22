@@ -6,6 +6,7 @@ namespace support\member;
 use app\exception\BusinessException;
 use app\exception\UnauthorizedHttpException;
 
+
 use support\Log;
 use support\orm\Db;
 use support\token\Token;
@@ -73,14 +74,15 @@ abstract class Authenticator
         try {
             Db::startTrans();
 
-            // 优化认证流程 - 减少冗余操作
+            // 认证流程
             $this->validateCredentials();      // 1. 验证基本凭证
-            $this->validateCaptcha();         // 2. 验证验证码
-            $this->findMember();               // 3. 查找用户（合并状态检查）
-            $this->verifyPassword();           // 4. 验证密码
-            $this->generateTokens();           // 5. 生成令牌
-            $this->extendMemberInfo();         // 6. 扩展用户信息
-            $this->updateLoginState('success'); // 7. 更新登录状态
+            $this->validateCaptcha();          // 2. 验证验证码
+            $this->findMember();               // 3. 查找用户
+            $this->checkMemberStatus();        // 4. 检查用户状态
+            $this->verifyPassword();           // 5. 验证密码
+            $this->generateTokens();           // 6. 生成令牌
+            $this->extendMemberInfo();         // 7. 扩展用户信息
+            $this->updateLoginState('success'); // 8. 更新登录状态
 
             Db::commit();
             return $this->memberModel;
@@ -174,7 +176,7 @@ abstract class Authenticator
      */
     protected function verifyPassword(): void
     {
-        $this->initializeDependencies();
+
         $res = $this->memberModel->verifyPassword($this->credentials['password'], $this->memberModel);
         if (!$res) {
             throw new UnauthorizedHttpException('密码错误', StatusCode::PASSWORD_ERROR);
@@ -189,30 +191,33 @@ abstract class Authenticator
      */
     protected function generateTokens(): void
     {
-        $this->initializeDependencies();
-        
-        // 基础Token数据
-        $tokenData = [
-            'sub'   => $this->memberModel->id,
-            'type'  => 'access',
-            'keep'  => false,
-            'role'  => $this->role,
-            'roles' => $this->memberModel->roles ?? [$this->role]
-        ];
-        
-        // 生成访问令牌
-        $this->memberModel->token = Token::encode($tokenData);
-        
-        // 根据需要生成刷新令牌
-        if (!empty($this->credentials['keep'])) {
-            $tokenData['keep'] = true;
-            $this->memberModel->refresh_token = Token::encode($tokenData);
+        try {
+            // 基础Token数据
+            $tokenData = [
+                'sub'   => $this->memberModel->id,
+                'type'  => 'access',
+                'keep'  => false,
+                'role'  => $this->role,
+                'roles' => $this->memberModel->roles ?? [$this->role]
+            ];
+
+            // 生成访问令牌
+            $this->memberModel->token = Token::encode($tokenData);
+
+            // 根据需要生成刷新令牌
+            if (!empty($this->credentials['keep'])) {
+                $tokenData['keep'] = true;
+                $this->memberModel->refresh_token = Token::encode($tokenData);
+            }
+        } catch (Throwable $e) {
+            Log::error($e->getMessage());
+            throw new BusinessException('生成令牌失败', StatusCode::TOKEN_GENERATE_FAILED);
         }
+
     }
 
     public function extendMemberInfo(): void
     {
-        $this->initializeDependencies();
         $this->memberModel->roles = [$this->role];
     }
 
@@ -291,7 +296,6 @@ abstract class Authenticator
      */
     protected function validateRefreshToken(string $refreshToken): void
     {
-        $this->initializeDependencies();
         $payload = Token::verify($refreshToken);
         if (empty($payload['user_id'])) {
             throw new UnauthorizedHttpException('无效的刷新令牌', StatusCode::TOKEN_INVALID, true);
@@ -311,7 +315,6 @@ abstract class Authenticator
     public function logout(): bool
     {
         try {
-            $this->initializeDependencies();
             if (!$this->memberModel) {
                 return true;
             }
@@ -371,7 +374,6 @@ abstract class Authenticator
      */
     public function forceLogout(int $userId): bool
     {
-        $this->initializeDependencies();
         $user = $this->memberModel->find($userId);
         if (!$user) {
             throw new UnauthorizedHttpException('用户不存在', StatusCode::USER_NOT_FOUND);

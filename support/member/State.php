@@ -9,6 +9,7 @@ use support\Log;
 use support\orm\Db;
 use support\StatusCode;
 use Throwable;
+use support\cache\Cache;
 
 /**
  * 基础状态管理器
@@ -54,7 +55,7 @@ class State
     public function checkStatus($member): bool
     {
         $this->memberModel = $member;
-        
+
         // 检查账号状态
         if ($this->memberModel->status !== 'enable') {
             throw new BusinessException('账号已被禁用', StatusCode::USER_DISABLED, true);
@@ -80,7 +81,7 @@ class State
         if ($ssoConfig) {
             // 单点登录模式下，检查是否在其他地方登录
             $cacheKey = $this->getStateCacheKey();
-            $stateData = \think\facade\Cache::get($cacheKey);
+            $stateData =Cache::get($cacheKey);
             
             if ($stateData && isset($stateData['token']) && $stateData['token'] !== request()->token) {
                 throw new BusinessException('账号已在其他地方登录', StatusCode::USER_LOGGED_IN_ELSEWHERE, true);
@@ -100,7 +101,7 @@ class State
         $maxRetry = $roleConfig['login']['max_retry'] ?? 10;
         $lockTime = $roleConfig['login']['lock_time'] ?? 3600;
         
-        if ($this->memberModel->login_failure >= $maxRetry) {
+        if ((int)($this->memberModel->login_failure ?? 0) >= $maxRetry) {
             $unlockTime = $this->memberModel->last_login_time + $lockTime;
 
             if (time() < $unlockTime) {
@@ -143,7 +144,8 @@ class State
                 // 记录登录日志
                 $this->recordLoginLog(true);
             } else {
-                $this->memberModel->login_failure++;
+                // 安全处理登录失败次数，避免非数值错误
+                $this->memberModel->login_failure = (int)($this->memberModel->login_failure ?? 0) + 1;
                 
                 // 登录失败时记录日志
                 $this->recordLoginLog(false);
@@ -181,8 +183,8 @@ class State
             'role' => $this->role
         ];
         
-        // 使用 think-cache 的缓存函数
-        \think\facade\Cache::set($cacheKey, $stateData, $cacheTime);
+       //cache 的缓存函数
+       Cache::set($cacheKey, $stateData, $cacheTime);
     }
 
 
@@ -247,7 +249,7 @@ class State
             // 清除状态缓存
             $this->memberModel = $user;
             $cacheKey = $this->getStateCacheKey();
-            \think\facade\Cache::delete($cacheKey);
+           Cache::delete($cacheKey);
 
             // 清除刷新令牌
             $user->refresh_token = null;
