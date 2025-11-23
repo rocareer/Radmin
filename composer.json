@@ -30,7 +30,6 @@
       "url": "https://gitee.com/rocareer/Radmin.git"
     }
   ],
-
   "require": {
     "php": ">=8.1",
     "workerman/webman-framework": "^2.1",
@@ -39,8 +38,8 @@
     "webman/console": "^2.1",
     "webman/think-orm": "^2.1",
     "webman/think-cache": "^2.1",
-    "rocareer/webman-status-code": "^v1.0.0",
-    "rocareer/webman-migration": "^1.0",
+    "rocareer/webman-status-code": "^v1.0.1",
+    "rocareer/webman-migration": "^1.0.3",
     "firebase/php-jwt": "^6.11",
     "phpmailer/phpmailer": "^v6.8.1",
     "vlucas/phpdotenv": "^5.6",
@@ -59,7 +58,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Rocareer\\RadminFramework\\" : "vendor/rocareer/radmin-framework/src",
+      "Rocareer\\RadminFramework\\": "vendor/rocareer/radmin-framework/src",
       "": "./",
       "app\\": "./app",
       "App\\": "./app",
