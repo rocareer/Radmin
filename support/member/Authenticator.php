@@ -7,6 +7,7 @@ use app\exception\BusinessException;
 use app\exception\TokenException;
 use app\exception\TokenExpiredException;
 use app\exception\UnauthorizedHttpException;
+use support\cache\Cache;
 use support\Log;
 use support\member\interface\InterfaceAuthenticator;
 use support\member\role\admin\AdminModel;
@@ -93,10 +94,11 @@ abstract class Authenticator implements InterfaceAuthenticator
             $this->validateCaptcha();          // 2. 验证验证码
             $this->findMember();               // 3. 查找用户
             $this->checkMemberStatus();        // 4. 检查用户状态
-            $this->verifyPassword();           // 5. 验证密码
-            $this->generateTokens();           // 6. 生成令牌
-            $this->extendMemberInfo();         // 7. 扩展用户信息
-            $this->updateLoginInfo($this->memberModel, $this->role); // 8. 更新登录信息
+            $this->checkLoginRetryLimit();     // 5. 检查登录失败次数限制
+            $this->verifyPassword();           // 6. 验证密码
+            $this->generateTokens();           // 7. 生成令牌
+            $this->extendMemberInfo();         // 8. 扩展用户信息
+            $this->updateLoginInfo($this->memberModel, $this->role); // 9. 更新登录信息
             
             // 登录成功事件 - 规范化事件格式
             Event::emit("member.login_success", [
@@ -113,6 +115,14 @@ abstract class Authenticator implements InterfaceAuthenticator
         } catch (UnauthorizedHttpException $e) {
             $this->handleAuthenticationFailure($e);
             throw $e;
+        } catch (BusinessException $e) {
+            // 如果是账号锁定异常，直接抛出，不包装成UnauthorizedHttpException
+            if ($e->getCode() === StatusCode::LOGIN_ACCOUNT_LOCKED) {
+                $this->handleAuthenticationFailure($e);
+                throw $e;
+            }
+            $this->handleAuthenticationFailure($e);
+            throw new UnauthorizedHttpException($e->getMessage(), $e->getCode(), [], $e);
         } catch (Throwable $e) {
             $this->handleAuthenticationFailure($e);
             Log::error('认证异常：' . $e->getMessage());
@@ -128,6 +138,12 @@ abstract class Authenticator implements InterfaceAuthenticator
     {
         try {
             Db::rollback();
+            
+            // 如果是账号锁定异常，不触发登录失败事件（避免重置锁定时间）
+            if ($e instanceof BusinessException && $e->getCode() === StatusCode::LOGIN_ACCOUNT_LOCKED) {
+                Log::info('账号已锁定，跳过登录失败事件处理');
+                return;
+            }
             
             // 登录失败事件 - 规范化事件格式
             Event::emit("member.login_failure", [
@@ -197,13 +213,23 @@ abstract class Authenticator implements InterfaceAuthenticator
      */
     protected function checkMemberStatus(): void
     {
-        // 状态检查事件已废弃，使用更具体的事件替代
-        // Event::emit('state.check_status', [
-        //     'member' => $this->memberModel,
-        //     'role' => $this->role,
-        //     'timestamp' => microtime(true),
-        //     'event_type' => 'status_check'
-        // ]);
+        // 创建状态管理器实例并检查用户状态
+        $state = new State();
+        $state->role = $this->role;
+        $state->memberModel = $this->memberModel;
+        $state->checkStatus($this->memberModel, 'login');
+    }
+
+    /**
+     * 检查登录失败次数限制（在密码验证前调用）
+     */
+    protected function checkLoginRetryLimit(): void
+    {
+        // 创建状态管理器实例并检查登录失败次数
+        $state = new State();
+        $state->role = $this->role;
+        $state->memberModel = $this->memberModel;
+        $state->checkLoginFailures();
     }
 
     /**
@@ -214,10 +240,26 @@ abstract class Authenticator implements InterfaceAuthenticator
      */
     protected function verifyPassword(): void
     {
-
         $res = $this->memberModel->verifyPassword($this->credentials['password'], $this->memberModel);
         if (!$res) {
-            throw new UnauthorizedHttpException('密码错误', StatusCode::PASSWORD_ERROR);
+            // 获取角色配置
+            $roleConfig = config('roles.roles.' . $this->role, []);
+            $maxRetry = $roleConfig['login']['max_retry'] ?? 10;
+            
+            // 获取当前登录失败次数
+            $currentFailures = $this->memberModel->login_failure ?? 0;
+            
+            // 计算剩余重试次数
+            $remainingRetries = max(0, $maxRetry - $currentFailures - 1);
+            
+            if ($remainingRetries >= 0) {
+                throw new UnauthorizedHttpException(
+                    "密码错误，您还有 {$remainingRetries} 次重试机会", 
+                    StatusCode::PASSWORD_ERROR
+                );
+            } else {
+                throw new UnauthorizedHttpException('密码错误', StatusCode::PASSWORD_ERROR);
+            }
         }
     }
 
@@ -381,7 +423,7 @@ abstract class Authenticator implements InterfaceAuthenticator
     protected function clearStateCache(): void
     {
         $cacheKey = $this->getStateCacheKey();
-        \support\cache\Cache::delete($cacheKey);
+        Cache::delete($cacheKey);
     }
     
     /**

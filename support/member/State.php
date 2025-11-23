@@ -181,22 +181,29 @@ class State implements InterfaceState
      * @return bool
      * @throws BusinessException
      */
-    protected function checkLoginFailures(): bool
+    public function checkLoginFailures(): bool
     {
         $roleConfig = config('roles.roles.' . $this->role, []);
         $maxRetry = $roleConfig['login']['max_retry'] ?? 10;
         $lockTime = $roleConfig['login']['lock_time'] ?? 3600;
-        
+
         $loginFailure = $this->memberModel->login_failure ?? 0;
         $lastLoginTime = $this->memberModel->last_login_time ?? 0;
         
+        // 确保 last_login_time 是时间戳格式
+        if (!is_numeric($lastLoginTime)) {
+            // 如果是字符串格式的时间，转换为时间戳
+            $lastLoginTime = is_string($lastLoginTime) ? strtotime($lastLoginTime) : 0;
+        }
+        $lastLoginTime = (int)$lastLoginTime;
+        
         if ((int)$loginFailure >= $maxRetry) {
-            $unlockTime = (int)$lastLoginTime + $lockTime;
+            $unlockTime = $lastLoginTime + $lockTime;
 
             if (time() < $unlockTime) {
                 throw new BusinessException(
                     "账号已锁定，请在" . ($unlockTime - time()) . "秒后重试",
-                    StatusCode::LOGIN_ACCOUNT_LOCKED, true
+                    StatusCode::LOGIN_ACCOUNT_LOCKED
                 );
             }
             $this->memberModel->login_failure = 0;
