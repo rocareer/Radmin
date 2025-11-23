@@ -84,9 +84,7 @@ class Frontend extends Api
 
             return !empty($this->member);
         } catch (\Throwable $e) {
-
-            throw $e;
-            // 初始化失败（如Token无效），保持member为空
+            // 初始化失败（如Token无效），保持member为空，不抛出异常
             $this->member = null;
             return false;
         }
