@@ -4,8 +4,6 @@
 namespace support\member;
 
 use app\exception\BusinessException;
-use app\exception\TokenException;
-use app\exception\TokenExpiredException;
 use app\exception\UnauthorizedHttpException;
 use Exception;
 use support\member\interface\InterfaceService;
@@ -95,25 +93,35 @@ abstract class Service implements InterfaceService
     }
 
     /**
-     * 初始化依赖组件（延迟初始化）
+     * 按需初始化依赖组件
      *
-     * @param bool $force 是否强制重新初始化
-     *
+     * @param string $dependency 需要初始化的依赖类型 (model|authenticator|state|rule)
      * @return void
      */
-    protected function initializeDependencies(bool $force = false): void
+    protected function initializeDependency(string $dependency): void
     {
-        // 只在需要时初始化，避免不必要的资源消耗
-        if ($force || !$this->memberModel) {
-            $this->memberModel = $this->createModel($this->role);
-        }
-
-        if ($force || !$this->authenticator) {
-            $this->authenticator = $this->createAuthenticator($this->role);
-        }
-
-        if ($force || !$this->state) {
-            $this->state = $this->createState($this->role);
+        switch ($dependency) {
+            case 'model':
+                if (!$this->memberModel) {
+                    $this->memberModel = $this->createModel($this->role);
+                }
+                break;
+            case 'authenticator':
+                if (!$this->authenticator) {
+                    $this->authenticator = $this->createAuthenticator($this->role);
+                }
+                break;
+            case 'state':
+                if (!$this->state) {
+                    $this->state = $this->createState($this->role);
+                }
+                break;
+            case 'rule':
+                if (!$this->rule) {
+                    $this->initializeDependency('model');
+                    $this->rule = $this->createRule($this->role, $this->memberModel);
+                }
+                break;
         }
     }
 
@@ -121,20 +129,17 @@ abstract class Service implements InterfaceService
      * 获取模型实例（延迟初始化）
      *
      * @param string|null $role 角色类型，为null时使用当前角色
-     *
      * @return object
      */
     protected function getMemberModel(?string $role = null): object
     {
-        // 使用传入的角色或当前角色
-        $targetRole = $role ?? $this->role;
-        
         // 如果请求的是当前角色的模型且已存在，直接返回
         if ($role === null && $this->memberModel) {
             return $this->memberModel;
         }
         
         // 创建新的模型实例
+        $targetRole = $role ?? $this->role;
         return $this->createModel($targetRole);
     }
 
@@ -145,9 +150,7 @@ abstract class Service implements InterfaceService
      */
     protected function getAuthenticator(): object
     {
-        if (!$this->authenticator) {
-            $this->authenticator = $this->createAuthenticator($this->role);
-        }
+        $this->initializeDependency('authenticator');
         return $this->authenticator;
     }
 
@@ -158,9 +161,7 @@ abstract class Service implements InterfaceService
      */
     protected function getState(): object
     {
-        if (!$this->state) {
-            $this->state = $this->createState($this->role);
-        }
+        $this->initializeDependency('state');
         return $this->state;
     }
     
@@ -171,10 +172,7 @@ abstract class Service implements InterfaceService
      */
     protected function getRule(): object
     {
-        if (!$this->rule) {
-            $memberModel = $this->getMemberModel();
-            $this->rule = $this->createRule($this->role, $memberModel);
-        }
+        $this->initializeDependency('rule');
         return $this->rule;
     }
 
@@ -244,11 +242,11 @@ abstract class Service implements InterfaceService
 
     /**
      * 用户信息初始化
+     *
+     * @throws UnauthorizedHttpException|BusinessException
      */
     public function initialization(): void
     {
-        $this->initializeDependencies();
-
         // 如果用户信息已存在，直接返回
         if (!empty(Context::getInstance()->getCurrentMember())) {
             return;
@@ -261,8 +259,8 @@ abstract class Service implements InterfaceService
             // 用户信息扩展
             $this->extendMemberInfo();
 
-            // 用户状态检查
-            $this->stateCheckStatus();
+            // 状态检查
+            $this->checkStatus('login');
 
         } catch (Exception $e) {
             Event::emit("state.updateLogin.failure", [
@@ -277,20 +275,22 @@ abstract class Service implements InterfaceService
         }
     }
 
-
     /**
-     * 状态:检查用户状态
-     * By albert  2025/05/06 19:23:20
+     * 统一状态检查接口
      *
-     * @return void
+     * @param string $checkType 检查类型（login/access/security等）
+     * @return bool
+     * @throws BusinessException
      */
-    protected function stateCheckStatus(): void
+    public function checkStatus(string $checkType = 'login'): bool
     {
-        // 使用状态管理器检查用户状态
-        $state = $this->getState();
-        if (method_exists($state, 'checkStatus')) {
-            $state->checkStatus($this->memberModel);
+        if (!$this->memberModel) {
+            throw new BusinessException('用户模型未初始化', StatusCode::USER_NOT_FOUND);
         }
+        
+        // 委托给专门的状态管理器执行检查
+        $state = $this->getState();
+        return $state->checkStatus($this->memberModel, $checkType);
     }
 
 
@@ -299,39 +299,33 @@ abstract class Service implements InterfaceService
      *
      * @param array $credentials
      * @param bool  $keep
-     *
      * @return array
      * @throws BusinessException
      * @throws Throwable
      */
     public function login(array $credentials, bool $keep = false): array
     {
-        try {
-            // 参数验证
-            $this->validateLoginCredentials($credentials);
+        // 参数验证
+        $this->validateLoginCredentials($credentials);
 
-            // 设置保持登录状态
-            $credentials['keep'] = $keep;
+        // 设置保持登录状态
+        $credentials['keep'] = $keep;
 
-            // 执行认证
-            $authenticator     = $this->getAuthenticator();
-            $this->memberModel = $authenticator->authenticate($credentials);
+        // 执行认证
+        $authenticator     = $this->getAuthenticator();
+        $this->memberModel = $authenticator->authenticate($credentials);
 
-            // 验证认证结果
-            if (empty($this->memberModel)) {
-                throw new UnauthorizedHttpException(
-                    '认证失败', StatusCode::NEED_LOGIN
-                );
-            }
-
-            // 设置用户信息
-            $this->setMember($this->memberModel);
-
-            return $this->memberModel->toArray();
-
-        } catch (Throwable $e) {
-            throw $e;
+        // 验证认证结果
+        if (empty($this->memberModel)) {
+            throw new UnauthorizedHttpException(
+                '认证失败', StatusCode::NEED_LOGIN
+            );
         }
+
+        // 设置用户信息
+        $this->setMember($this->memberModel);
+
+        return $this->memberModel->toArray();
     }
 
     /**
@@ -354,8 +348,7 @@ abstract class Service implements InterfaceService
 
 
     /**
-     * 注销登录 - 支持多角色隔离注销
-     * By albert  2025/05/08 04:28:10
+     * 注销登录
      *
      * @return bool
      */
@@ -370,10 +363,11 @@ abstract class Service implements InterfaceService
             $this->memberModel   = null;
             $this->authenticator = null;
             $this->state         = null;
+            $this->rule          = null;
 
             return $result;
 
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             // 登出失败不抛出异常，避免影响用户体验
             return false;
         }
@@ -384,41 +378,47 @@ abstract class Service implements InterfaceService
      * 用户注册
      *
      * @param array $credentials
-     *
      * @return array
      * @throws Throwable
      */
     public function register(array $credentials): array
     {
-        try {
-            // 委托给认证器处理注册逻辑
-            $authenticator = $this->getAuthenticator();
-            $result        = $authenticator->register($credentials);
+        // 委托给认证器处理注册逻辑
+        $authenticator = $this->getAuthenticator();
+        $result        = $authenticator->register($credentials);
 
-            // 获取认证器中的用户模型
-            $this->memberModel = $authenticator->memberModel;
+        // 获取认证器中的用户模型
+        $this->memberModel = $authenticator->memberModel;
 
-            // 设置用户信息到上下文
-            $this->setMember($this->memberModel);
+        // 设置用户信息到上下文
+        $this->setMember($this->memberModel);
 
-            return $result;
-
-        } catch (Throwable $e) {
-            throw $e;
-        }
+        return $result;
     }
 
-    public function resetPassword()
+    /**
+     * 重置密码（待实现）
+     */
+    public function resetPassword(): void
     {
-
+        // 待实现
     }
 
-    public function changePassword()
+    /**
+     * 修改密码（待实现）
+     */
+    public function changePassword(): void
     {
-
+        // 待实现
     }
 
-    public function checkPassword($password): bool
+    /**
+     * 检查密码
+     *
+     * @param string $password
+     * @return bool
+     */
+    public function checkPassword(string $password): bool
     {
         if (empty($password)) {
             return false;
@@ -436,37 +436,25 @@ abstract class Service implements InterfaceService
      * 用户信息初始化
      *
      * @param string|null $token
-     *
      * @throws UnauthorizedHttpException
      */
     public function memberInitialization(?string $token = null): void
     {
-        try {
-            // 委托给认证器处理用户初始化
-            $authenticator = $this->getAuthenticator();
-            $authenticator->memberInitialization($token);
+        // 委托给认证器处理用户初始化
+        $authenticator = $this->getAuthenticator();
+        $authenticator->memberInitialization($token);
 
-            // 获取认证器中的用户模型
-            $this->memberModel = $authenticator->memberModel;
+        // 获取认证器中的用户模型
+        $this->memberModel = $authenticator->memberModel;
 
-            // 设置用户信息到上下文
-            $this->setMember($this->memberModel);
-
-        } catch (TokenExpiredException $e) {
-            throw new TokenException('Token已过期', StatusCode::TOKEN_EXPIRED);
-        } catch (Throwable $e) {
-            throw new UnauthorizedHttpException(
-                $e->getMessage(), StatusCode::NEED_LOGIN
-            );
-        }
+        // 设置用户信息到上下文
+        $this->setMember($this->memberModel);
     }
 
 
     /**
      * 用户信息扩展
      *
-     * @author Albert <albert@rocareer.com>
-     * @time   2025/11/23 13:44
      * @return void
      */
     public function extendMemberInfo(): void
@@ -477,65 +465,49 @@ abstract class Service implements InterfaceService
     }
 
     /**
-     * 用户:获取用户信息 By id
-     * By albert  2025/05/06 19:32:38
+     * 根据ID获取用户信息
      *
-     * @param      $id
-     * @param null $role
-     *
+     * @param int $id
+     * @param string|null $role
      * @return object|null
      * @throws DataNotFoundException
      * @throws DbException
      * @throws ModelNotFoundException
      */
-    public function getMemberById($id, $role = null): ?object
+    public function getMemberById(int $id, ?string $role = null): ?object
     {
         $model = $this->getMemberModel($role);
-        if (empty($model)) {
-            return null;
-        }
-        $member = $model->where('id', $id)->find();
-        return $member;
+        return $model->where('id', $id)->find();
     }
 
     /**
-     * 用户:获取用户信息 By name
+     * 根据用户名获取用户信息
      *
-     * @author Albert <albert@rocareer.com>
-     * @time   2025/11/23 14:04
-     *
-     * @param      $username
-     * @param null $role
-     *
+     * @param string $username
+     * @param string|null $role
      * @return object|null
      * @throws DataNotFoundException
      * @throws DbException
      * @throws ModelNotFoundException
      */
-    public function getMemberByName($username, $role = null): ?object
+    public function getMemberByName(string $username, ?string $role = null): ?object
     {
         $model = $this->getMemberModel($role);
-        if (empty($model)) {
-            return null;
-        }
-        $member = $model->where('username', $username)->find();
-        return $member;
+        return $model->where('username', $username)->find();
     }
 
     /**
      * 检查当前用户是否拥有指定角色
-     * By albert  2025/04/30 04:02:04
      *
-     * @param      $role
-     * @param null $roles
-     *
+     * @param string $role
+     * @param array|null $roles
      * @return bool
      */
-    public function hasRole($role, $roles = null): bool
+    public function hasRole(string $role, ?array $roles = null): bool
     {
         // 如果提供了角色数组，直接检查
         if ($roles !== null) {
-            return in_array($role, (array)$roles);
+            return in_array($role, $roles);
         }
 
         // 从当前成员模型中获取角色信息
@@ -636,13 +608,11 @@ abstract class Service implements InterfaceService
 
     /**
      * 设置用户信息
-     * By albert  2025/05/06 17:48:07
      *
-     * @param $member
-     *
+     * @param object $member
      * @return void
      */
-    public function setMember($member): void
+    public function setMember(object $member): void
     {
         $this->memberModel = $member;
         Context::getInstance()->setCurrentMember(
@@ -652,13 +622,15 @@ abstract class Service implements InterfaceService
 
     /**
      * 重置用户信息
-     * By albert  2025/05/06 17:48:20
      *
      * @return void
      */
     public function resetMember(): void
     {
-        $this->memberModel = null;
+        $this->memberModel   = null;
+        $this->authenticator = null;
+        $this->state         = null;
+        $this->rule          = null;
         RequestContext::clear();
     }
 
@@ -666,11 +638,10 @@ abstract class Service implements InterfaceService
     /**
      * 设置错误消息
      *
-     * @param $error
-     *
+     * @param string $error
      * @return Service
      */
-    public function setError($error): Service
+    public function setError(string $error): Service
     {
         $this->error = $error;
         return $this;

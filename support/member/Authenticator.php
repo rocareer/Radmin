@@ -509,7 +509,7 @@ abstract class Authenticator implements InterfaceAuthenticator
     }
 
     /**
-     * 更新用户登录信息（从Service迁移）
+     * 更新用户登录信息（统一登录信息更新入口）
      * 
      * @param object $member 用户模型
      * @param string $role 用户角色
@@ -551,6 +551,13 @@ abstract class Authenticator implements InterfaceAuthenticator
                 
                 // 更新登录历史摘要
                 $this->updateLoginHistorySummary($member, $role, $currentTime, $currentIp, $previousLoginIp);
+                
+                Log::info("用户登录信息更新成功", [
+                    'member_id' => $member->id,
+                    'role' => $role,
+                    'last_login_time' => date('Y-m-d H:i:s', $currentTime),
+                    'last_login_ip' => $currentIp
+                ]);
                 
                 return true;
                 

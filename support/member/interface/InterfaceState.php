@@ -12,6 +12,6 @@ interface InterfaceState
      * 获取状态值
      */
 
-    public function checkStatus($member): bool;
+    public function checkStatus($member, string $checkType = 'login'): bool;
 
 }

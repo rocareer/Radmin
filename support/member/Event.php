@@ -73,8 +73,8 @@ class Event
         }
 
         try {
-            // 直接处理登录信息更新，不再触发单独事件
-            self::handleLoginInfoUpdate($member, $role);
+            // 注意：登录信息更新已在Authenticator.updateLoginInfo中处理
+            // 这里不再重复更新登录信息，只处理后续逻辑
             
             // 更新状态缓存
             $state = new State();
@@ -97,7 +97,7 @@ class Event
     }
     
     /**
-     * 处理登录信息更新（使用Service中的方法）
+     * 处理登录信息更新（统一使用Authenticator中的方法）
      * @param object $member 用户模型
      * @param string $role 用户角色
      * @return bool
@@ -105,11 +105,12 @@ class Event
     private static function handleLoginInfoUpdate(object $member, string $role): bool
     {
         try {
-            // 获取对应角色的Service实例
-            $service = $role === 'admin' ? new \app\admin\service\AuthService() : new \app\common\service\UserService();
+            // 创建对应角色的认证器实例
+            $authenticatorClass = $role === 'admin' ? 'support\member\role\admin\AdminAuthenticator' : 'support\member\role\user\UserAuthenticator';
+            $authenticator = new $authenticatorClass();
             
-            // 使用Service中的方法更新登录信息
-            return $service->updateLoginInfo($member, $role);
+            // 使用认证器中的方法更新登录信息
+            return $authenticator->updateLoginInfo($member, $role);
             
         } catch (\Throwable $e) {
             Log::error('登录信息更新失败：' . $e->getMessage(), [
@@ -380,19 +381,103 @@ class Event
     }
 
     /**
-     * 用户菜单获取错误事件处理（已废除，只做简单日志记录）
+     * 用户状态检查开始事件处理
      * @param array $data
      * @return void
      */
-    public static function eventUserMenuGetError(array $data): void
+    public static function eventStatusCheckStart(array $data): void
     {
-        $uid = $data['uid'] ?? null;
-        $error = $data['error'] ?? null;
-        $role = $data['role'] ?? null;
+        $member = $data['member'] ?? null;
+        $role = $data['role'] ?? 'admin';
+        $checkType = $data['check_type'] ?? 'login';
         
-        // 只做简单日志记录，不进行复杂处理
-        if ($uid && $error) {
-            Log::info("用户菜单获取错误（已废除事件）：用户 {$uid} 在角色 {$role} 下获取菜单失败 - {$error}");
+        if (!$member) {
+            Log::warning('状态检查开始事件处理失败：member参数为空');
+            return;
+        }
+
+        try {
+            Log::info("用户状态检查开始：用户 {$member->username} ({$role}) 进行 {$checkType} 状态检查", [
+                'user_id' => $member->id,
+                'username' => $member->username,
+                'role' => $role,
+                'check_type' => $checkType,
+                'check_time' => date('Y-m-d H:i:s'),
+                'ip' => request()->getRealIp()
+            ]);
+            
+        } catch (\Throwable $e) {
+            Log::error('状态检查开始事件处理失败：' . $e->getMessage());
         }
     }
+
+    /**
+     * 用户状态检查成功事件处理
+     * @param array $data
+     * @return void
+     */
+    public static function eventStatusCheckSuccess(array $data): void
+    {
+        $member = $data['member'] ?? null;
+        $role = $data['role'] ?? 'admin';
+        $checkType = $data['check_type'] ?? 'login';
+        $checkItems = $data['check_items'] ?? [];
+        
+        if (!$member) {
+            Log::warning('状态检查成功事件处理失败：member参数为空');
+            return;
+        }
+
+        try {
+            Log::info("用户状态检查成功：用户 {$member->username} ({$role}) {$checkType} 状态检查通过", [
+                'user_id' => $member->id,
+                'username' => $member->username,
+                'role' => $role,
+                'check_type' => $checkType,
+                'check_items' => $checkItems,
+                'check_time' => date('Y-m-d H:i:s'),
+                'ip' => request()->getRealIp()
+            ]);
+            
+        } catch (\Throwable $e) {
+            Log::error('状态检查成功事件处理失败：' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 用户状态检查失败事件处理
+     * @param array $data
+     * @return void
+     */
+    public static function eventStatusCheckFailure(array $data): void
+    {
+        $member = $data['member'] ?? null;
+        $role = $data['role'] ?? 'admin';
+        $checkType = $data['check_type'] ?? 'login';
+        $failureReason = $data['failure_reason'] ?? '状态检查失败';
+        $failedItem = $data['failed_item'] ?? null;
+        
+        if (!$member) {
+            Log::warning('状态检查失败事件处理失败：member参数为空');
+            return;
+        }
+
+        try {
+            Log::warning("用户状态检查失败：用户 {$member->username} ({$role}) {$checkType} 状态检查失败 - {$failureReason}", [
+                'user_id' => $member->id,
+                'username' => $member->username,
+                'role' => $role,
+                'check_type' => $checkType,
+                'failure_reason' => $failureReason,
+                'failed_item' => $failedItem,
+                'check_time' => date('Y-m-d H:i:s'),
+                'ip' => request()->getRealIp()
+            ]);
+            
+        } catch (\Throwable $e) {
+            Log::error('状态检查失败事件处理失败：' . $e->getMessage());
+        }
+    }
+
+
 }

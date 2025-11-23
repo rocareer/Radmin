@@ -10,6 +10,7 @@ use support\StatusCode;
 use support\member\interface\InterfaceState;
 use Throwable;
 use support\cache\Cache as WebmanCache;
+use Webman\Event\Event as WebmanEvent;
 
 /**
  * 统一状态管理器 - 负责所有登录状态检查和处理
@@ -46,29 +47,82 @@ class State implements InterfaceState
         $this->config = config('roles.state', []);
     }
 
+    /**
+     * 初始化依赖组件（简化版，State类不需要复杂的依赖初始化）
+     * @return void
+     */
+    protected function initializeDependencies(): void
+    {
+        // State类主要依赖外部传入的memberModel
+        // 这里只需要确保基础配置已加载
+        if (empty($this->config)) {
+            $this->config = config('roles.state', []);
+        }
+        
+        // 如果角色未设置，尝试自动检测
+        if (empty($this->role)) {
+            $this->role = $this->detectMemberRole();
+        }
+    }
+
 
     /**
      * 统一检查用户状态
      * @param mixed $member 用户模型
+     * @param string $checkType 检查类型
      * @return bool
      * @throws BusinessException
      */
-    public function checkStatus($member): bool
+    public function checkStatus($member, string $checkType = 'login'): bool
     {
         $this->memberModel = $member;
+        
+        // 触发状态检查开始事件
+        WebmanEvent::emit('member.status_check.start', [
+            'member' => $this->memberModel,
+            'role' => $this->role,
+            'check_type' => $checkType
+        ]);
 
-        // 检查账号状态
-        if ($this->memberModel->status !== 'enable') {
-            throw new BusinessException('账号已被禁用', StatusCode::USER_DISABLED, true);
+        $checkItems = [];
+        
+        try {
+            // 检查账号状态
+            if ($this->memberModel->status !== 'enable') {
+                throw new BusinessException('账号已被禁用', StatusCode::USER_DISABLED, true);
+            }
+            $checkItems[] = '账号状态检查通过';
+            
+            // 检查登录失败次数
+            $this->checkLoginFailures();
+            $checkItems[] = '登录失败次数检查通过';
+            
+            // 检查单点登录状态
+            $this->checkSsoStatus();
+            $checkItems[] = '单点登录状态检查通过';
+            
+            // 触发状态检查成功事件
+            WebmanEvent::emit('member.status_check.success', [
+                'member' => $this->memberModel,
+                'role' => $this->role,
+                'check_type' => $checkType,
+                'check_items' => $checkItems
+            ]);
+            
+            return true;
+            
+        } catch (BusinessException $e) {
+            // 触发状态检查失败事件
+            WebmanEvent::emit('member.status_check.failure', [
+                'member' => $this->memberModel,
+                'role' => $this->role,
+                'check_type' => $checkType,
+                'failure_reason' => $e->getMessage(),
+                'failed_item' => end($checkItems) ?: '初始检查'
+            ]);
+            
+            throw $e;
         }
-        
-        // 检查登录失败次数
-        $this->checkLoginFailures();
-        
-        // 检查单点登录状态
-        $this->checkSsoStatus();
-        
-        return true;
     }
 
     /**
@@ -152,55 +206,16 @@ class State implements InterfaceState
     }
 
     /**
-     * 更新登录信息
-     * By albert  2025/05/06 02:50:25
+     * 更新登录状态（已废弃，统一使用事件处理）
+     * @deprecated 请使用事件系统处理登录状态更新
      * @param        $member
      * @param string $success
      * @return bool
      */
     public function updateLoginState($member, string $success): bool
     {
-        try {
-            // 检查member参数是否有效
-            if (!$member) {
-                Log::error('更新登录状态失败：member参数为空');
-                return false;
-            }
-            
-            $this->memberModel = $member;
-            $this->memberModel->startTrans();
-
-            if ($success === 'state.updateLogin.success') {
-                $this->memberModel->login_failure = 0;
-                
-                // 登录成功时更新状态缓存
-                $this->updateStateCache();
-                
-                // 记录登录日志
-                $this->recordLoginLog(true);
-            } else {
-                // 安全处理登录失败次数，避免非数值错误
-                $loginFailure = $this->memberModel->login_failure ?? 0;
-                $this->memberModel->login_failure = (int)$loginFailure + 1;
-                
-                // 登录失败时记录日志
-                $this->recordLoginLog(false);
-            }
-
-            // 注意：登录时间和IP的更新已移至登录成功事件中统一处理
-            // 这里只保存模型状态
-            $this->memberModel->save();
-
-            $this->memberModel->commit();
-            return true;
-        } catch (Throwable $e) {
-            // 只有在事务已启动时才回滚
-            if ($this->memberModel && method_exists($this->memberModel, 'rollback')) {
-                $this->memberModel->rollback();
-            }
-            Log::error('更新登录状态失败：' . $e->getMessage());
-            return false;
-        }
+        Log::warning('updateLoginState方法已废弃，请使用事件系统处理登录状态更新');
+        return false;
     }
     
     /**
@@ -323,16 +338,32 @@ class State implements InterfaceState
 
 
     /**
-     * 自动检测用户类型
+     * 自动检测用户类型（优化版）
      * @return string
      */
     protected function detectMemberRole(): string
     {
-        $this->initializeDependencies();
-        if (property_exists($this->memberModel, 'role')) {
+        // 如果当前角色已设置且有效，直接返回
+        if (!empty($this->role) && in_array($this->role, ['admin', 'user'])) {
+            return $this->role;
+        }
+        
+        // 如果用户模型已初始化且有角色属性，使用模型中的角色
+        if ($this->memberModel && property_exists($this->memberModel, 'role') && !empty($this->memberModel->role)) {
             return $this->memberModel->role;
         }
-        return strtolower(str_replace('StateManager', '', static::class));
+        
+        // 从类名推断角色（备用方案）
+        $className = static::class;
+        if (strpos($className, 'Admin') !== false) {
+            return 'admin';
+        }
+        if (strpos($className, 'User') !== false) {
+            return 'user';
+        }
+        
+        // 默认返回管理员角色
+        return 'admin';
     }
 
     /**

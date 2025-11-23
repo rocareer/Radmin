@@ -9,11 +9,6 @@
  * Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
  */
 
-use app\admin\model\data\Backup;
-use app\admin\model\log\authentication\Admin;
-use app\admin\model\log\data\Backup as BackupLog;
-use app\admin\model\log\data\Restore as RestoreLog;
-use support\member\State;
 use support\member\Event;
 
 return [
@@ -61,23 +56,17 @@ return [
         [Event::class, 'eventRoleConsistencyMismatch'],
     ],
     
-    // 用户菜单获取错误事件
-    'user.menu.get.error' => [
-        [Event::class, 'eventUserMenuGetError'],
+    // 用户状态检查开始事件
+    'member.status_check.start' => [
+        [Event::class, 'eventStatusCheckStart'],
     ],
-    
-    // 状态检查事件（已废弃，使用更具体的事件替代）
-    // 'state.check_status' => [
-    //     [Member::class, 'eventCheckStatus'],
-    // ],
-    
-    // 登录更新事件（已废弃，使用 state.login_success 和 state.login_failure 替代）
-    // 'state.update_login.*' => [
-    //     [Member::class, 'eventUpdateLogin'],
-    // ],
-    
-    // 通配符事件（已废弃，从未被使用）
-    // 'state.check.*' => [
-    //     [Member::class, 'eventHandleWildcard'],
-    // ],
+    // 用户状态检查成功事件
+    'member.status_check.success' => [
+        [Event::class, 'eventStatusCheckSuccess'],
+    ],
+    // 用户状态检查失败事件
+    'member.status_check.failure' => [
+        [Event::class, 'eventStatusCheckFailure'],
+    ],
+
 ];
