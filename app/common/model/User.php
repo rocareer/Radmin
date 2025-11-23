@@ -9,6 +9,8 @@ use extend\ba\Random;
 /**
  * 会员公共模型
  * @property int    $id              会员ID
+ * @property string $username        用户名
+ * @property string $nickname        昵称
  * @property string $password        密码密文
  * @property int    $login_failure   登录失败次数
  * @property string $last_login_time 上次登录时间

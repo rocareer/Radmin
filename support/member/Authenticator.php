@@ -1054,6 +1054,11 @@ abstract class Authenticator implements InterfaceAuthenticator
         
         // 设置默认用户组（ID为1的默认分组）
         $credentials['group_id'] = 1;
+        
+        // 设置默认昵称为用户名
+        if (empty($credentials['nickname'])) {
+            $credentials['nickname'] = $credentials['username'];
+        }
 
         // 创建用户
         $member = $this->memberModel->create($credentials);
