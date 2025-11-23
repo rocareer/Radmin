@@ -14,16 +14,23 @@ namespace extend\ra;
 use app\admin\model\Config as ConfigModel;
 use support\cache\Cache;
 use support\orm\Db;
+use function request;
 
 class SystemUtil
 {
+    /**
+     * 获取系统配置
+     * @param string $name 配置项名称
+     * @param string $group 配置分组
+     * @param bool $concise 是否返回简洁格式
+     * @return mixed
+     */
     public static function get_sys_config(string $name = '', string $group = '', bool $concise = true): mixed
     {
         if (!self::installed()) {
-            return [];
+            return $name ? '' : [];
         }
         
-        // 使用缓存键名而不是标签
         if ($name) {
             return self::getSingleConfig($name);
         } elseif ($group) {
@@ -40,13 +47,19 @@ class SystemUtil
     {
         $cacheKey = 'sys_config_' . $name;
         $config = Cache::get($cacheKey);
-        if (!$config) {
-            $config = ConfigModel::where('name', $name)->find();
-            if ($config) {
-                $config = $config['value'];
+        
+        if ($config === null) {
+            $configModel = ConfigModel::where('name', $name)->find();
+            if ($configModel) {
+                // 通过模型的访问器获取处理后的value值
+                $config = $configModel->value;
                 Cache::set($cacheKey, $config, 3600); // 缓存1小时
+            } else {
+                $config = '';
+                Cache::set($cacheKey, $config, 3600);
             }
         }
+        
         return $config;
     }
 
@@ -55,15 +68,27 @@ class SystemUtil
      */
     private static function getGroupConfig(string $group, bool $concise = true): array
     {
-        // 分组配置缓存
         $cacheKey = 'sys_config_group_' . $group;
-        $temp = Cache::get($cacheKey);
-        if (!$temp) {
-            $temp = ConfigModel::where('group', $group)->order('weigh desc')->select()->toArray();
-            Cache::set($cacheKey, $temp, 3600); // 缓存1小时
+        $config = Cache::get($cacheKey);
+        
+        if ($config === null) {
+            $configModels = ConfigModel::where('group', $group)->order('weigh desc')->select();
+            $config = [];
+            
+            foreach ($configModels as $model) {
+                if ($concise) {
+                    // 简洁格式：name => value
+                    $config[$model->name] = $model->value;
+                } else {
+                    // 完整格式：包含所有字段
+                    $config[] = $model->toArray();
+                }
+            }
+            
+            Cache::set($cacheKey, $config, 3600); // 缓存1小时
         }
         
-        return $concise ? self::formatConfigConcise($temp) : $temp;
+        return $config;
     }
 
     /**
@@ -71,26 +96,26 @@ class SystemUtil
      */
     private static function getConfigList(bool $concise = true): array
     {
-        // 全部配置缓存
         $cacheKey = 'sys_config_all';
-        $temp = Cache::get($cacheKey);
-        if (!$temp) {
-            $temp = ConfigModel::order('weigh desc')->select()->toArray();
-            Cache::set($cacheKey, $temp, 3600); // 缓存1小时
+        $config = Cache::get($cacheKey);
+        
+        if ($config === null) {
+            $configModels = ConfigModel::order('weigh desc')->select();
+            $config = [];
+            
+            foreach ($configModels as $model) {
+                if ($concise) {
+                    // 简洁格式：name => value
+                    $config[$model->name] = $model->value;
+                } else {
+                    // 完整格式：包含所有字段
+                    $config[] = $model->toArray();
+                }
+            }
+            
+            Cache::set($cacheKey, $config, 3600); // 缓存1小时
         }
         
-        return $concise ? self::formatConfigConcise($temp) : $temp;
-    }
-
-    /**
-     * 格式化简洁配置格式
-     */
-    private static function formatConfigConcise(array $temp): array
-    {
-        $config = [];
-        foreach ($temp as $item) {
-            $config[$item['name']] = $item['value'];
-        }
         return $config;
     }
 

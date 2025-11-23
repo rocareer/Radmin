@@ -60,22 +60,56 @@ class Config extends BaseModel
     }
 
     /**
-     * 写入后
+     * 写入后 - 自动更新系统配置缓存
      */
     public static function onAfterWrite(): void
     {
-        // 清理配置缓存 - 不使用标签方式
-        // 删除全部配置缓存
-        Cache::delete('sys_config_all');
-        // 删除分组配置缓存（需要遍历所有分组）
-        $groups = self::distinct()->column('group');
-        foreach ($groups as $group) {
-            Cache::delete('sys_config_group_' . $group);
-        }
-        // 删除单个配置项缓存（需要遍历所有配置项）
-        $configs = self::column('name');
-        foreach ($configs as $name) {
-            Cache::delete('sys_config_' . $name);
+        self::refreshSystemConfigCache();
+    }
+    
+    /**
+     * 刷新系统配置缓存
+     * 确保配置变更后立即生效
+     */
+    public static function refreshSystemConfigCache(): void
+    {
+        try {
+            // 清理配置缓存
+            Cache::delete('sys_config_all');
+            
+            // 重新加载所有配置到缓存（使用模型确保数据格式正确）
+            $allConfigModels = self::order('weigh desc')->select();
+            
+            // 按分组缓存配置（简洁格式）
+            $configGroups = [];
+            $allConfigs = [];
+            
+            foreach ($allConfigModels as $configModel) {
+                $configName = $configModel->name;
+                $configGroup = $configModel->group;
+                $configValue = $configModel->value; // 通过模型访问器获取处理后的值
+                
+                // 缓存单个配置项
+                Cache::set('sys_config_' . $configName, $configValue, 3600);
+                
+                // 按分组收集配置
+                $configGroups[$configGroup][$configName] = $configValue;
+                
+                // 收集所有配置
+                $allConfigs[$configName] = $configValue;
+            }
+            
+            // 缓存分组配置（简洁格式）
+            foreach ($configGroups as $group => $configs) {
+                Cache::set('sys_config_group_' . $group, $configs, 3600);
+            }
+            
+            // 缓存完整配置（简洁格式）
+            Cache::set('sys_config_all', $allConfigs, 3600);
+            
+        } catch (\Throwable $e) {
+            // 缓存更新失败不影响主流程，记录日志即可
+            error_log('系统配置缓存自动更新失败: ' . $e->getMessage());
         }
     }
 

@@ -210,8 +210,7 @@ class Config extends Backend
                 }
                 $result = $this->model->saveAll($configValue);
                 
-                // 强制更新系统配置缓存
-                $this->forceUpdateSystemConfigCache();
+                // 模型的onAfterWrite会自动更新缓存
                 
                 $this->model->commit();
             } catch (Throwable $e) {
@@ -254,6 +253,9 @@ class Config extends Backend
                 }
 
                 $result = $this->model->save($data);
+                
+                // 模型的onAfterWrite会自动更新缓存
+                
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
@@ -299,50 +301,5 @@ class Config extends Backend
      return $this->success(__('Test mail sent successfully~'));
     }
 
-    /**
-     * 强制更新系统配置缓存
-     * 确保配置保存后立即生效
-     */
-    private function forceUpdateSystemConfigCache(): void
-    {
-        try {
-            // 清理配置缓存 - 不使用标签方式
-            // 删除全部配置缓存
-            Cache::delete('sys_config_all');
-            // 删除分组配置缓存（需要遍历所有分组）
-            $groups = $this->model->distinct()->column('group');
-            foreach ($groups as $group) {
-                Cache::delete('sys_config_group_' . $group);
-            }
-            // 删除单个配置项缓存（需要遍历所有配置项）
-            $configs = $this->model->column('name');
-            foreach ($configs as $name) {
-                Cache::delete('sys_config_' . $name);
-            }
-            
-            // 重新加载所有配置到缓存
-            $allConfigs = $this->model->order('weigh desc')->select()->toArray();
-            
-            // 按分组缓存配置
-            $configGroups = [];
-            foreach ($allConfigs as $config) {
-                $configGroups[$config['group']][$config['name']] = $config['value'];
-                
-                // 缓存单个配置项（与SystemUtil::get_sys_config()保持一致）
-                Cache::set('sys_config_' . $config['name'], $config['value'], 3600);
-            }
-            
-            // 缓存分组配置（与SystemUtil::get_sys_config()保持一致）
-            foreach ($configGroups as $group => $configs) {
-                Cache::set('sys_config_group_' . $group, $configs, 3600);
-            }
-            
-            // 缓存完整配置
-            Cache::set('sys_config_all', $configGroups, 3600);
-            
-        } catch (\Throwable $e) {
-            // 缓存更新失败不影响主流程，记录日志即可
-            error_log('系统配置缓存更新失败: ' . $e->getMessage());
-        }
-    }
+
 }
