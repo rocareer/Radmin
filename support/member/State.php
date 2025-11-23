@@ -39,7 +39,7 @@ class State implements InterfaceState
     protected static string $loginLogTable = '';
 
     //instance
-    protected mixed $memberModel;
+    public mixed $memberModel;
 
     public function __construct()
     {
@@ -206,7 +206,7 @@ class State implements InterfaceState
     /**
      * 更新状态缓存
      */
-    protected function updateStateCache(): void
+    public function updateStateCache(): void
     {
         $cacheKey = $this->getStateCacheKey();
         $cacheTime = $this->config['state']['cache_time'] ?? 86400;
@@ -223,7 +223,7 @@ class State implements InterfaceState
     }
 
 
-    protected function recordLoginLog(bool $success, ?string $reason = null): void
+    public function recordLoginLog(bool $success, ?string $reason = null): void
     {
         try {
             $tableName = $this->getLoginLogTableName();

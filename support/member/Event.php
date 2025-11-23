@@ -5,7 +5,7 @@ namespace support\member;
 use app\exception\BusinessException;
 use support\StatusCode;
 use Webman\Event\Event as WebmanEvent;
-use support\log\Log;
+use support\Log;
 use support\member\State;
 
 /**
@@ -380,7 +380,7 @@ class Event
     }
 
     /**
-     * 用户菜单获取错误事件处理
+     * 用户菜单获取错误事件处理（已废除，只做简单日志记录）
      * @param array $data
      * @return void
      */
@@ -390,22 +390,9 @@ class Event
         $error = $data['error'] ?? null;
         $role = $data['role'] ?? null;
         
-        if (!$uid || !$error) {
-            Log::warning('用户菜单获取错误事件处理失败：uid或error参数为空');
-            return;
-        }
-
-        try {
-            Log::error("用户菜单获取错误：用户 {$uid} 在角色 {$role} 下获取菜单失败", [
-                'uid' => $uid,
-                'role' => $role,
-                'error' => $error,
-                'error_time' => date('Y-m-d H:i:s'),
-                'ip' => request()->getRealIp()
-            ]);
-            
-        } catch (\Throwable $e) {
-            Log::error('用户菜单获取错误事件处理失败：' . $e->getMessage());
+        // 只做简单日志记录，不进行复杂处理
+        if ($uid && $error) {
+            Log::info("用户菜单获取错误（已废除事件）：用户 {$uid} 在角色 {$role} 下获取菜单失败 - {$error}");
         }
     }
 }

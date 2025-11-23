@@ -17,22 +17,7 @@ use support\member\State;
 use support\member\Event;
 
 return [
-    // 状态检查事件（已废弃，从未被触发）
-    // 'state.check.before' => [
-    //     [Member::class, 'eventBeforeCheck'],
-    // ],
-    // 'state.check.account_status' => [
-    //     [Member::class, 'eventCheckAccountStatus'],
-    // ],
-    // 'state.check.login_failures' => [
-    //     [Member::class, 'eventCheckLoginFailures'],
-    // ],
-    // 'state.check.sso_status' => [
-    //     [Member::class, 'eventCheckSsoStatus'],
-    // ],
-    // 'state.check.after' => [
-    //     [Member::class, 'eventAfterCheck'],
-    // ],
+
     
     // 登录成功事件
     'member.login_success' => [
