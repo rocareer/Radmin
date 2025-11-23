@@ -141,7 +141,7 @@ class InstallData extends AbstractMigration
                 'title' => 'Version number',
                 'tip'   => '系统版本号',
                 'type'  => 'string',
-                'value' => 'v1.0.0',
+                'value' => 'v1.1.0',
                 'rule'  => 'required',
             ],
             [
