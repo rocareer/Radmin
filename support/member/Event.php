@@ -33,20 +33,29 @@ class Event
         try {
             $member->startTrans();
 
+            // 更新登录失败次数和登录信息
             $loginFailure = $member->login_failure ?? 0;
             $member->login_failure = (int)$loginFailure + 1;
             $member->last_login_time = time();
             $member->last_login_ip = request()->getRealIp();
             $member->save();
 
-            // 记录登录日志
+            // 统一状态管理：记录登录失败日志
             $state = new State();
             $state->role = $role;
             $state->memberModel = $member;
             $state->recordLoginLog(false, $reason);
 
             $member->commit();
-            Log::info('登录失败记录成功', ['username' => $member->username, 'role' => $role, 'reason' => $reason]);
+            
+            Log::info('登录失败记录成功', [
+                'username' => $member->username, 
+                'role' => $role, 
+                'reason' => $reason,
+                'login_failure_count' => $member->login_failure,
+                'login_time' => date('Y-m-d H:i:s'),
+                'ip' => request()->getRealIp()
+            ]);
             return true;
         } catch (\Throwable $e) {
             if (method_exists($member, 'rollback')) {
@@ -73,19 +82,24 @@ class Event
         }
 
         try {
-            // 注意：登录信息更新已在Authenticator.updateLoginInfo中处理
-            // 这里不再重复更新登录信息，只处理后续逻辑
-            
-            // 更新状态缓存
+            // 统一状态管理：更新状态缓存和记录日志
             $state = new State();
             $state->role = $role;
             $state->memberModel = $member;
+            
+            // 更新状态缓存
             $state->updateStateCache();
-
+            
             // 记录登录成功日志
             $state->recordLoginLog(true);
             
-            Log::info("用户 {$member->username} ({$role}) 登录成功");
+            Log::info("用户 {$member->username} ({$role}) 登录成功", [
+                'member_id' => $member->id,
+                'username' => $member->username,
+                'role' => $role,
+                'login_time' => date('Y-m-d H:i:s'),
+                'ip' => request()->getRealIp()
+            ]);
             
         } catch (\Throwable $e) {
             Log::error('登录成功事件处理失败：' . $e->getMessage(), [
@@ -131,6 +145,7 @@ class Event
     {
         $member = $data['member'] ?? null;
         $role = $data['role'] ?? 'admin';
+        $errorMessage = $data['error_message'] ?? '认证失败';
         
         if (!$member) {
             Log::warning('登录失败事件处理失败：member参数为空');
@@ -138,14 +153,21 @@ class Event
         }
 
         try {
-            // 记录登录失败
+            // 直接调用记录登录失败方法，避免中间方法调用
             self::eventRecordLoginFailure([
                 'member' => $member,
                 'role' => $role,
-                'reason' => '认证失败'
+                'reason' => $errorMessage
             ]);
             
-            Log::warning("用户 {$member->username} ({$role}) 登录失败");
+            Log::warning("用户 {$member->username} ({$role}) 登录失败 - {$errorMessage}", [
+                'member_id' => $member->id,
+                'username' => $member->username,
+                'role' => $role,
+                'error_message' => $errorMessage,
+                'login_time' => date('Y-m-d H:i:s'),
+                'ip' => request()->getRealIp()
+            ]);
             
         } catch (\Throwable $e) {
             Log::error('登录失败事件处理失败：' . $e->getMessage());
@@ -168,7 +190,7 @@ class Event
         }
 
         try {
-            // 记录注册成功日志
+            // 统一状态管理：记录注册成功日志
             $state = new State();
             $state->role = $role;
             $state->memberModel = $member;

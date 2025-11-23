@@ -13,6 +13,7 @@ use support\member\interface\InterfaceAuthenticator;
 use support\member\role\admin\AdminModel;
 use support\member\role\user\UserModel;
 use support\orm\Db;
+use support\RequestContext;
 use support\StatusCode;
 use support\token\Token;
 use think\db\exception\DataNotFoundException;
@@ -557,7 +558,7 @@ abstract class Authenticator implements InterfaceAuthenticator
      * @param string $role 用户角色
      * @return bool
      */
-    protected function updateLoginInfo(object $member, string $role): bool
+    public function updateLoginInfo(object $member, string $role): bool
     {
         try {
             if (!$member || !isset($member->id)) {
@@ -681,7 +682,7 @@ abstract class Authenticator implements InterfaceAuthenticator
         try {
             // 从缓存或数据库获取登录历史
             $cacheKey = "login_history_{$role}_{$userId}";
-            $summary = \support\RequestContext::get($cacheKey);
+            $summary = RequestContext::get($cacheKey);
             
             if (!$summary) {
                 // 这里可以从数据库获取更详细的登录历史
@@ -696,7 +697,7 @@ abstract class Authenticator implements InterfaceAuthenticator
                 ];
                 
                 // 缓存摘要信息
-                \support\RequestContext::set($cacheKey, $summary);
+                RequestContext::set($cacheKey, $summary);
             }
             
             return $summary;
@@ -751,7 +752,7 @@ abstract class Authenticator implements InterfaceAuthenticator
         
         // 缓存更新后的摘要
         $cacheKey = "login_history_{$role}_{$member->id}";
-        \support\RequestContext::set($cacheKey, $summary);
+        RequestContext::set($cacheKey, $summary);
         
         Log::debug('登录历史摘要已更新', [
             'member_id' => $member->id,
@@ -813,15 +814,15 @@ abstract class Authenticator implements InterfaceAuthenticator
     protected function cleanupCurrentRoleContext(): void
     {
         // 清理成员上下文中的当前角色数据
-        $context = \support\RequestContext::get('member_context');
+        $context = RequestContext::get('member_context');
         if ($context) {
             $context->clearRoleContext($this->role);
         }
         
         // 清理RequestContext中与当前角色相关的数据
-        \support\RequestContext::delete("role_{$this->role}_data");
-        \support\RequestContext::delete("role_{$this->role}_token");
-        \support\RequestContext::delete("current_{$this->role}_service");
+        RequestContext::delete("role_{$this->role}_data");
+        RequestContext::delete("role_{$this->role}_token");
+        RequestContext::delete("current_{$this->role}_service");
         
         // 使用Role统一清理角色上下文
         \support\member\Role::getInstance()->cleanupRoleContext($this->role);
