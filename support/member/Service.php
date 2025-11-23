@@ -241,7 +241,7 @@ abstract class Service implements InterfaceService
     }
 
     /**
-     * 用户信息初始化
+     * 用户信息初始化（简化版，专注于协调）
      *
      * @throws UnauthorizedHttpException|BusinessException
      */
@@ -253,23 +253,18 @@ abstract class Service implements InterfaceService
         }
 
         try {
-            // 用户信息初始化
+            // 委托给认证器处理用户初始化
             $this->memberInitialization();
 
-            // 用户信息扩展
-            $this->extendMemberInfo();
-
-            // 状态检查
+            // 委托给状态管理器进行状态检查
             $this->checkStatus('login');
 
         } catch (Exception $e) {
-            Event::emit("state.updateLogin.failure", [
-                'member'        => $this->memberModel,
+            // 触发初始化失败事件
+            Event::emit("member.initialization.failure", [
                 'role'          => $this->role,
-                'success'       => false,
-                'timestamp'     => microtime(true),
-                'event_type'    => 'login_update',
-                'error_message' => $e->getMessage()
+                'error_message' => $e->getMessage(),
+                'timestamp'     => microtime(true)
             ]);
             throw $e;
         }

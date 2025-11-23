@@ -15,7 +15,7 @@ use support\member\State;
 class Event
 {
     /**
-     * 记录登录失败事件处理
+     * 记录登录失败事件处理（解耦版）
      * @param array $data
      * @return bool
      */
@@ -31,36 +31,23 @@ class Event
         }
 
         try {
-            $member->startTrans();
-
-            // 更新登录失败次数和登录信息
-            $loginFailure = $member->login_failure ?? 0;
-            $member->login_failure = (int)$loginFailure + 1;
-            $member->last_login_time = time();
-            $member->last_login_ip = request()->getRealIp();
-            $member->save();
-
-            // 统一状态管理：记录登录失败日志
-            $state = new State();
-            $state->role = $role;
-            $state->memberModel = $member;
-            $state->recordLoginLog(false, $reason);
-
-            $member->commit();
+            // 触发状态更新事件，由状态管理器处理
+            WebmanEvent::emit('member.state.update', [
+                'member' => $member,
+                'role' => $role,
+                'action' => 'login_failure',
+                'reason' => $reason
+            ]);
             
             Log::info('登录失败记录成功', [
                 'username' => $member->username, 
                 'role' => $role, 
                 'reason' => $reason,
-                'login_failure_count' => $member->login_failure,
                 'login_time' => date('Y-m-d H:i:s'),
                 'ip' => request()->getRealIp()
             ]);
             return true;
         } catch (\Throwable $e) {
-            if (method_exists($member, 'rollback')) {
-                $member->rollback();
-            }
             Log::error('记录登录失败信息失败：' . $e->getMessage());
             return false;
         }
@@ -343,36 +330,6 @@ class Event
     }
 
     /**
-     * 角色切换事件处理
-     * @param array $data
-     * @return void
-     */
-    public static function eventRoleSwitched(array $data): void
-    {
-        $fromRole = $data['from_role'] ?? null;
-        $toRole = $data['to_role'] ?? null;
-        $activeRoles = $data['active_roles'] ?? [];
-        
-        if (!$fromRole || !$toRole) {
-            Log::warning('角色切换事件处理失败：from_role或to_role参数为空');
-            return;
-        }
-
-        try {
-            Log::info("用户角色切换：从 {$fromRole} 切换到 {$toRole}", [
-                'from_role' => $fromRole,
-                'to_role' => $toRole,
-                'active_roles' => $activeRoles,
-                'switch_time' => date('Y-m-d H:i:s'),
-                'ip' => request()->getRealIp()
-            ]);
-            
-        } catch (\Throwable $e) {
-            Log::error('角色切换事件处理失败：' . $e->getMessage());
-        }
-    }
-
-    /**
      * 角色一致性检查失败事件处理
      * @param array $data
      * @return void
@@ -403,101 +360,253 @@ class Event
     }
 
     /**
-     * 用户状态检查开始事件处理
+     * 状态更新事件处理
      * @param array $data
      * @return void
      */
-    public static function eventStatusCheckStart(array $data): void
+    public static function eventStateUpdate(array $data): void
     {
         $member = $data['member'] ?? null;
         $role = $data['role'] ?? 'admin';
-        $checkType = $data['check_type'] ?? 'login';
+        $action = $data['action'] ?? 'update';
+        $reason = $data['reason'] ?? null;
         
         if (!$member) {
-            Log::warning('状态检查开始事件处理失败：member参数为空');
+            Log::warning('状态更新事件处理失败：member参数为空');
             return;
         }
 
         try {
-            Log::info("用户状态检查开始：用户 {$member->username} ({$role}) 进行 {$checkType} 状态检查", [
+            Log::info("用户状态更新：用户 {$member->username} ({$role}) 状态更新 - {$action}", [
                 'user_id' => $member->id,
                 'username' => $member->username,
                 'role' => $role,
-                'check_type' => $checkType,
-                'check_time' => date('Y-m-d H:i:s'),
+                'action' => $action,
+                'reason' => $reason,
+                'update_time' => date('Y-m-d H:i:s'),
                 'ip' => request()->getRealIp()
             ]);
             
         } catch (\Throwable $e) {
-            Log::error('状态检查开始事件处理失败：' . $e->getMessage());
+            Log::error('状态更新事件处理失败：' . $e->getMessage());
         }
     }
 
     /**
-     * 用户状态检查成功事件处理
+     * 上下文清理事件处理
      * @param array $data
      * @return void
      */
-    public static function eventStatusCheckSuccess(array $data): void
+    public static function eventContextCleared(array $data): void
+    {
+        $previousRole = $data['previous_role'] ?? null;
+        $activeRolesCleared = $data['active_roles_cleared'] ?? [];
+        
+        try {
+            Log::info("上下文清理：清理前角色 {$previousRole}，清理活跃角色：" . implode(', ', $activeRolesCleared), [
+                'previous_role' => $previousRole,
+                'active_roles_cleared' => $activeRolesCleared,
+                'clear_time' => date('Y-m-d H:i:s'),
+                'ip' => request()->getRealIp()
+            ]);
+            
+        } catch (\Throwable $e) {
+            Log::error('上下文清理事件处理失败：' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 初始化失败事件处理
+     * @param array $data
+     * @return void
+     */
+    public static function eventInitializationFailure(array $data): void
+    {
+        $role = $data['role'] ?? 'admin';
+        $errorMessage = $data['error_message'] ?? '初始化失败';
+        
+        try {
+            Log::error("初始化失败：角色 {$role} 初始化失败 - {$errorMessage}", [
+                'role' => $role,
+                'error_message' => $errorMessage,
+                'failure_time' => date('Y-m-d H:i:s'),
+                'ip' => request()->getRealIp()
+            ]);
+            
+        } catch (\Throwable $e) {
+            Log::error('初始化失败事件处理失败：' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 状态检查事件处理（合并版）
+     * @param array $data
+     * @return void
+     */
+    public static function eventStatusCheck(array $data): void
     {
         $member = $data['member'] ?? null;
         $role = $data['role'] ?? 'admin';
         $checkType = $data['check_type'] ?? 'login';
+        $status = $data['status'] ?? 'start'; // start, success, failure
+        $failureReason = $data['failure_reason'] ?? null;
+        $failedItem = $data['failed_item'] ?? null;
         $checkItems = $data['check_items'] ?? [];
         
-        if (!$member) {
-            Log::warning('状态检查成功事件处理失败：member参数为空');
+        if (!$member && $status !== 'start') {
+            Log::warning('状态检查事件处理失败：member参数为空');
             return;
         }
 
         try {
-            Log::info("用户状态检查成功：用户 {$member->username} ({$role}) {$checkType} 状态检查通过", [
-                'user_id' => $member->id,
-                'username' => $member->username,
+            $logLevel = 'info';
+            $message = "用户状态检查：用户 {$member?->username} ({$role}) {$checkType} 状态检查";
+            
+            switch ($status) {
+                case 'start':
+                    $message .= "开始";
+                    break;
+                case 'success':
+                    $message .= "成功";
+                    break;
+                case 'failure':
+                    $message .= "失败 - {$failureReason}";
+                    $logLevel = 'warning';
+                    break;
+            }
+            
+            $logData = [
+                'user_id' => $member?->id,
+                'username' => $member?->username,
                 'role' => $role,
                 'check_type' => $checkType,
-                'check_items' => $checkItems,
+                'status' => $status,
                 'check_time' => date('Y-m-d H:i:s'),
                 'ip' => request()->getRealIp()
-            ]);
+            ];
+            
+            if ($status === 'success') {
+                $logData['check_items'] = $checkItems;
+            } elseif ($status === 'failure') {
+                $logData['failure_reason'] = $failureReason;
+                $logData['failed_item'] = $failedItem;
+            }
+            
+            Log::$logLevel($message, $logData);
             
         } catch (\Throwable $e) {
-            Log::error('状态检查成功事件处理失败：' . $e->getMessage());
+            Log::error('状态检查事件处理失败：' . $e->getMessage());
         }
     }
 
     /**
-     * 用户状态检查失败事件处理
+     * 角色切换事件处理（合并版）
      * @param array $data
      * @return void
      */
-    public static function eventStatusCheckFailure(array $data): void
+    public static function eventRoleSwitch(array $data): void
     {
-        $member = $data['member'] ?? null;
-        $role = $data['role'] ?? 'admin';
-        $checkType = $data['check_type'] ?? 'login';
-        $failureReason = $data['failure_reason'] ?? '状态检查失败';
-        $failedItem = $data['failed_item'] ?? null;
+        $fromRole = $data['from_role'] ?? null;
+        $toRole = $data['to_role'] ?? null;
+        $status = $data['status'] ?? 'switched'; // switched, skipped, failed
+        $reason = $data['reason'] ?? null;
+        $currentRole = $data['current_role'] ?? null;
+        $activeRoles = $data['active_roles'] ?? [];
         
-        if (!$member) {
-            Log::warning('状态检查失败事件处理失败：member参数为空');
-            return;
-        }
-
         try {
-            Log::warning("用户状态检查失败：用户 {$member->username} ({$role}) {$checkType} 状态检查失败 - {$failureReason}", [
-                'user_id' => $member->id,
-                'username' => $member->username,
-                'role' => $role,
-                'check_type' => $checkType,
-                'failure_reason' => $failureReason,
-                'failed_item' => $failedItem,
-                'check_time' => date('Y-m-d H:i:s'),
+            $logLevel = 'info';
+            $message = "角色切换：";
+            
+            switch ($status) {
+                case 'switched':
+                    $message .= "从 {$fromRole} 切换到 {$toRole}";
+                    break;
+                case 'skipped':
+                    $message .= "角色 {$toRole} 切换被跳过 - 原因：{$reason}";
+                    break;
+                case 'failed':
+                    $message .= "尝试切换到 {$toRole} 失败，当前角色为 {$currentRole}";
+                    $logLevel = 'warning';
+                    break;
+            }
+            
+            $logData = [
+                'from_role' => $fromRole,
+                'to_role' => $toRole,
+                'status' => $status,
+                'switch_time' => date('Y-m-d H:i:s'),
                 'ip' => request()->getRealIp()
-            ]);
+            ];
+            
+            if ($status === 'switched') {
+                $logData['active_roles'] = $activeRoles;
+            } elseif ($status === 'skipped') {
+                $logData['reason'] = $reason;
+            } elseif ($status === 'failed') {
+                $logData['current_role'] = $currentRole;
+            }
+            
+            Log::$logLevel($message, $logData);
             
         } catch (\Throwable $e) {
-            Log::error('状态检查失败事件处理失败：' . $e->getMessage());
+            Log::error('角色切换事件处理失败：' . $e->getMessage());
+        }
+    }
+
+    /**
+     * 角色清理事件处理（合并版）
+     * @param array $data
+     * @return void
+     */
+    public static function eventRoleCleanup(array $data): void
+    {
+        $role = $data['role'] ?? null;
+        $type = $data['type'] ?? 'single'; // single, batch_start, batch_complete, failed
+        $wasCurrentRole = $data['was_current_role'] ?? false;
+        $clearedRoles = $data['cleared_roles'] ?? [];
+        $error = $data['error'] ?? null;
+        $timestamp = $data['timestamp'] ?? microtime(true);
+        
+        try {
+            $logLevel = 'info';
+            $message = "角色清理：";
+            
+            switch ($type) {
+                case 'single':
+                    $message .= "清理角色 {$role}，是否当前角色：" . ($wasCurrentRole ? '是' : '否');
+                    break;
+                case 'batch_start':
+                    $message .= "开始清理所有角色：" . implode(', ', $clearedRoles);
+                    break;
+                case 'batch_complete':
+                    $message .= "所有角色清理完成：" . implode(', ', $clearedRoles);
+                    break;
+                case 'failed':
+                    $message .= "清理角色 {$role} 失败 - {$error}";
+                    $logLevel = 'error';
+                    break;
+            }
+            
+            $logData = [
+                'role' => $role,
+                'type' => $type,
+                'clear_time' => date('Y-m-d H:i:s'),
+                'ip' => request()->getRealIp()
+            ];
+            
+            if ($type === 'single') {
+                $logData['was_current_role'] = $wasCurrentRole;
+            } elseif (in_array($type, ['batch_start', 'batch_complete'])) {
+                $logData['cleared_roles'] = $clearedRoles;
+                $logData['timestamp'] = $timestamp;
+            } elseif ($type === 'failed') {
+                $logData['error'] = $error;
+            }
+            
+            Log::$logLevel($message, $logData);
+            
+        } catch (\Throwable $e) {
+            Log::error('角色清理事件处理失败：' . $e->getMessage());
         }
     }
 

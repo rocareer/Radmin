@@ -15,6 +15,7 @@ use think\db\exception\DataNotFoundException;
 use think\db\exception\DbException;
 use think\db\exception\ModelNotFoundException;
 use Throwable;
+use Webman\Event\Event as WebmanEvent;
 
 /**
  * 用户基础模型
@@ -184,10 +185,13 @@ abstract class Model extends ThinkModel implements InterfaceModel
      */
     public function recordLoginFailure(?string $reason = null): bool
     {
-        // 统一使用State类处理登录状态
-        $state = new State();
-        $state->role = $this->role;
-        return $state->recordLoginFailure($this, $reason);
+        // 触发事件，由事件处理器统一处理
+        WebmanEvent::emit("member.login.failure", [
+            'member' => $this,
+            'role' => $this->role,
+            'reason' => $reason
+        ]);
+        return true;
     }
 
 

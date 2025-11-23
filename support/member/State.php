@@ -374,14 +374,19 @@ class State implements InterfaceState
     }
 
     /**
-     * 获取缓存键
+     * 获取缓存键（增强唯一性保障）
      * By albert  2025/05/06 04:47:33
      * @return string
      */
     protected function getStateCacheKey(): string
     {
         $this->initCachePrefix();
-        return $this->cachePrefix . "{$this->role}-{$this->memberModel->id}";
+        
+        // 增强唯一性保障：添加应用标识和用户类型哈希
+        $appIdentifier = config('app.name', 'webman-radmin');
+        $userTypeHash = substr(md5($this->role), 0, 8);
+        
+        return $this->cachePrefix . "{$appIdentifier}-{$userTypeHash}-{$this->role}-{$this->memberModel->id}";
     }
 
     /**

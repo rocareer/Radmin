@@ -46,6 +46,11 @@ abstract class Authenticator implements InterfaceAuthenticator
     public object|null $memberModel = null;
 
     /**
+     * @var State|null 状态管理器实例缓存
+     */
+    protected ?State $stateInstance = null;
+
+    /**
      * @throws BusinessException
      */
     public function __construct()
@@ -210,15 +215,25 @@ abstract class Authenticator implements InterfaceAuthenticator
     }
 
     /**
+     * 获取状态管理器实例（缓存优化）
+     */
+    protected function getState(): State
+    {
+        if (!$this->stateInstance) {
+            $this->stateInstance = new State();
+            $this->stateInstance->role = $this->role;
+            $this->stateInstance->memberModel = $this->memberModel;
+        }
+        return $this->stateInstance;
+    }
+
+    /**
      * 检查用户状态
      */
     protected function checkMemberStatus(): void
     {
-        // 创建状态管理器实例并检查用户状态
-        $state = new State();
-        $state->role = $this->role;
-        $state->memberModel = $this->memberModel;
-        $state->checkStatus($this->memberModel, 'login');
+        // 使用缓存的状态管理器实例检查用户状态
+        $this->getState()->checkStatus($this->memberModel, 'login');
     }
 
     /**
@@ -226,11 +241,8 @@ abstract class Authenticator implements InterfaceAuthenticator
      */
     protected function checkLoginRetryLimit(): void
     {
-        // 创建状态管理器实例并检查登录失败次数
-        $state = new State();
-        $state->role = $this->role;
-        $state->memberModel = $this->memberModel;
-        $state->checkLoginFailures();
+        // 使用缓存的状态管理器实例检查登录失败次数
+        $this->getState()->checkLoginFailures();
     }
 
     /**
@@ -428,13 +440,18 @@ abstract class Authenticator implements InterfaceAuthenticator
     }
     
     /**
-     * 获取状态缓存键
+     * 获取状态缓存键（与State类保持一致）
      */
     protected function getStateCacheKey(): string
     {
-        $config = config('auth.state');
+        $config = config('roles.state', []);
         $prefix = $config['prefix'] ?? 'state-';
-        return $prefix . $this->role . '-' . $this->memberModel->id;
+        
+        // 与State类保持一致：添加应用标识和用户类型哈希
+        $appIdentifier = config('app.name', 'webman-radmin');
+        $userTypeHash = substr(md5($this->role), 0, 8);
+        
+        return $prefix . "{$appIdentifier}-{$userTypeHash}-{$this->role}-{$this->memberModel->id}";
     }
 
 
