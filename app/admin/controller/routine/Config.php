@@ -12,6 +12,7 @@ use support\Response;
 use extend\ra\FileUtil;
 use Throwable;
 use support\cache\Cache;
+use support\Log;
 
 
 class Config extends Backend
@@ -123,8 +124,34 @@ class Config extends Backend
                         $backendEntrance = SystemUtil::get_sys_config('backend_entrance');
                         if ($backendEntrance == $data[$item->name]) continue;
 
-                        if (!preg_match("/^\/[a-zA-Z0-9]+$/", $data[$item->name])) {
-                            return $this->error(__('Backend entrance rule'));
+                        // 验证后台入口规则
+                        $newEntrance = ltrim($data[$item->name], '/');
+                        
+                        // 检查是否为空
+                        if (empty($newEntrance)) {
+                            return $this->error(__('Backend entrance cannot be empty'));
+                        }
+                        
+                        // 检查长度
+                        if (strlen($newEntrance) < 3 || strlen($newEntrance) > 20) {
+                            return $this->error(__('Backend entrance length must be between 3 and 20 characters'));
+                        }
+                        
+                        // 检查格式
+                        if (!preg_match("/^[a-zA-Z][a-zA-Z0-9_-]*$/", $newEntrance)) {
+                            return $this->error(__('Backend entrance must start with a letter and can only contain letters, numbers, underscores and hyphens'));
+                        }
+                        
+                        // 检查是否为保留词
+                        $reservedWords = ['admin', 'api', 'www', 'mail', 'ftp', 'localhost', 'test', 'dev', 'staging', 'prod', 'production'];
+                        if (in_array(strtolower($newEntrance), $reservedWords)) {
+                            return $this->error(__('Backend entrance cannot be a reserved word'));
+                        }
+                        
+                        // 检查是否与现有路由冲突
+                        $conflictingRoutes = ['user', 'agent', 'install', 'public', 'index'];
+                        if (in_array(strtolower($newEntrance), $conflictingRoutes)) {
+                            return $this->error(__('Backend entrance conflicts with existing routes'));
                         }
 
                         // 修改 adminBaseRoutePath
@@ -144,8 +171,11 @@ class Config extends Backend
                         $oldBackendEntrance = ltrim($backendEntrance, '/');
                         $newBackendEntrance = ltrim($data[$item->name], '/');
 
+                        // 记录修改日志
+                        Log::info("Changing backend entrance from '{$oldBackendEntrance}' to '{$newBackendEntrance}'");
+
                         // 设置应用别名映射
-                        $appMap = config('app.app_map');
+                        $appMap = config('app.app_map') ?: [];
                         $adminMapKey = array_search('admin', $appMap);
                         if ($adminMapKey !== false) {
                             unset($appMap[$adminMapKey]);
@@ -153,12 +183,20 @@ class Config extends Backend
                         if ($newBackendEntrance != 'admin') {
                             $appMap[$newBackendEntrance] = 'admin';
                         }
+                        
+                        // 备份原配置文件
                         $appConfigFilePath = FileUtil::fsFit(root_path() . $this->filePath['appConfig']);
-                        $appConfigContent = @file_get_contents($appConfigFilePath);
+                        $backupFilePath = $appConfigFilePath . '.bak.' . date('YmdHis');
+                        if (!copy($appConfigFilePath, $backupFilePath)) {
+                            Log::warning("Failed to backup app config file to {$backupFilePath}");
+                        }
+                        
+                        $appConfigContent = file_get_contents($appConfigFilePath);
                         if (!$appConfigContent) {
-                            return $this->error(__('Configuration write failed: %s', [$this->filePath['appConfig']]));
+                            return $this->error(__('Configuration read failed: %s', [$this->filePath['appConfig']]));
                         }
 
+                        // 更新应用映射配置
                         $appMapStr = '';
                         foreach ($appMap as $newAppName => $oldAppName) {
                             $appMapStr .= "'$newAppName' => '$oldAppName', ";
@@ -166,30 +204,59 @@ class Config extends Backend
                         $appMapStr = rtrim($appMapStr, ', ');
                         $appMapStr = "[$appMapStr]";
 
-                        $appConfigContent = preg_replace("/'app_map'(\s+)=>(\s+)(.*)\/\/ 域名/s", "'app_map'\$1=>\$2$appMapStr,\n    // 域名", $appConfigContent);
-                        $result = @file_put_contents($appConfigFilePath, $appConfigContent);
+                        // 检查是否已存在 app_map 配置
+                        if (strpos($appConfigContent, "'app_map'") !== false) {
+                            $appConfigContent = preg_replace("/'app_map'(\s+)=>(\s+)(\[[^\]]*\])/s", "'app_map'\$1=>\$2$appMapStr", $appConfigContent);
+                        } else {
+                            // 如果没有 app_map 配置，在 request 配置前添加
+                            $appConfigContent = preg_replace("/(\s+)(\/\/ request log)/", "\$1'app_map' => {$appMapStr},\n\n\$2", $appConfigContent);
+                        }
+                        
+                        $result = file_put_contents($appConfigFilePath, $appConfigContent);
                         if (!$result) {
+                            // 恢复备份
+                            if (file_exists($backupFilePath)) {
+                                copy($backupFilePath, $appConfigFilePath);
+                            }
                             return $this->error(__('Configuration write failed: %s', [$this->filePath['appConfig']]));
                         }
 
-                        // 建立API入口文件
+                        // 处理入口文件
                         $oldBackendEntranceFile = FileUtil::fsFit(public_path() . $oldBackendEntrance . '.php');
                         $newBackendEntranceFile = FileUtil::fsFit(public_path() . $newBackendEntrance . '.php');
-                        if (file_exists($oldBackendEntranceFile)) {
-                            @unlink($oldBackendEntranceFile);
+                        
+                        // 删除旧入口文件
+                        if (file_exists($oldBackendEntranceFile) && $oldBackendEntrance != 'admin') {
+                            if (!unlink($oldBackendEntranceFile)) {
+                                Log::warning("Failed to delete old backend entrance file: {$oldBackendEntranceFile}");
+                            }
                         }
 
+                        // 创建新入口文件
                         if ($newBackendEntrance != 'admin') {
-                            $backendEntranceStub = @file_get_contents(FileUtil::fsFit(root_path() . $this->filePath['backendEntranceStub']));
+                            $backendEntranceStub = file_get_contents(FileUtil::fsFit(root_path() . $this->filePath['backendEntranceStub']));
                             if (!$backendEntranceStub) {
-                                return $this->error(__('Configuration write failed: %s', [$this->filePath['backendEntranceStub']]));
+                                // 恢复备份
+                                if (file_exists($backupFilePath)) {
+                                    copy($backupFilePath, $appConfigFilePath);
+                                }
+                                return $this->error(__('Configuration read failed: %s', [$this->filePath['backendEntranceStub']]));
                             }
 
-                            $result = @file_put_contents($newBackendEntranceFile, $backendEntranceStub);
+                            $result = file_put_contents($newBackendEntranceFile, $backendEntranceStub);
                             if (!$result) {
+                                // 恢复备份
+                                if (file_exists($backupFilePath)) {
+                                    copy($backupFilePath, $appConfigFilePath);
+                                }
                                 return $this->error(__('Configuration write failed: %s', [$newBackendEntranceFile]));
                             }
+                            
+                            // 设置文件权限
+                            chmod($newBackendEntranceFile, 0644);
                         }
+                        
+                        Log::info("Backend entrance successfully changed to '{$newBackendEntrance}'");
                     }
                 }
 

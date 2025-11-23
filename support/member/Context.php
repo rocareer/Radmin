@@ -25,7 +25,7 @@ class Context
     protected static ?Context $instance = null;
     
     /**
-     * @var RoleManager 角色管理器
+     * @var Role 角色管理器
      */
     protected Role $roleManager;
     

@@ -7,13 +7,14 @@ use app\exception\BusinessException;
 use support\Log;
 use support\orm\Db;
 use support\StatusCode;
+use support\member\interface\InterfaceState;
 use Throwable;
 use support\cache\Cache as WebmanCache;
 
 /**
  * 统一状态管理器 - 负责所有登录状态检查和处理
  */
-class State
+class State implements InterfaceState
 {
     public bool $login = false;
 
@@ -115,7 +116,7 @@ class State
             $stateData = WebmanCache::get($cacheKey);
             
             if ($stateData && isset($stateData['token']) && $stateData['token'] !== request()->token) {
-                throw new BusinessException('账号已在其他地方登录', StatusCode::USER_LOGGED_IN_ELSEWHERE, true);
+                throw new BusinessException('账号已在其他地方登录', StatusCode::MEMBER_LOGGED_IN_ELSEWHERE, true);
             }
         }
     }
