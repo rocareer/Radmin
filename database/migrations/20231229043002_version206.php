@@ -10,22 +10,23 @@ class Version206 extends AbstractMigration
      */
     public function up()
     {
-        $exist = Db::name('config')->where('name', 'backend_entrance')->value('id');
-        if (!$exist) {
-            $rows  = [
-                [
-                    'name'  => 'backend_entrance',
-                    'group' => 'basics',
-                    'title' => 'Backend entrance',
-                    'type'  => 'string',
-                    'value' => '/admin',
-                    'rule'  => 'required',
-                    'weigh' => 1,
-                ],
-            ];
-            $table = $this->table(getDbPrefix().'config');
-            $table->insert($rows)->saveData();
-        }
+        // todo 暂时禁止自定义后台入口
+        // $exist = Db::name('config')->where('name', 'backend_entrance')->value('id');
+        // if (!$exist) {
+        //     $rows  = [
+        //         [
+        //             'name'  => 'backend_entrance',
+        //             'group' => 'basics',
+        //             'title' => 'Backend entrance',
+        //             'type'  => 'string',
+        //             'value' => '/admin',
+        //             'rule'  => 'required',
+        //             'weigh' => 1,
+        //         ],
+        //     ];
+        //     $table = $this->table(getDbPrefix().'config');
+        //     $table->insert($rows)->saveData();
+        // }
 
         $crudLog = $this->table(getDbPrefix().'crud_log');
         if (!$crudLog->hasColumn('connection')) {
