@@ -16,6 +16,7 @@ return [
     'smtp verification'                                                                                 => 'SMTP verification mode',
     'smtp sender mail'                                                                                  => 'SMTP sender mailbox',
     'Variable name'                                                                                     => 'variable name',
+    'Send test email'                                                                                  => 'Send test email',
     'Test mail sent successfully~'                                                                      => 'Test message sent successfully',
     'This is a test email'                                                                              => 'This is a test email',
     'Congratulations, receiving this email means that your email service has been configured correctly' => "Congratulations, when you receive this email, it means that your mail service is configures correctly. This is the email subject, <b>you can use HtmlL!</b> in the main body.",
