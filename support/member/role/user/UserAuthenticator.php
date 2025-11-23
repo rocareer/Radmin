@@ -1,7 +1,7 @@
 <?php
 
 
-namespace support\member\user;
+namespace support\member\role\user;
 
 use app\exception\UnauthorizedHttpException;
 use support\member\Authenticator;

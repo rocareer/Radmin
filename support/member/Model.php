@@ -6,10 +6,10 @@ namespace support\member;
 
 use app\exception\BusinessException;
 use app\exception\UnauthorizedHttpException;
-
 use support\Log;
-use support\orm\Model as ThinkModel;
+use support\member\interface\InterfaceModel;
 use support\orm\Db;
+use support\orm\Model as ThinkModel;
 use support\StatusCode;
 use think\db\exception\DataNotFoundException;
 use think\db\exception\DbException;

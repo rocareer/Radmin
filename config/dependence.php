@@ -12,8 +12,8 @@
  * @license   http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
-use support\member\admin\AdminService;
-use support\member\user\UserService;
+use support\member\role\admin\AdminService;
+use support\member\role\user\UserService;
 
 return [
     // 简化的成员服务（直接根据角色返回对应服务）

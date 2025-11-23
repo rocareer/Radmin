@@ -10,8 +10,8 @@ class Factory
     private static array $instances = [];
 
     private static array $serviceClasses = [
-        'admin' => 'support\member\admin\AdminService',
-        'user'  => 'support\member\user\UserService',
+        'admin' => 'support\member\role\admin\AdminService',
+        'user'  => 'support\member\role\user\UserService',
     ];
 
     /**

@@ -8,19 +8,22 @@
  */
 
 namespace support\member;
-use support\RequestContext;
+
 use think\Facade;
 
 /**
  * 成员系统 Facade
- * @method static object initialization()                               // 初始化
- * @method static array login(array $credentials, bool $keep = false)   // 登录
- * @method static array register(array $credentials)                    // 注册
- * @method static array refreshToken(string $refreshToken)              // 刷新token
- * @method static bool logout()                                         // 退出登录
- * @method static bool hasRole($role, ?array $roles = null)             // 检查角色
- * @method static bool memberInitialization(string $token)              // 初始化
- * @method static bool terminal(string $token)                          // 终端检查权限
+ * @method static object initialization()                                       // 初始化
+ * @method static array login(array $credentials, bool $keep = false)           // 登录
+ * @method static array register(array $credentials)                            // 注册
+ * @method static mixed getCurrentMember()                                      // 获取当前用户
+ * @method static mixed getMemberById(int $uid, string $role = 'user')          // 获取用户信息
+ * @method static mixed getMemberByName(string $name, string $role = 'user')    // 获取用户信息
+ * @method static array refreshToken(string $refreshToken)                      // 刷新token
+ * @method static bool logout()                                                 // 退出登录
+ * @method static bool hasRole($role, ?array $roles = null)                     // 检查角色
+ * @method static bool memberInitialization(string $token)                      // 初始化
+ * @method static bool terminal(string $token)                                  // 终端检查权限
  * @method static array getMenus(?int $uid = null)
  * @method static bool check(string $name, ?int $uid = null, string $relation = 'or', string $mode = 'url')
  */
@@ -28,12 +31,14 @@ class Member extends Facade
 {
     /**
      * 设置当前角色 在非 Request 请求下使用
+     *
      * @param $role
-     * @return   mixed
+     *
+     * @return   object
      * Author:   albert <albert@rocareer.com>
      * Time:     2025/5/16 06:21
      */
-    public static function setCurrentRole($role): mixed
+    public static function setCurrentRole($role): object
     {
         Role::getInstance()->setCurrentRole($role);
         return static::instance();
@@ -47,13 +52,14 @@ class Member extends Facade
      */
     protected static function getFacadeClass(): string
     {
-        $role = request()->role ?? \support\member\Context::getInstance()->getCurrentRole() ?? 'user';
-        
+        $role = request()->role ??
+            Context::getInstance()->getCurrentRole() ?? 'user';
+
         if ($role === 'admin') {
-            return 'support\member\admin\AdminService';
+            return 'support\member\role\admin\AdminService';
         }
-        
-        return 'support\member\user\UserService';
+
+        return 'support\member\role\user\UserService';
     }
 }
 

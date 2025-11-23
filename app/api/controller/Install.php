@@ -15,17 +15,16 @@ namespace app\api\controller;
 
 use app\admin\model\Config;
 use app\admin\model\User as UserModel;
+use app\exception\BusinessException;
 use Exception;
 use extend\ba\Random;
 use extend\ba\Terminal;
 use extend\ba\Version;
+use extend\ra\FileUtil;
 use PDOException;
-use app\exception\BusinessException;
-
+use support\member\role\admin\AdminModel;
 use support\orm\Db;
 use support\Response;
-use extend\ra\FileUtil;
-use support\member\admin\AdminModel;
 use think\db\exception\DbException;
 use Throwable;
 

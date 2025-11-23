@@ -36,10 +36,10 @@ return [
             'auth_required' => true,
             'path_prefix' => ['/user', '/api/user'],
             'middleware' => ['auth'],
-            'service_class' => 'support\\member\\user\\UserService',
-            'model_class' => 'support\\member\\user\\UserModel',
-            'authenticator_class' => 'support\\member\\user\\UserAuthenticator',
-            'state_class' => 'support\\member\\user\\UserState',
+            'service_class' => 'support\\member\\role\\user\\UserService',
+            'model_class' => 'support\\member\\role\\user\\UserModel',
+            'authenticator_class' => 'support\\member\\role\\user\\UserAuthenticator',
+            'state_class' => 'support\\member\\role\\user\\UserState',
             'table' => 'user',
             // 认证相关配置
             'login' => [
@@ -59,10 +59,10 @@ return [
             'auth_required' => true,
             'path_prefix' => ['/admin', '/api/admin'],
             'middleware' => ['auth', 'admin'],
-            'service_class' => 'support\\member\\admin\\AdminService',
-            'model_class' => 'support\\member\\admin\\AdminModel',
-            'authenticator_class' => 'support\\member\\admin\\AdminAuthenticator',
-            'state_class' => 'support\\member\\admin\\AdminState',
+            'service_class' => 'support\\member\\role\\admin\\AdminService',
+            'model_class' => 'support\\member\\role\\admin\\AdminModel',
+            'authenticator_class' => 'support\\member\\role\\admin\\AdminAuthenticator',
+            'state_class' => 'support\\member\\role\\admin\\AdminState',
             'table' => 'admin',
             // 认证相关配置
             'login' => [

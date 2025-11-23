@@ -1,7 +1,7 @@
 <?php
 
 
-namespace support\member;
+namespace support\member\interface;
 
 /**
  * 状态管理器接口

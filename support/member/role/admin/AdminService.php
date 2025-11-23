@@ -8,13 +8,12 @@
  * Describe  AdminService.php
  */
 
-namespace support\member\admin;
+namespace support\member\role\admin;
 
 use app\admin\model\AdminGroup;
-
+use support\member\Service;
 use support\orm\Db;
 use support\token\Token;
-use support\member\Service;
 use Throwable;
 
 class AdminService extends Service

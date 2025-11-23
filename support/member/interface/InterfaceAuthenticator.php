@@ -1,7 +1,7 @@
 <?php
 
 
-namespace support\member;
+namespace support\member\interface;
 
 use app\exception\BusinessException;
 

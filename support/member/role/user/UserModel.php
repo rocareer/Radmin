@@ -8,7 +8,7 @@
  * Describe  AdminModel.php
  */
 
-namespace support\member\user;
+namespace support\member\role\user;
 
 use app\admin\model\Admin;
 use support\member\Model;

@@ -8,7 +8,7 @@
  * Describe  UserService.php
  */
 
-namespace support\member\user;
+namespace support\member\role\user;
 
 use support\member\Service;
 
@@ -42,7 +42,7 @@ class UserService extends Service
         try {
             // 确保用户已登录
             if (empty($this->memberModel) && !empty($uid)) {
-                $this->memberModel = new \support\member\user\UserModel();
+                $this->memberModel = new \support\member\role\user\UserModel();
                 $this->memberModel = $this->memberModel->findById($uid);
             }
 

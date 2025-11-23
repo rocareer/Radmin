@@ -1,7 +1,7 @@
 <?php
 
 
-namespace support\member\admin;
+namespace support\member\role\admin;
 
 use support\member\State;
 

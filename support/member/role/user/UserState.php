@@ -4,7 +4,7 @@
  * 简化状态检查，减少冗余逻辑
  */
 
-namespace support\member\user;
+namespace support\member\role\user;
 
 use support\member\State;
 

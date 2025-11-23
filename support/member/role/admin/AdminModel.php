@@ -7,11 +7,11 @@
  * Describe  AdminModel.php
  */
 
-namespace support\member\admin;
+namespace support\member\role\admin;
 
 use app\admin\model\AdminGroup;
-use support\orm\Db;
 use support\member\Model;
+use support\orm\Db;
 use think\db\exception\DbException;
 
 /**
