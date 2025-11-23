@@ -5,6 +5,7 @@ namespace app\admin\model;
 use app\common\model\BaseModel;
 use Exception;
 
+use support\member\Context;
 use support\orm\Db;
 use think\model\relation\BelongsTo;
 
@@ -136,14 +137,14 @@ class AdminLog extends BaseModel
      */
     public function record(string $title = '', mixed $data = null):void
     {
-        $adminId=null;
-        $userName=null;
-        if (request()->member){
-            $userID = request()->member->id;
-            $userName = request()->member->username;
+        // 从Context获取当前用户信息
+        $adminId = 0;
+        $username = __('Unknown');
+        
+        if ($member = Context::getInstance()->getCurrentMember()) {
+            $adminId = $member->id ?? 0;
+            $username = $member->username ?? __('Unknown');
         }
-        $adminId    = $adminId ?? $userID??0 ;
-        $username   = $userName ?? request()->input('username', __('Unknown'));
         $controller = str_replace('.', '/', request()->controller());
         $action     = request()->action;
         $path       = $controller . '/' . $action;

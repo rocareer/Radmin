@@ -14,6 +14,7 @@ use support\orm\Db;
 use Throwable;
 use support\Response;
 use support\Request;
+use support\member\Context;
 
 
 class AdminSecurity implements MiddlewareInterface
@@ -25,6 +26,11 @@ class AdminSecurity implements MiddlewareInterface
         'delete',
     ];
 
+    protected mixed $member;
+
+    public function __construct(){
+
+    }
     /**
      * @throws exception
      */
@@ -75,11 +81,11 @@ class AdminSecurity implements MiddlewareInterface
                 ->toArray();
 
             $recycleDataArr = [];
-
+            $this->member=Context::getInstance()->getCurrentMember();
 
             foreach ($recycleData as $recycleDatum) {
                 $recycleDataArr[] = [
-                    'admin_id'    => $request->member ? $request->member->id : 0,
+                    'admin_id'    => $this->member ? $this->member->id : 0,
                     'recycle_id'  => $recycle['id'],
                     'data'        => json_encode($recycleDatum, JSON_UNESCAPED_UNICODE),
                     'connection'  => $recycle['connection'],
@@ -133,6 +139,7 @@ class AdminSecurity implements MiddlewareInterface
 
             $newData          = $request->post();
             $sensitiveDataLog = [];
+            $this->member=Context::getInstance()->getCurrentMember();
 
             foreach ($sensitiveData['data_fields'] as $field => $title) {
                 if (isset($editData[$field]) && isset($newData[$field]) && $editData[$field] != $newData[$field]) {
@@ -144,7 +151,7 @@ class AdminSecurity implements MiddlewareInterface
                     }
 
                     $sensitiveDataLog[] = [
-                        'admin_id'     => $request->member ? $request->member->id : 0,
+                        'admin_id'     => $this->member ? $this->member->id : 0,
                         'sensitive_id' => $sensitiveData['id'],
                         'connection'   => $sensitiveData['connection'],
                         'data_table'   => $sensitiveData['data_table'],
