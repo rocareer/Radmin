@@ -1048,6 +1048,12 @@ abstract class Authenticator implements InterfaceAuthenticator
     {
         // 密码加密 - 使用 common.php 中的 hash_password 函数
         $credentials['password'] = hash_password($credentials['password']);
+        
+        // 设置默认状态为启用
+        $credentials['status'] = 'enable';
+        
+        // 设置默认用户组（ID为1的默认分组）
+        $credentials['group_id'] = 1;
 
         // 创建用户
         $member = $this->memberModel->create($credentials);
@@ -1056,7 +1062,32 @@ abstract class Authenticator implements InterfaceAuthenticator
             throw new \RuntimeException('用户注册失败');
         }
 
+        // 分配用户到默认分组
+        $this->assignUserToDefaultGroup($member->id);
+
         return $member;
+    }
+    
+    /**
+     * 分配用户到默认分组
+     *
+     * @param int $userId
+     * @throws Throwable
+     */
+    protected function assignUserToDefaultGroup(int $userId): void
+    {
+        try {
+            // 用户表中的group_id字段直接关联用户组，无需额外关系表
+            // 在performRegistration中已经设置了group_id = 1
+            // 这里可以添加其他用户组相关的初始化逻辑
+            
+            // 记录用户组分配日志
+            error_log("用户ID {$userId} 已分配到默认分组");
+            
+        } catch (\Throwable $e) {
+            // 用户组分配失败不影响注册流程，记录日志即可
+            error_log('用户组分配失败: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -1117,6 +1148,9 @@ abstract class Authenticator implements InterfaceAuthenticator
 
             // 扩展用户信息
             $this->extendMemberInfo();
+            
+            // 注册成功后自动登录
+            $this->autoLoginAfterRegistration($member);
 
             // 触发注册成功事件
             Event::emit("member.register_success", [
@@ -1141,6 +1175,30 @@ abstract class Authenticator implements InterfaceAuthenticator
             ]);
 
             throw $e;
+        }
+    }
+    
+    /**
+     * 注册成功后自动登录
+     *
+     * @param object $member
+     * @throws Throwable
+     */
+    protected function autoLoginAfterRegistration(object $member): void
+    {
+        try {
+            // 设置用户信息到上下文
+            $this->memberModel = $member;
+            
+            // 生成Token（使用与登录相同的Token生成逻辑）
+            $this->generateTokens();
+            
+            // 更新登录信息
+            $this->updateLoginInfo();
+            
+        } catch (\Throwable $e) {
+            // 自动登录失败不影响注册流程，记录日志即可
+            error_log('注册后自动登录失败: ' . $e->getMessage());
         }
     }
 
