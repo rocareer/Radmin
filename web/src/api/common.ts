@@ -178,9 +178,26 @@ export function postClearCache(type: string) {
  * 构建命令执行窗口url
  */
 export function buildTerminalUrl(commandKey: string, uuid: string, extend: string) {
+    const { getToken } = isAdminApp() ? useAdminInfo() : useUserInfo()
+    const token = getToken()
+    
     return (
-        getUrl() + terminalUrl + '?command=' + commandKey + '&uuid=' + uuid + '&extend=' + extend + '&server=1'
+        getUrl() + terminalUrl + '?command=' + commandKey + '&uuid=' + uuid + '&extend=' + extend + '&server=1' + (token ? '&token=' + token : '')
     )
+}
+
+/**
+ * 执行终端命令（支持token认证）
+ */
+export function executeTerminalCommand(data: {command: string; uuid: string; extend: string}) {
+    return createAxios({
+        url: terminalUrl,
+        method: 'post',
+        data: data,
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
 }
 
 /**

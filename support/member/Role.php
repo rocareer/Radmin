@@ -2,7 +2,8 @@
 /**
  * 角色管理类
  * 统一管理角色配置、检测、验证、多角色上下文和隔离机制
- * 合并RoleManager和MultiRoleManager功能，消除冗余
+ * 职责：角色检测、验证、配置管理、访问控制
+ * 不包含：认证逻辑、Token管理、状态管理
  */
 
 namespace support\member;
@@ -12,7 +13,6 @@ use support\Request;
 use support\RequestContext;
 use support\StatusCode;
 use Webman\Event\Event;
-
 class Role
 {
     protected static ?Role $instance = null;
@@ -63,6 +63,17 @@ class Role
     {
         $path = $request->path();
         
+        // 使用统一的路径匹配方法
+        return $this->matchPathToRole($path);
+    }
+    
+    /**
+     * 匹配路径到角色（统一方法）
+     * @param string $path 请求路径
+     * @return string 匹配的角色
+     */
+    protected function matchPathToRole(string $path): string
+    {
         // 1. 精确匹配
         foreach ($this->config['path_rules']['exact'] ?? [] as $exactPath => $role) {
             if ($path === $exactPath) {
@@ -586,5 +597,120 @@ class Role
     public static function validateTokenRoleConsistencyStatic(string $token, string $expectedRole): bool
     {
         return self::getInstance()->validateTokenRoleConsistency($token, $expectedRole);
+    }
+
+    // ==================== 角色配置管理方法 ====================
+    
+    /**
+     * 检查是否启用登录验证码
+     * @param string $role 角色名称
+     * @return bool
+     */
+    public static function isCaptchaEnabled(string $role): bool
+    {
+        $instance = self::getInstance();
+        $loginConfig = $instance->getRoleConfig($role, 'login', []);
+        return $loginConfig['captcha'] ?? false;
+    }
+    
+    /**
+     * 检查是否启用单点登录
+     * @param string $role 角色名称
+     * @return bool
+     */
+    public static function isSsoEnabled(string $role): bool
+    {
+        $instance = self::getInstance();
+        $loginConfig = $instance->getRoleConfig($role, 'login', []);
+        return $loginConfig['sso'] ?? false;
+    }
+    
+    /**
+     * 获取登录失败重试限制
+     * @param string $role 角色名称
+     * @return int
+     */
+    public static function getLoginRetryLimit(string $role): int
+    {
+        $instance = self::getInstance();
+        $loginConfig = $instance->getRoleConfig($role, 'login', []);
+        return $loginConfig['max_retry'] ?? 10;
+    }
+    
+    /**
+     * 获取Token保持时间
+     * @param string $role 角色名称
+     * @return int
+     */
+    public static function getTokenKeepTime(string $role): int
+    {
+        $instance = self::getInstance();
+        $loginConfig = $instance->getRoleConfig($role, 'login', []);
+        return $loginConfig['token_keep_time'] ?? 259200;
+    }
+    
+    /**
+     * 获取角色登录配置
+     * @param string $role 角色名称
+     * @param string $key 配置键名
+     * @param mixed $default 默认值
+     * @return mixed
+     */
+    public static function getRoleLoginConfig(string $role, string $key = '', $default = null)
+    {
+        $instance = self::getInstance();
+        $loginConfig = $instance->getRoleConfig($role, 'login', []);
+        
+        if (empty($key)) {
+            return $loginConfig;
+        }
+        
+        return $loginConfig[$key] ?? $default;
+    }
+    
+    /**
+     * 验证角色配置完整性
+     * @param string $role 角色名称
+     * @return array 缺失的配置项
+     */
+    public static function validateRoleConfig(string $role): array
+    {
+        $instance = self::getInstance();
+        $roleConfig = $instance->getRoleConfig($role);
+        
+        $required = [
+            'name',
+            'auth_required',
+            'path_prefix',
+            'middleware',
+            'table'
+        ];
+        
+        $missing = [];
+        
+        foreach ($required as $key) {
+            if (!isset($roleConfig[$key])) {
+                $missing[] = $key;
+            }
+        }
+        
+        return $missing;
+    }
+    
+    /**
+     * 获取所有角色的登录配置
+     * @return array
+     */
+    public static function getAllRolesLoginConfig(): array
+    {
+        $instance = self::getInstance();
+        $allRoles = $instance->getAllRoles();
+        $loginConfigs = [];
+        
+        foreach ($allRoles as $role => $config) {
+            $loginConfigs[$role] = $config['login'] ?? [];
+        }
+        
+        return $loginConfigs;
     }
 }

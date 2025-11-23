@@ -26,6 +26,7 @@ class AdminAuthenticator extends Authenticator
     public function extendMemberInfo(): void
     {
         if (Member::isSuperAdmin($this->memberModel->id)) {
+            $this->memberModel->super = true;
             $this->memberModel->roles = ['super', 'admin'];
         }
     }

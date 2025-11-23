@@ -63,6 +63,8 @@ abstract class Model extends ThinkModel implements InterfaceModel
         'last_login_time' => 'integer',
         'login_failure'   => 'integer',
     ];
+    
+
 
 
 

@@ -1,12 +1,12 @@
 import { ElNotification } from 'element-plus'
 import { defineStore } from 'pinia'
 import { nextTick, reactive } from 'vue'
-import { buildTerminalUrl } from '/@/api/common'
-import { i18n } from '/@/lang/index'
+import { buildTerminalUrl, executeTerminalCommand } from '/@/api/common'
+import { i18n } from '/@/lang'
 import { STORE_TERMINAL } from '/@/stores/constant/cacheKey'
 import { SYSTEM_ZINDEX } from '/@/stores/constant/common'
 import { taskStatus } from '/@/stores/constant/terminalTaskStatus'
-import type { Terminal } from '/@/stores/interface/index'
+import type { Terminal } from '/@/stores/interface'
 import { timeFormat } from '/@/utils/common'
 import { uuid } from '/@/utils/random'
 import { closeHotUpdate, openHotUpdate } from '/@/utils/vite'
@@ -193,51 +193,57 @@ export const useTerminal = defineStore(
             }
         }
 
-        function startEventSource(taskKey: number) {
+        async function startEventSource(taskKey: number) {
             // 命令执行期间禁用热更新
             closeHotUpdate('terminal')
 
-            window.eventSource = new EventSource(
-                buildTerminalUrl(state.taskList[taskKey].command, state.taskList[taskKey].uuid, state.taskList[taskKey].extend)
-            )
-            window.eventSource.onmessage = function (e) {
-                const data = JSON.parse(e.data)
-                if (!data || !data.data) {
-                    return
-                }
+            const eventSource = new EventSource(buildTerminalUrl(state.taskList[taskKey].command, state.taskList[taskKey].uuid, state.taskList[taskKey].extend))
 
-                const taskIdx = findTaskIdxFromUuid(data.uuid)
-                if (taskIdx === false) {
-                    return
-                }
+            eventSource.onmessage = (event) => {
+                const data = JSON.parse(event.data)
+                if (data.uuid !== state.taskList[taskKey].uuid) return
 
-                if (data.data == 'command-exec-error') {
-                    setTaskStatus(taskIdx, taskStatus.Failed)
-                    window.eventSource.close()
-                    taskCompleted(taskIdx)
+                if (data.data === 'command-link-success') {
+                    setTaskStatus(taskKey, taskStatus.Executing)
+                } else if (data.data === 'command-exec-success') {
+                    setTaskStatus(taskKey, taskStatus.Success)
+                    eventSource.close()
+                    taskCompleted(taskKey)
                     startTask()
-                } else if (data.data == 'command-exec-completed') {
-                    window.eventSource.close()
-                    if (state.taskList[taskIdx].status != taskStatus.Success) {
-                        setTaskStatus(taskIdx, taskStatus.Failed)
+                } else if (data.data === 'command-exec-error') {
+                    setTaskStatus(taskKey, taskStatus.Failed)
+                    eventSource.close()
+                    taskCompleted(taskKey)
+                    startTask()
+                } else if (data.data === 'command-exec-completed') {
+                    eventSource.close()
+                    if (state.taskList[taskKey].status !== taskStatus.Success) {
+                        setTaskStatus(taskKey, taskStatus.Failed)
                     }
-                    taskCompleted(taskIdx)
+                    taskCompleted(taskKey)
                     startTask()
-                } else if (data.data == 'command-link-success') {
-                    setTaskStatus(taskIdx, taskStatus.Executing)
-                } else if (data.data == 'command-exec-success') {
-                    setTaskStatus(taskIdx, taskStatus.Success)
                 } else {
-                    addTaskMessage(taskIdx, data.data)
+                    addTaskMessage(taskKey, data.data)
                 }
             }
-            window.eventSource.onerror = function () {
-                window.eventSource.close()
-                const taskIdx = findTaskIdxFromGuess(taskKey)
-                if (taskIdx === false) return
-                setTaskStatus(taskIdx, taskStatus.Failed)
-                taskCompleted(taskIdx)
+
+            eventSource.onerror = (error) => {
+                console.error('EventSource error:', error)
+                setTaskStatus(taskKey, taskStatus.Failed)
+                eventSource.close()
+                taskCompleted(taskKey)
+                startTask()
             }
+
+            // 设置超时（30秒）
+            setTimeout(() => {
+                if (state.taskList[taskKey].status === taskStatus.Connecting || state.taskList[taskKey].status === taskStatus.Executing) {
+                    setTaskStatus(taskKey, taskStatus.Failed)
+                    eventSource.close()
+                    taskCompleted(taskKey)
+                    startTask()
+                }
+            }, 30000)
         }
 
         function retryTask(idx: number) {

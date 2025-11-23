@@ -87,19 +87,8 @@ class State implements InterfaceState
         $checkItems = [];
         
         try {
-            // 检查账号状态
-            if ($this->memberModel->status !== 'enable') {
-                throw new BusinessException('账号已被禁用', StatusCode::USER_DISABLED, true);
-            }
-            $checkItems[] = '账号状态检查通过';
-            
-            // 检查登录失败次数
-            $this->checkLoginFailures();
-            $checkItems[] = '登录失败次数检查通过';
-            
-            // 检查单点登录状态
-            $this->checkSsoStatus();
-            $checkItems[] = '单点登录状态检查通过';
+            // 使用统一的检查方法
+            $this->performStatusChecks($checkItems);
             
             // 触发状态检查成功事件
             WebmanEvent::emit('member.status_check.success', [
@@ -124,6 +113,28 @@ class State implements InterfaceState
             throw $e;
         }
     }
+    
+    /**
+     * 执行状态检查（统一方法）
+     * @param array &$checkItems 检查项目数组
+     * @throws BusinessException
+     */
+    protected function performStatusChecks(array &$checkItems): void
+    {
+        // 检查账号状态
+        if ($this->memberModel->status !== 'enable') {
+            throw new BusinessException('账号已被禁用', StatusCode::USER_DISABLED, true);
+        }
+        $checkItems[] = '账号状态检查通过';
+        
+        // 检查登录失败次数
+        $this->checkLoginFailures();
+        $checkItems[] = '登录失败次数检查通过';
+        
+        // 检查单点登录状态
+        $this->checkSsoStatus();
+        $checkItems[] = '单点登录状态检查通过';
+    }
 
     /**
      * 统一记录登录失败
@@ -137,21 +148,42 @@ class State implements InterfaceState
             $this->memberModel = $member;
             $this->memberModel->startTrans();
 
-            $loginFailure = $this->memberModel->login_failure ?? 0;
-            $this->memberModel->login_failure = (int)$loginFailure + 1;
-            // 注意：登录失败时不更新登录时间和IP，只在登录成功时更新
+            // 获取当前时间和IP
+            $currentTime = time();
+            $currentIp = request()->getRealIp();
+
+            // 使用带下划线的字段名，保存时会自动映射到数据库字段
+            $this->memberModel->login_failure = ($this->memberModel->login_failure ?? 0) + 1;
+            $this->memberModel->last_login_time = $currentTime;
+            $this->memberModel->last_login_ip = $currentIp;
+            
             $this->memberModel->save();
 
             // 记录登录日志
             $this->recordLoginLog(false, $reason);
 
             $this->memberModel->commit();
+            
+            Log::info('登录失败信息已更新到数据库', [
+                'member_id' => $this->memberModel->id,
+                'username' => $this->memberModel->username,
+                'role' => $this->role,
+                'login_failure' => $this->memberModel->login_failure,
+                'last_login_time' => date('Y-m-d H:i:s', $currentTime),
+                'last_login_ip' => $currentIp,
+                'reason' => $reason
+            ]);
+            
             return true;
         } catch (Throwable $e) {
             if ($this->memberModel && method_exists($this->memberModel, 'rollback')) {
                 $this->memberModel->rollback();
             }
-            Log::error('记录登录失败信息失败：' . $e->getMessage());
+            Log::error('记录登录失败信息失败：' . $e->getMessage(), [
+                'member_id' => $this->memberModel->id ?? 'unknown',
+                'role' => $this->role,
+                'trace' => $e->getTraceAsString()
+            ]);
             return false;
         }
     }

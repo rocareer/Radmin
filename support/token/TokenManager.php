@@ -31,7 +31,8 @@ class TokenManager
      */
     public function __construct(array $config = [])
     {
-        $tokenConfig         = SystemUtil::get_sys_config('', 'authentication');
+        // 从配置文件获取鉴权配置
+        $tokenConfig         = config('authentication', []);
         $this->defaultDriver = $tokenConfig['driver'] ?? $this->defaultDriver;
         $this->config        = array_merge($config, $tokenConfig);
     }
@@ -196,6 +197,17 @@ class TokenManager
      */
     public function verify(string $token): stdClass
     {
+        // 使用统一的Token验证方法
+        return $this->performTokenVerification($token);
+    }
+    
+    /**
+     * 执行Token验证（统一方法）
+     * @param string $token
+     * @return stdClass
+     */
+    protected function performTokenVerification(string $token): stdClass
+    {
         // 检查缓存中是否有已验证的Token
         $cache = TokenCache::getInstance();
         $cachedPayload = $cache->getVerifiedPayload($token);
@@ -243,6 +255,17 @@ class TokenManager
      * @return string
      */
     public function refresh(string $token): string
+    {
+        // 使用统一的Token刷新方法
+        return $this->performTokenRefresh($token);
+    }
+    
+    /**
+     * 执行Token刷新（统一方法）
+     * @param string $token
+     * @return string
+     */
+    protected function performTokenRefresh(string $token): string
     {
         // 清除旧Token的缓存
         $cache = TokenCache::getInstance();
@@ -304,5 +327,73 @@ class TokenManager
     public function getEncryptedToken(): string
     {
         return getEncryptedToken(uniqid($this->config['iss'], true), $this->config['algo'], $this->config['secret']);
+    }
+
+    // ==================== Token配置管理方法 ====================
+    
+    /**
+     * 获取Token配置
+     * @param string $key 配置键名
+     * @param mixed $default 默认值
+     * @return mixed
+     */
+    public static function getConfig(string $key, $default = null)
+    {
+        $config = config('authentication', []);
+        
+        // 支持点分隔符访问多维数组
+        $keys = explode('.', $key);
+        $value = $config;
+        
+        foreach ($keys as $k) {
+            if (!isset($value[$k])) {
+                return $default;
+            }
+            $value = $value[$k];
+        }
+        
+        return $value;
+    }
+    
+    /**
+     * 获取Token刷新配置
+     * @return array
+     */
+    public static function getTokenRefreshConfig(): array
+    {
+        return self::getConfig('token_refresh', [
+            'enabled' => true,
+            'threshold' => 300,
+            'max_refresh_count' => 5
+        ]);
+    }
+    
+    /**
+     * 验证Token配置完整性
+     * @return array 缺失的配置项
+     */
+    public static function validateConfig(): array
+    {
+        $required = [
+            'driver',
+            'expire_time', 
+            'keep_time',
+            'algo',
+            'jwt_algo',
+            'secret',
+            'jwt_secret',
+            'iss'
+        ];
+        
+        $missing = [];
+        $config = config('authentication', []);
+        
+        foreach ($required as $key) {
+            if (!isset($config[$key]) || empty($config[$key])) {
+                $missing[] = $key;
+            }
+        }
+        
+        return $missing;
     }
 }

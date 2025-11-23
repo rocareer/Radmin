@@ -2,59 +2,19 @@
 
 namespace support\member;
 
-use app\exception\BusinessException;
-use support\StatusCode;
 use Webman\Event\Event as WebmanEvent;
 use support\Log;
-use support\member\State;
 
 /**
  * 会员事件监听器
  * 负责处理所有会员相关的生命周期事件
+ * 优化版：减少冗余代码，提高可维护性
  */
 class Event
 {
-    /**
-     * 记录登录失败事件处理（解耦版）
-     * @param array $data
-     * @return bool
-     */
-    public static function eventRecordLoginFailure(array $data): bool
-    {
-        $member = $data['member'] ?? null;
-        $reason = $data['reason'] ?? null;
-        $role = $data['role'] ?? 'admin';
-        
-        if (!$member) {
-            Log::warning('记录登录失败失败：member参数为空');
-            return false;
-        }
-
-        try {
-            // 触发状态更新事件，由状态管理器处理
-            WebmanEvent::emit('member.state.update', [
-                'member' => $member,
-                'role' => $role,
-                'action' => 'login_failure',
-                'reason' => $reason
-            ]);
-            
-            Log::info('登录失败记录成功', [
-                'username' => $member->username, 
-                'role' => $role, 
-                'reason' => $reason,
-                'login_time' => date('Y-m-d H:i:s'),
-                'ip' => request()->getRealIp()
-            ]);
-            return true;
-        } catch (\Throwable $e) {
-            Log::error('记录登录失败信息失败：' . $e->getMessage());
-            return false;
-        }
-    }
 
     /**
-     * 登录成功事件处理
+     * 登录成功事件处理（简化版）
      * @param array $data
      * @return void
      */
@@ -69,7 +29,7 @@ class Event
         }
 
         try {
-            // 统一状态管理：更新状态缓存和记录日志
+            // 直接调用State类更新状态缓存和记录日志
             $state = new State();
             $state->role = $role;
             $state->memberModel = $member;
@@ -97,34 +57,11 @@ class Event
         }
     }
     
-    /**
-     * 处理登录信息更新（统一使用Authenticator中的方法）
-     * @param object $member 用户模型
-     * @param string $role 用户角色
-     * @return bool
-     */
-    private static function handleLoginInfoUpdate(object $member, string $role): bool
-    {
-        try {
-            // 创建对应角色的认证器实例
-            $authenticatorClass = $role === 'admin' ? 'support\member\role\admin\AdminAuthenticator' : 'support\member\role\user\UserAuthenticator';
-            $authenticator = new $authenticatorClass();
-            
-            // 使用认证器中的方法更新登录信息
-            return $authenticator->updateLoginInfo($member, $role);
-            
-        } catch (\Throwable $e) {
-            Log::error('登录信息更新失败：' . $e->getMessage(), [
-                'member_id' => $member->id ?? 'unknown',
-                'role' => $role,
-                'trace' => $e->getTraceAsString()
-            ]);
-            return false;
-        }
-    }
+
+
 
     /**
-     * 登录失败事件处理
+     * 登录失败事件处理（简化版）
      * @param array $data
      * @return void
      */
@@ -140,13 +77,13 @@ class Event
         }
 
         try {
-            // 直接调用记录登录失败方法，避免中间方法调用
-            self::eventRecordLoginFailure([
-                'member' => $member,
-                'role' => $role,
-                'reason' => $errorMessage
-            ]);
+            // 直接调用State类记录登录失败，避免中间方法调用
+            $state = new State();
+            $state->role = $role;
+            $state->memberModel = $member;
+            $state->recordLoginFailure($member, $errorMessage);
             
+            // 记录日志
             Log::warning("用户 {$member->username} ({$role}) 登录失败 - {$errorMessage}", [
                 'member_id' => $member->id,
                 'username' => $member->username,
@@ -235,11 +172,6 @@ class Event
     {
         $member = $data['member'] ?? null;
         $role = $data['role'] ?? 'admin';
-        
-        if (!$member) {
-            Log::warning('用户注销成功事件处理失败：member参数为空');
-            return;
-        }
 
         try {
             // 记录注销成功日志
@@ -271,11 +203,6 @@ class Event
         $member = $data['member'] ?? null;
         $role = $data['role'] ?? 'admin';
         $reason = $data['reason'] ?? '注销失败';
-        
-        if (!$member) {
-            Log::warning('用户注销失败事件处理失败：member参数为空');
-            return;
-        }
 
         try {
             Log::error("用户 {$member->username} ({$role}) 注销失败", [
@@ -440,20 +367,25 @@ class Event
 
     /**
      * 状态检查事件处理（合并版）
+     * member.status_check.start
+     * member.status_check.success
+     * member.status_check.failure
+     *
      * @param array $data
+     * @param       $status
+     *
      * @return void
      */
-    public static function eventStatusCheck(array $data): void
+    public static function eventStatusCheck(array $data, $status): void
     {
         $member = $data['member'] ?? null;
         $role = $data['role'] ?? 'admin';
         $checkType = $data['check_type'] ?? 'login';
-        $status = $data['status'] ?? 'start'; // start, success, failure
+        // $status = $data['status'] ?? 'start'; // start, success, failure
         $failureReason = $data['failure_reason'] ?? null;
         $failedItem = $data['failed_item'] ?? null;
         $checkItems = $data['check_items'] ?? [];
-        
-        if (!$member && $status !== 'start') {
+        if (!$member && $status !== 'member.status_check.start') {
             Log::warning('状态检查事件处理失败：member参数为空');
             return;
         }
@@ -463,13 +395,13 @@ class Event
             $message = "用户状态检查：用户 {$member?->username} ({$role}) {$checkType} 状态检查";
             
             switch ($status) {
-                case 'start':
+                case 'member.status_check.start':
                     $message .= "开始";
                     break;
-                case 'success':
+                case 'member.status_check.success':
                     $message .= "成功";
                     break;
-                case 'failure':
+                case 'member.status_check.failure':
                     $message .= "失败 - {$failureReason}";
                     $logLevel = 'warning';
                     break;
@@ -485,9 +417,9 @@ class Event
                 'ip' => request()->getRealIp()
             ];
             
-            if ($status === 'success') {
+            if ($status === 'member.status_check.success') {
                 $logData['check_items'] = $checkItems;
-            } elseif ($status === 'failure') {
+            } elseif ($status === 'member.status_check.failure') {
                 $logData['failure_reason'] = $failureReason;
                 $logData['failed_item'] = $failedItem;
             }

@@ -448,7 +448,7 @@ class Context
 
         // 根据事件类型选择日志级别
         $logLevel = $this->getEventLogLevel($event);
-        Log::log($logLevel, "Context Event: {$event}", $normalizedData);
+        Log::log($logLevel, "上下文事件: {$event}", $normalizedData);
     }
 
     /**

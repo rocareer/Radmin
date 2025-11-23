@@ -349,6 +349,12 @@ if (!function_exists('getTokenFromRequest')) {
             }
         }
         
+        // 4. 从通用的token参数获取（用于EventSource等场景）
+        $token = $request->input('token');
+        if (!empty($token)) {
+            return $token;
+        }
+        
         return null;
     }
 

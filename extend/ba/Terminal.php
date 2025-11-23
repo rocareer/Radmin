@@ -523,4 +523,88 @@ class Terminal
         ]);
         $this->connection->send(new Response(200, $headers, "\r\n"));
     }
+
+    /**
+     * 设置命令参数（用于POST请求）
+     */
+    public function setCommandParams(string $command, string $uuid, string $extend = ''): void
+    {
+        $this->commandKey = $command;
+        $this->uuid = $uuid;
+        $this->extend = $extend;
+    }
+
+    /**
+     * 执行命令并返回输出（用于POST请求）
+     * @throws Throwable
+     */
+    public function execWithOutput(): array
+    {
+        $output = [];
+        
+        // 模拟原有的exec方法，但收集输出而不是直接发送
+        $command = self::getCommand($this->commandKey);
+        if (!$command) {
+            throw new \RuntimeException('The command was not allowed to be executed');
+        }
+
+        // 认证检查
+        try {
+            $token = getTokenFromRequest(request());
+            if (!Member::terminal($token)) {
+                throw new \RuntimeException('You are not super administrator or not logged in');
+            }
+        } catch (Exception $e) {
+            throw new \RuntimeException('Token expiration');
+        }
+
+        $this->beforeExecution();
+        
+        // 添加连接成功状态
+        $output[] = ['type' => 'status', 'data' => $this->flag['link-success']];
+        
+        if (!empty($command['notes'])) {
+            $output[] = ['type' => 'output', 'data' => '> ' . __($command['notes'])];
+        }
+        $output[] = ['type' => 'output', 'data' => '> ' . $command['command']];
+
+        $this->process = proc_open($command['command'], $this->descriptorsPec, $this->pipes, $command['cwd']);
+        if (!is_resource($this->process)) {
+            throw new \RuntimeException('Failed to execute');
+        }
+
+        $startTime = time();
+        $lastContent = '';
+        
+        while ($this->getProcStatus()) {
+            $contents = file_get_contents($this->outputFile);
+            if (strlen($contents) && $lastContent != $contents) {
+                $newOutput = str_replace($lastContent, '', $contents);
+                if (preg_match('/\r\n|\r|\n/', $newOutput)) {
+                    $output[] = ['type' => 'output', 'data' => $newOutput];
+                    $lastContent = $contents;
+                }
+            }
+
+            // 超时检查（30秒超时）
+            if (time() - $startTime > 30) {
+                proc_terminate($this->process);
+                $output[] = ['type' => 'status', 'data' => $this->flag['exec-error']];
+                break;
+            }
+            
+            usleep(100000); // 100ms
+        }
+
+        // 检查执行结果
+        if ($this->procStatusMark === 2) {
+            $output[] = ['type' => 'status', 'data' => $this->flag['exec-success']];
+        } else {
+            $output[] = ['type' => 'status', 'data' => $this->flag['exec-error']];
+        }
+
+        $output[] = ['type' => 'status', 'data' => $this->flag['exec-completed']];
+        
+        return $output;
+    }
 }

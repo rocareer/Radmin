@@ -42,7 +42,7 @@ return [
     // ==================== 状态管理事件 ====================
     
     // 状态检查事件（合并开始、成功、失败）
-    'member.status_check' => [
+    'member.status_check.*' => [
         [Event::class, 'eventStatusCheck'],
     ],
     

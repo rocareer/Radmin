@@ -210,11 +210,48 @@ class Ajax extends Backend
     }
 
     /**
-     * 终端
+     * 终端（支持EventSource和token认证）
      * @throws Throwable
      */
-    public function terminal(): void
+    public function terminal(): Response
     {
+        // 如果是POST请求，使用新的执行方式
+        if ($this->request->method() === 'POST') {
+            return $this->executeTerminalCommand();
+        }
+        
+        // 保持原有的GET请求支持（EventSource）
         (new Terminal())->exec();
+        return response('');
+    }
+
+    /**
+     * 执行终端命令（POST方式，支持token认证）
+     * @throws Throwable
+     */
+    private function executeTerminalCommand(): Response
+    {
+        $command = $this->request->post('command');
+        $uuid = $this->request->post('uuid');
+        $extend = $this->request->post('extend');
+
+        if (!$command || !$uuid) {
+            return $this->error('Command and UUID are required');
+        }
+
+        try {
+            // 创建终端实例并执行命令
+            $terminal = new Terminal();
+            
+            // 设置命令参数
+            $terminal->setCommandParams($command, $uuid, $extend);
+            
+            // 执行命令并获取输出
+            $result = $terminal->execWithOutput();
+            
+            return $this->success('Command executed successfully', $result);
+        } catch (Throwable $e) {
+            return $this->error($e->getMessage());
+        }
     }
 }
