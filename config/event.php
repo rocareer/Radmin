@@ -14,41 +14,85 @@ use app\admin\model\log\authentication\Admin;
 use app\admin\model\log\data\Backup as BackupLog;
 use app\admin\model\log\data\Restore as RestoreLog;
 use support\member\State;
-use support\member\StateEventListener;
+use support\member\Event;
 
 return [
-    // 状态检查事件
-    'state.check.before' => [
-        [StateEventListener::class, 'eventBeforeCheck'],
-    ],
-    // 检查账号状态
-    'state.check.account_status' => [
-        [StateEventListener::class, 'eventCheckAccountStatus'],
-    ],
-    // 检查登录失败次数
-    'state.check.login_failures' => [
-        [StateEventListener::class, 'eventCheckLoginFailures'],
-    ],
-    // 检查单点登录状态
-    'state.check.sso_status' => [
-        [StateEventListener::class, 'eventCheckSsoStatus'],
-    ],
-    // 状态检查后事件
-    'state.check.after' => [
-        [StateEventListener::class, 'eventAfterCheck'],
-    ],
+    // 状态检查事件（已废弃，从未被触发）
+    // 'state.check.before' => [
+    //     [Member::class, 'eventBeforeCheck'],
+    // ],
+    // 'state.check.account_status' => [
+    //     [Member::class, 'eventCheckAccountStatus'],
+    // ],
+    // 'state.check.login_failures' => [
+    //     [Member::class, 'eventCheckLoginFailures'],
+    // ],
+    // 'state.check.sso_status' => [
+    //     [Member::class, 'eventCheckSsoStatus'],
+    // ],
+    // 'state.check.after' => [
+    //     [Member::class, 'eventAfterCheck'],
+    // ],
     
     // 登录成功事件
-    'state.login_success' => [
-        [StateEventListener::class, 'eventLoginSuccess'],
+    'member.login_success' => [
+        [Event::class, 'eventLoginSuccess'],
     ],
     // 登录失败事件
-    'state.login_failure' => [
-        [StateEventListener::class, 'eventLoginFailure'],
+    'member.login_failure' => [
+        [Event::class, 'eventLoginFailure'],
     ],
     
-    // 通配符事件（兼容旧版本）
-    'state.check.*' => [
-        [StateEventListener::class, 'eventHandleWildcard'],
+    // 用户注册成功事件
+    'member.register_success' => [
+        [Event::class, 'eventRegisterSuccess'],
     ],
+    // 用户注册失败事件
+    'member.register_failure' => [
+        [Event::class, 'eventRegisterFailure'],
+    ],
+    
+    // 用户注销成功事件
+    'member.logout_success' => [
+        [Event::class, 'eventLogoutSuccess'],
+    ],
+    // 用户注销失败事件
+    'member.logout_failure' => [
+        [Event::class, 'eventLogoutFailure'],
+    ],
+    
+    // 强制注销事件
+    'member.force_logout' => [
+        [Event::class, 'eventForceLogout'],
+    ],
+    
+    // 角色切换事件
+    'member.context.role_switched' => [
+        [Event::class, 'eventRoleSwitched'],
+    ],
+    
+    // 角色一致性检查失败事件
+    'member.role_consistency.mismatch' => [
+        [Event::class, 'eventRoleConsistencyMismatch'],
+    ],
+    
+    // 用户菜单获取错误事件
+    'user.menu.get.error' => [
+        [Event::class, 'eventUserMenuGetError'],
+    ],
+    
+    // 状态检查事件（已废弃，使用更具体的事件替代）
+    // 'state.check_status' => [
+    //     [Member::class, 'eventCheckStatus'],
+    // ],
+    
+    // 登录更新事件（已废弃，使用 state.login_success 和 state.login_failure 替代）
+    // 'state.update_login.*' => [
+    //     [Member::class, 'eventUpdateLogin'],
+    // ],
+    
+    // 通配符事件（已废弃，从未被使用）
+    // 'state.check.*' => [
+    //     [Member::class, 'eventHandleWildcard'],
+    // ],
 ];

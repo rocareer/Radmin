@@ -35,7 +35,7 @@ class Member extends Facade
      */
     public static function setCurrentRole($role): mixed
     {
-        RoleManager::getInstance()->setCurrentRole($role);
+        Role::getInstance()->setCurrentRole($role);
         return static::instance();
     }
 
@@ -47,7 +47,7 @@ class Member extends Facade
      */
     protected static function getFacadeClass(): string
     {
-        $role = request()->role ?? RequestContext::get('role') ?? 'user';
+        $role = request()->role ?? \support\member\Context::getInstance()->getCurrentRole() ?? 'user';
         
         if ($role === 'admin') {
             return 'support\member\admin\AdminService';

@@ -7,7 +7,7 @@ namespace app\middleware;
 
 use Exception;
 use support\Request;
-use support\member\RoleManager;
+use support\member\Role;
 use Webman\Event\Event;
 
 class RequestMiddleWare implements MiddlewareInterface
@@ -32,7 +32,7 @@ class RequestMiddleWare implements MiddlewareInterface
      */
     protected function detectAndSetRole(Request $request): void
     {
-        $roleManager = RoleManager::getInstance();
+        $roleManager = Role::getInstance();
         
         // 优先使用请求中指定的角色
         $requestRole = $request->input('x-role');

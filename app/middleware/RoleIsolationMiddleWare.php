@@ -85,7 +85,7 @@ class RoleIsolationMiddleWare implements MiddlewareInterface
             
             if ($payload->role !== $expectedRole) {
                 // 检查是否是其他角色的Token，如果是，记录日志但不阻止访问
-                $activeRoles = \support\member\RoleManager::getInstance()->getActiveRoles();
+                $activeRoles = \support\member\Role::getInstance()->getActiveRoles();
                 if (in_array($payload->role, $activeRoles)) {
                     // Token角色与请求路径不匹配，但属于活跃角色，记录日志
                     \Webman\Event\Event::emit('member.role_consistency.mismatch', [
@@ -132,7 +132,7 @@ class RoleIsolationMiddleWare implements MiddlewareInterface
      */
     public static function getActiveRoles(): array
     {
-        return \support\member\RoleManager::getInstance()->getActiveRoles();
+        return \support\member\Role::getInstance()->getActiveRoles();
     }
     
     /**
@@ -140,6 +140,6 @@ class RoleIsolationMiddleWare implements MiddlewareInterface
      */
     public static function forceClearRoleContext(string $role): bool
     {
-        return \support\member\RoleManager::getInstance()->cleanupRoleContext($role);
+        return \support\member\Role::getInstance()->cleanupRoleContext($role);
     }
 }

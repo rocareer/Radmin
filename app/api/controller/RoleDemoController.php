@@ -9,7 +9,7 @@ namespace app\api\controller;
 use app\controller\BaseController;
 use support\Request;
 use support\Response;
-use support\member\RoleManager;
+use support\member\Role;
 use app\middleware\RoleAuthMiddleware;
 
 class RoleDemoController extends BaseController
@@ -19,7 +19,7 @@ class RoleDemoController extends BaseController
      */
     public function getCurrentRoleInfo(Request $request): Response
     {
-        $roleManager = RoleManager::getInstance();
+        $roleManager = Role::getInstance();
         $currentRole = $request->role;
         
         $data = [
@@ -39,7 +39,7 @@ class RoleDemoController extends BaseController
      */
     public function getAllRoles(): Response
     {
-        $roleManager = RoleManager::getInstance();
+        $roleManager = Role::getInstance();
         $allRoles = $roleManager->getAllRoles();
         
         return $this->success([
@@ -89,7 +89,7 @@ class RoleDemoController extends BaseController
         }
         
         try {
-            $roleManager = RoleManager::getInstance();
+            $roleManager = Role::getInstance();
             $roleManager->setCurrentRole($newRole);
             
             return $this->success([
@@ -131,7 +131,7 @@ class RoleDemoController extends BaseController
      */
     public function testMultiRoleLogin(): Response
     {
-        $roleManager = RoleManager::getInstance();
+        $roleManager = Role::getInstance();
         
         // 模拟多角色登录场景
         $activeRoles = $roleManager->getActiveRoles();
@@ -153,7 +153,7 @@ class RoleDemoController extends BaseController
      */
     public function getRoleMiddleware(Request $request): Response
     {
-        $roleManager = RoleManager::getInstance();
+        $roleManager = Role::getInstance();
         $currentRole = $request->role;
         
         $middleware = $roleManager->getRoleMiddleware($currentRole);

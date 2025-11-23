@@ -80,7 +80,7 @@ class Frontend extends Api
     {
         try {
             Member::initialization();
-            $this->member = RequestContext::get('member');
+            $this->member = \support\member\Context::getInstance()->getCurrentMember();
 
             return !empty($this->member);
         } catch (\Throwable $e) {

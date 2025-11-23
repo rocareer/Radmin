@@ -22,7 +22,6 @@ use Webman\Event\Event;
  */
 abstract class Authenticator
 {
-    use DependencyInjectionTrait;
     /**
      * @var string 用户模型类型
      */
@@ -60,6 +59,17 @@ abstract class Authenticator
             $this->memberModel = $this->createModel($this->role);
         }
     }
+    
+    /**
+     * 创建模型实例
+     */
+    protected function createModel(string $role): object
+    {
+        if ($role === 'admin') {
+            return new \support\member\admin\AdminModel();
+        }
+        return new \support\member\user\UserModel();
+    }
 
     /**
      * 认证用户（优化版）
@@ -83,11 +93,13 @@ abstract class Authenticator
             $this->generateTokens();           // 6. 生成令牌
             $this->extendMemberInfo();         // 7. 扩展用户信息
             
-            // 登录成功事件
-            Event::emit("state.login_success", [
+            // 登录成功事件 - 规范化事件格式
+            Event::emit("member.login_success", [
                 'member' => $this->memberModel,
                 'role' => $this->role,
-                'success' => true
+                'success' => true,
+                'timestamp' => microtime(true),
+                'event_type' => 'authentication'
             ]);
 
             Db::commit();
@@ -112,11 +124,14 @@ abstract class Authenticator
         try {
             Db::rollback();
             
-            // 登录失败事件
-            Event::emit("state.login_failure", [
+            // 登录失败事件 - 规范化事件格式
+            Event::emit("member.login_failure", [
                 'member' => $this->memberModel,
                 'role' => $this->role,
-                'success' => false
+                'success' => false,
+                'timestamp' => microtime(true),
+                'event_type' => 'authentication',
+                'error_message' => $e->getMessage()
             ]);
         } catch (Throwable $rollbackError) {
             Log::error('认证失败回滚异常：' . $rollbackError->getMessage());
@@ -177,7 +192,13 @@ abstract class Authenticator
      */
     protected function checkMemberStatus(): void
     {
-        Event::dispatch('state.checkStatus', $this->memberModel);
+        // 状态检查事件已废弃，使用更具体的事件替代
+        // Event::emit('state.check_status', [
+        //     'member' => $this->memberModel,
+        //     'role' => $this->role,
+        //     'timestamp' => microtime(true),
+        //     'event_type' => 'status_check'
+        // ]);
     }
 
     /**

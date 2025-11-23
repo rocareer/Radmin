@@ -69,7 +69,7 @@ class Api extends BaseController
 
         if (!empty($this->role)) {
             Member::setCurrentRole($this->role);
-            $this->member = RequestContext::get('member');
+            $this->member = \support\member\Context::getInstance()->getCurrentMember();
         }
     }
 

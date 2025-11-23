@@ -5,6 +5,7 @@ namespace support\member;
 
 use app\exception\UnauthorizedHttpException;
 use Exception;
+use support\Log;
 use support\RequestContext;
 use think\db\exception\DataNotFoundException;
 use think\db\exception\DbException;
@@ -20,7 +21,6 @@ use Throwable;
 
 abstract class Service
 {
-    use DependencyInjectionTrait;
     //common
     /**
      * 角色
@@ -67,19 +67,94 @@ abstract class Service
     public function __construct()
     {
         $this->request = request();
-        $this->initializeDependencies();
+        // 移除构造函数中的依赖初始化，改为按需初始化
     }
 
     /**
-     * 初始化依赖组件（优化版）
+     * 初始化依赖组件（延迟初始化）
+     * @param bool $force 是否强制重新初始化
      * @return void
      */
-    protected function initializeDependencies(): void
+    protected function initializeDependencies(bool $force = false): void
     {
-        // 优化：减少重复初始化检查
-        $this->memberModel = $this->memberModel ?: $this->createModel($this->role);
-        $this->authenticator = $this->authenticator ?: $this->createAuthenticator($this->role);
-        $this->state = $this->state ?: $this->createState($this->role);
+        // 只在需要时初始化，避免不必要的资源消耗
+        if ($force || !$this->memberModel) {
+            $this->memberModel = $this->createModel($this->role);
+        }
+        
+        if ($force || !$this->authenticator) {
+            $this->authenticator = $this->createAuthenticator($this->role);
+        }
+        
+        if ($force || !$this->state) {
+            $this->state = $this->createState($this->role);
+        }
+    }
+    
+    /**
+     * 获取模型实例（延迟初始化）
+     * @return object
+     */
+    protected function getMemberModel(): object
+    {
+        if (!$this->memberModel) {
+            $this->memberModel = $this->createModel($this->role);
+        }
+        return $this->memberModel;
+    }
+    
+    /**
+     * 获取认证器实例（延迟初始化）
+     * @return object
+     */
+    protected function getAuthenticator(): object
+    {
+        if (!$this->authenticator) {
+            $this->authenticator = $this->createAuthenticator($this->role);
+        }
+        return $this->authenticator;
+    }
+    
+    /**
+     * 获取状态管理器实例（延迟初始化）
+     * @return object
+     */
+    protected function getState(): object
+    {
+        if (!$this->state) {
+            $this->state = $this->createState($this->role);
+        }
+        return $this->state;
+    }
+    
+    /**
+     * 创建模型实例
+     */
+    protected function createModel(string $role): object
+    {
+        if ($role === 'admin') {
+            return new \support\member\admin\AdminModel();
+        }
+        return new \support\member\user\UserModel();
+    }
+    
+    /**
+     * 创建认证器实例
+     */
+    protected function createAuthenticator(string $role): object
+    {
+        if ($role === 'admin') {
+            return new \support\member\admin\AdminAuthenticator();
+        }
+        return new \support\member\user\UserAuthenticator();
+    }
+    
+    /**
+     * 创建状态管理器实例
+     */
+    protected function createState(string $role): object
+    {
+        return new \support\member\State();
     }
 
 
@@ -102,7 +177,7 @@ abstract class Service
         $this->initializeDependencies();
         
         // 如果用户信息已存在，直接返回
-        if (!empty(RequestContext::get('member'))) {
+        if (!empty(\support\member\Context::getInstance()->getCurrentMember())) {
             return;
         }
         
@@ -117,30 +192,235 @@ abstract class Service
             $this->stateCheckStatus();
             
         } catch (Exception $e) {
-            Event::emit("state.updateLogin.failure", $this->memberModel);
+            Event::emit("state.updateLogin.failure", [
+                'member' => $this->memberModel,
+                'role' => $this->role,
+                'success' => false,
+                'timestamp' => microtime(true),
+                'event_type' => 'login_update',
+                'error_message' => $e->getMessage()
+            ]);
             throw $e;
         }
     }
 
-
+    
     /**
-     * 状态:检查状态
-     * By albert  2025/05/06 19:24:35
+     * 状态:检查用户状态
+     * By albert  2025/05/06 19:23:20
+     * @return void
      */
     protected function stateCheckStatus(): void
     {
-        Event::dispatch('state.checkStatus', $this->memberModel);
+        // 使用状态管理器检查用户状态
+        $state = $this->getState();
+        if (method_exists($state, 'checkStatus')) {
+            $state->checkStatus($this->memberModel);
+        }
     }
-
+    
     /**
-     * 状态:更新登录记录
-     * By albert  2025/05/06 19:23:20
-     * @param string $success
-     * @return void
+     * 更新用户登录信息（整合自LoginTimeTracker）
+     * 
+     * @param object $member 用户模型
+     * @param string $role 用户角色
+     * @return bool
      */
-    protected function stateUpdateLogin(string $success): void
+    protected function updateLoginInfo(object $member, string $role): bool
     {
-        Event::emit("state.updateLogin.$success", $this->memberModel);
+        try {
+            if (!$member || !isset($member->id)) {
+                Log::warning('更新登录信息失败：用户模型无效');
+                return false;
+            }
+
+            // 获取当前时间和IP
+            $currentTime = time();
+            $currentIp = request()->getRealIp();
+            
+            // 记录上次登录信息（用于日志）
+            $previousLoginTime = $member->last_login_time ?? null;
+            $previousLoginIp = $member->last_login_ip ?? null;
+            
+            // 开始事务
+            $member->startTrans();
+            
+            try {
+                // 更新登录信息
+                $member->last_login_time = $currentTime;
+                $member->last_login_ip = $currentIp;
+                $member->login_failure = 0; // 重置登录失败次数
+                
+                // 保存更改
+                $member->save();
+                
+                // 提交事务
+                $member->commit();
+                
+                // 记录详细日志
+                $this->logLoginUpdate($member, $role, $currentTime, $currentIp, $previousLoginTime, $previousLoginIp);
+                
+                // 更新登录历史摘要
+                $this->updateLoginHistorySummary($member, $role, $currentTime, $currentIp, $previousLoginIp);
+                
+                return true;
+                
+            } catch (\Throwable $e) {
+                // 回滚事务
+                $member->rollback();
+                throw $e;
+            }
+            
+        } catch (\Throwable $e) {
+            Log::error('登录信息更新失败：' . $e->getMessage(), [
+                'member_id' => $member->id ?? 'unknown',
+                'role' => $role,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return false;
+        }
+    }
+    
+    /**
+     * 记录登录更新日志（整合自LoginTimeTracker）
+     * 
+     * @param object $member 用户模型
+     * @param string $role 用户角色
+     * @param int $currentTime 当前登录时间
+     * @param string $currentIp 当前登录IP
+     * @param int|null $previousLoginTime 上次登录时间
+     * @param string|null $previousLoginIp 上次登录IP
+     */
+    private function logLoginUpdate(
+        object $member, 
+        string $role, 
+        int $currentTime, 
+        string $currentIp, 
+        ?int $previousLoginTime, 
+        ?string $previousLoginIp
+    ): void {
+        $logData = [
+            'user_id' => $member->id,
+            'username' => $member->username ?? $member->name ?? 'unknown',
+            'role' => $role,
+            'current_login_time' => date('Y-m-d H:i:s', $currentTime),
+            'current_login_ip' => $currentIp,
+            'previous_login_time' => $previousLoginTime ? date('Y-m-d H:i:s', $previousLoginTime) : '首次登录',
+            'previous_login_ip' => $previousLoginIp ?? '首次登录'
+        ];
+        
+        // 检查是否为异常登录（不同IP或短时间内的多次登录）
+        $isAbnormalLogin = false;
+        if ($previousLoginTime && $previousLoginIp) {
+            $timeDiff = $currentTime - $previousLoginTime;
+            $ipChanged = $previousLoginIp !== $currentIp;
+            
+            // 如果IP变化或短时间内多次登录，标记为异常
+            if ($ipChanged || $timeDiff < 300) { // 5分钟内
+                $isAbnormalLogin = true;
+                $logData['abnormal_login'] = true;
+                $logData['time_diff_minutes'] = round($timeDiff / 60, 2);
+                $logData['ip_changed'] = $ipChanged;
+            }
+        }
+        
+        if ($isAbnormalLogin) {
+            Log::warning('检测到异常登录行为', $logData);
+        } else {
+            Log::info('用户登录信息更新成功', $logData);
+        }
+    }
+    
+    /**
+     * 获取用户登录历史摘要（整合自LoginTimeTracker）
+     * 
+     * @param int $userId 用户ID
+     * @param string $role 用户角色
+     * @return array
+     */
+    protected function getLoginHistorySummary(int $userId, string $role): array
+    {
+        try {
+            // 从缓存或数据库获取登录历史
+            $cacheKey = "login_history_{$role}_{$userId}";
+            $summary = RequestContext::get($cacheKey);
+            
+            if (!$summary) {
+                // 这里可以从数据库获取更详细的登录历史
+                // 简化实现，只返回基本信息
+                $summary = [
+                    'user_id' => $userId,
+                    'role' => $role,
+                    'last_login_time' => null,
+                    'last_login_ip' => null,
+                    'login_count_today' => 0,
+                    'abnormal_login_count' => 0
+                ];
+                
+                // 缓存摘要信息
+                RequestContext::set($cacheKey, $summary);
+            }
+            
+            return $summary;
+            
+        } catch (\Throwable $e) {
+            Log::error('获取登录历史摘要失败：' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * 更新登录历史摘要（整合自LoginTimeTracker）
+     * 
+     * @param object $member 用户模型
+     * @param string $role 用户角色
+     * @param int $loginTime 登录时间
+     * @param string $loginIp 登录IP
+     * @param string|null $previousLoginIp 上次登录IP
+     */
+    private function updateLoginHistorySummary(object $member, string $role, int $loginTime, string $loginIp, ?string $previousLoginIp): void
+    {
+        // 更新登录历史摘要
+        $summary = $this->getLoginHistorySummary($member->id, $role);
+        
+        // 更新今日登录次数
+        $today = date('Y-m-d', $loginTime);
+        $lastLoginDate = date('Y-m-d', $summary['last_login_time'] ?? 0);
+        
+        if ($today === $lastLoginDate) {
+            $summary['login_count_today'] = ($summary['login_count_today'] ?? 0) + 1;
+        } else {
+            $summary['login_count_today'] = 1;
+        }
+        
+        // 更新摘要信息
+        $summary['last_login_time'] = $loginTime;
+        $summary['last_login_ip'] = $loginIp;
+        
+        // 检查异常登录
+        if ($previousLoginIp && $previousLoginIp !== $loginIp) {
+            $summary['abnormal_login_count'] = ($summary['abnormal_login_count'] ?? 0) + 1;
+            
+            // 记录IP变更事件
+            Event::emit('security.ip_changed', [
+                'member' => $member,
+                'role' => $role,
+                'previous_ip' => $previousLoginIp,
+                'current_ip' => $loginIp,
+                'timestamp' => microtime(true)
+            ]);
+        }
+        
+        // 缓存更新后的摘要
+        $cacheKey = "login_history_{$role}_{$member->id}";
+        RequestContext::set($cacheKey, $summary);
+        
+        Log::debug('登录历史摘要已更新', [
+            'member_id' => $member->id,
+            'role' => $role,
+            'login_count_today' => $summary['login_count_today'],
+            'abnormal_login_count' => $summary['abnormal_login_count']
+        ]);
     }
 
 
@@ -162,7 +442,8 @@ abstract class Service
             $credentials['keep'] = $keep;
             
             // 执行认证
-            $this->memberModel = $this->authenticator->authenticate($credentials);
+            $authenticator = $this->getAuthenticator();
+            $this->memberModel = $authenticator->authenticate($credentials);
             
             // 验证认证结果
             if (empty($this->memberModel)) {
@@ -254,7 +535,8 @@ abstract class Service
         $credentials['password'] = hash_password($credentials['password']);
         
         // 创建用户
-        $member = $this->memberModel->create($credentials);
+        $model = $this->getMemberModel();
+        $member = $model->create($credentials);
         
         if (empty($member)) {
             throw new \RuntimeException('用户注册失败');
@@ -270,7 +552,8 @@ abstract class Service
      */
     private function getUserByUsername(string $username): ?object
     {
-        return $this->memberModel->where('username', $username)->find();
+        $model = $this->getMemberModel();
+        return $model->where('username', $username)->find();
     }
 
     /**
@@ -280,7 +563,8 @@ abstract class Service
      */
     private function getUserByEmail(string $email): ?object
     {
-        return $this->memberModel->where('email', $email)->find();
+        $model = $this->getMemberModel();
+        return $model->where('email', $email)->find();
     }
 
     /**
@@ -290,7 +574,8 @@ abstract class Service
      */
     private function getUserByMobile(string $mobile): ?object
     {
-        return $this->memberModel->where('mobile', $mobile)->find();
+        $model = $this->getMemberModel();
+        return $model->where('mobile', $mobile)->find();
     }
 
     /**
@@ -318,12 +603,23 @@ abstract class Service
             // 清理当前角色的上下文数据
             $this->cleanupCurrentRoleContext();
             
-            Event::emit("log.authentication.{$this->role}.logout.success", $this->memberModel);
+            Event::emit("log.authentication.{$this->role}.logout.success", [
+                'member' => $this->memberModel,
+                'role' => $this->role,
+                'timestamp' => microtime(true),
+                'event_type' => 'logout'
+            ]);
             
             return true;
             
         } catch (\Throwable $e) {
-            Event::emit("log.authentication.{$this->role}.logout.failure", $this->memberModel ?? null);
+            Event::emit("log.authentication.{$this->role}.logout.failure", [
+                'member' => $this->memberModel ?? null,
+                'role' => $this->role,
+                'timestamp' => microtime(true),
+                'event_type' => 'logout',
+                'error_message' => $e->getMessage()
+            ]);
             // 登出失败不抛出异常，避免影响用户体验
             return false;
         }
@@ -340,10 +636,24 @@ abstract class Service
             $context->clearRoleContext($this->role);
         }
         
-        // 成员信息清理由 RoleManager 统一处理
+        // 清理RequestContext中与当前角色相关的数据
+        RequestContext::delete("role_{$this->role}_data");
+        RequestContext::delete("role_{$this->role}_token");
+        RequestContext::delete("current_{$this->role}_service");
+        
+        // 使用Role统一清理角色上下文
+        Role::getInstance()->cleanupRoleContext($this->role);
         
         // 重置当前服务的成员信息
         $this->memberModel = null;
+        $this->authenticator = null;
+        $this->state = null;
+        
+        // 记录清理事件
+        Event::emit("service.{$this->role}.context_cleaned", [
+            'role' => $this->role,
+            'timestamp' => microtime(true)
+        ]);
     }
 
     /**
@@ -355,9 +665,6 @@ abstract class Service
     public function register(array $credentials): array
     {
         try {
-            // 确保依赖已初始化
-            $this->initializeDependencies();
-            
             // 参数验证
             $this->validateRegisterCredentials($credentials);
             
@@ -370,9 +677,28 @@ abstract class Service
             // 设置用户信息
             $this->setMember($member);
             
+            // 触发注册成功事件
+            Event::emit("member.register_success", [
+                'member' => $member,
+                'role' => $this->role,
+                'success' => true,
+                'timestamp' => microtime(true),
+                'event_type' => 'registration'
+            ]);
+            
             return $member->toArray();
             
         } catch (Throwable $e) {
+            // 触发注册失败事件
+            Event::emit("member.register_failure", [
+                'username' => $credentials['username'] ?? null,
+                'role' => $this->role,
+                'success' => false,
+                'reason' => $e->getMessage(),
+                'timestamp' => microtime(true),
+                'event_type' => 'registration'
+            ]);
+            
             throw $e;
         }
     }
@@ -393,11 +719,12 @@ abstract class Service
             return false;
         }
         
-        if (empty($this->memberModel) || empty($this->memberModel->password)) {
+        $model = $this->getMemberModel();
+        if (empty($model) || empty($model->password)) {
             return false;
         }
         
-        return verify_password($password, $this->memberModel->password);
+        return verify_password($password, $model->password);
     }
 
     /**
@@ -468,7 +795,8 @@ abstract class Service
             throw new UnauthorizedHttpException('用户ID不能为空', StatusCode::NEED_LOGIN);
         }
         
-        $member = $this->memberModel->findById($userId);
+        $model = $this->getMemberModel();
+        $member = $model->findById($userId);
         if (empty($member)) {
             throw new UnauthorizedHttpException('用户不存在', StatusCode::NEED_LOGIN);
         }
@@ -490,7 +818,7 @@ abstract class Service
      */
     public function getMember(): ?object
     {
-        return $this->memberModel;
+        return $this->getMemberModel();
     }
 
 
@@ -533,7 +861,8 @@ abstract class Service
      */
     public function getMenus(?int $uid = null): array
     {
-        $uid             = $uid ?? $this->memberModel->id;
+        $model = $this->getMemberModel();
+        $uid   = $uid ?? $model->id;
         $this->children  = [];
 
         $originAuthRules = $this->getOriginAuthRules($uid);
@@ -559,7 +888,8 @@ abstract class Service
      */
     public function getOriginAuthRules(?int $uid = null): array
     {
-        $uid = $uid ?? $this->memberModel->id;
+        $model = $this->getMemberModel();
+        $uid   = $uid ?? $model->id;
         $ids = $this->getRuleIds($uid);
         if (empty($ids)) return [];
 
@@ -593,7 +923,8 @@ abstract class Service
      */
     public function getRuleIds(?int $uid = null): array
     {
-        $uid = $uid ?? $this->memberModel->id;
+        $model = $this->getMemberModel();
+        $uid   = $uid ?? $model->id;
         // 用户的组别和规则ID
         $groups = $this->getGroups($uid);
 
@@ -613,7 +944,8 @@ abstract class Service
      */
     public function getGroups(?int $id = null): array
     {
-        $id = $id ?? $this->memberModel->id;
+        $model = $this->getMemberModel();
+        $id    = $id ?? $model->id;
 
         $dbName = $this->config['auth_group_access'] ?: 'user';
         if ($this->config['auth_group_access']) {
@@ -661,7 +993,7 @@ abstract class Service
     public function setMember($member): void
     {
         $this->memberModel = $member;
-        RequestContext::set('member', $this->memberModel);
+        \support\member\Context::getInstance()->setCurrentMember($this->memberModel, $this->role);
     }
 
     /**
@@ -708,7 +1040,8 @@ abstract class Service
      */
     public function check(string $name, ?int $uid = null, string $relation = 'or', string $mode = 'url'): bool
     {
-        $uid = $uid ?? $this->memberModel->id;
+        $model = $this->getMemberModel();
+        $uid   = $uid ?? $model->id;
         // 获取用户需要验证的所有有效规则列表
         $ruleList = $this->getRuleList($uid);
         if (in_array('*', $ruleList)) {
@@ -761,7 +1094,8 @@ abstract class Service
      */
     public function getRuleList(?int $uid = null): array
     {
-        $uid = $uid ?? $this->memberModel->id;
+        $model = $this->getMemberModel();
+        $uid   = $uid ?? $model->id;
         // 读取用户规则节点
         $ids = $this->getRuleIds($uid);
         if (empty($ids)) return [];

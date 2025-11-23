@@ -53,11 +53,13 @@ class Request extends \Webman\Http\Request
         
         $this->token = getTokenFromRequest($this);
         
-        // 记录token提取日志
+        // 记录token提取日志 - 规范化事件格式
         if ($this->token) {
             \Webman\Event\Event::emit('request.token_extracted', [
                 'token_length' => strlen($this->token),
-                'request_path' => $this->path()
+                'request_path' => $this->path(),
+                'timestamp' => microtime(true),
+                'event_type' => 'token_extraction'
             ]);
         }
         
@@ -84,7 +86,7 @@ class Request extends \Webman\Http\Request
         } else {
             // 使用角色管理器检测角色
             try {
-                $roleManager = \support\member\RoleManager::getInstance();
+                $roleManager = \support\member\Role::getInstance();
                 $this->role = $roleManager->detectRoleByRequest($this);
             } catch (\Throwable $e) {
                 // 降级处理：使用默认角色
@@ -92,10 +94,12 @@ class Request extends \Webman\Http\Request
             }
         }
         
-        // 记录角色获取日志
+        // 记录角色获取日志 - 规范化事件格式
         \Webman\Event\Event::emit('request.role_retrieved', [
             'role' => $this->role,
-            'request_path' => $this->path()
+            'request_path' => $this->path(),
+            'timestamp' => microtime(true),
+            'event_type' => 'role_retrieval'
         ]);
         
         return $this->role;

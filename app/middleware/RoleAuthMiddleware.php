@@ -10,18 +10,18 @@ use app\exception\UnauthorizedHttpException;
 use support\Request;
 use support\RequestContext;
 use support\StatusCode;
-use support\member\RoleManager;
+use support\member\Role;
 use support\member\Context;
 use Webman\Event\Event;
 
 class RoleAuthMiddleware implements MiddlewareInterface
 {
-    protected RoleManager $roleManager;
+    protected Role $roleManager;
     protected array $config;
 
     public function __construct()
     {
-        $this->roleManager = RoleManager::getInstance();
+        $this->roleManager = Role::getInstance();
         $this->config = config('roles', []);
     }
 
@@ -126,14 +126,14 @@ class RoleAuthMiddleware implements MiddlewareInterface
         // 获取成员上下文实例
         $context = RequestContext::get('member_context');
         if (!$context) {
-            $context = new Context();
+            $context = Context::getInstance();
         }
         
-        // 切换到指定角色上下文
-        $context->switchRole($role);
-        
-        // 激活角色
+        // 先激活角色，确保角色状态正确
         $this->roleManager->activateRole($role);
+        
+        // 然后切换到指定角色上下文
+        $context->switchRole($role);
         
         Event::emit('role.auth.context_initialized', [
             'role' => $role,
@@ -219,8 +219,12 @@ class RoleAuthMiddleware implements MiddlewareInterface
             return $payload;
             
         } catch (\support\token\TokenExpiredException $e) {
+            // Token过期时清理相关上下文
+            $this->cleanupExpiredTokenContext($expectedRole, $request);
             throw new UnauthorizedHttpException('Token已过期', StatusCode::TOKEN_SHOULD_REFRESH);
         } catch (\Throwable $e) {
+            // 其他Token验证失败时也清理上下文
+            $this->cleanupExpiredTokenContext($expectedRole, $request);
             throw new UnauthorizedHttpException('Token验证失败: ' . $e->getMessage(), StatusCode::NEED_LOGIN);
         }
     }
@@ -250,14 +254,15 @@ class RoleAuthMiddleware implements MiddlewareInterface
      */
     protected function cleanupAfterRequest(string $role): void
     {
-        // 保存角色上下文
+        // 保存角色上下文到RequestContext，供后续请求使用
         $context = RequestContext::get('member_context');
         if ($context) {
-            $context->saveRoleContext();
+            // 将当前上下文保存到RequestContext中，供后续请求使用
+            RequestContext::set('member_context', $context);
         }
         
         // 根据配置决定是否清理角色上下文
-        $autoCleanup = $this->config['context']['auto_cleanup'] ?? true;
+        $autoCleanup = $this->config['context']['auto_cleanup'] ?? false; // 默认不自动清理
         if ($autoCleanup) {
             // 延迟清理，避免影响后续请求
             $this->scheduleContextCleanup($role);
@@ -268,6 +273,36 @@ class RoleAuthMiddleware implements MiddlewareInterface
             'context_saved' => true,
             'auto_cleanup_scheduled' => $autoCleanup
         ]);
+    }
+    
+    /**
+     * 清理过期Token的上下文
+     */
+    protected function cleanupExpiredTokenContext(string $role, Request $request): void
+    {
+        try {
+            // 清理RequestContext中的成员信息
+            RequestContext::delete('member');
+            RequestContext::delete('role');
+            
+            // 清理角色管理器中的角色状态
+            $this->roleManager->deactivateRole($role);
+            
+            // 记录清理事件
+            Event::emit('role.auth.expired_token_cleanup', [
+                'role' => $role,
+                'request_path' => $request->path(),
+                'timestamp' => microtime(true)
+            ]);
+            
+        } catch (\Throwable $e) {
+            // 清理失败时记录日志，但不抛出异常
+            Event::emit('role.auth.cleanup_error', [
+                'role' => $role,
+                'error' => $e->getMessage(),
+                'request_path' => $request->path()
+            ]);
+        }
     }
     
     /**
@@ -342,7 +377,7 @@ class RoleAuthMiddleware implements MiddlewareInterface
      */
     public static function getActiveRoles(): array
     {
-        return RoleManager::getInstance()->getActiveRoles();
+        return Role::getInstance()->getActiveRoles();
     }
     
     /**
@@ -351,7 +386,7 @@ class RoleAuthMiddleware implements MiddlewareInterface
     public static function forceClearRoleContext(string $role): bool
     {
         try {
-            RoleManager::getInstance()->cleanupRoleContext($role);
+            Role::getInstance()->cleanupRoleContext($role);
             return true;
         } catch (\Throwable $e) {
             Event::emit('role.auth.force_clear_failed', [
@@ -367,7 +402,7 @@ class RoleAuthMiddleware implements MiddlewareInterface
      */
     public static function addRole(string $roleKey, array $config): bool
     {
-        return RoleManager::getInstance()->addRole($roleKey, $config);
+        return Role::getInstance()->addRole($roleKey, $config);
     }
     
     /**
@@ -375,6 +410,6 @@ class RoleAuthMiddleware implements MiddlewareInterface
      */
     public static function getDebugInfo(): array
     {
-        return RoleManager::getInstance()->getDebugInfo();
+        return Role::getInstance()->getDebugInfo();
     }
 }

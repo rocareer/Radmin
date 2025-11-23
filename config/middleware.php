@@ -29,7 +29,6 @@ return [
         RoleAuthMiddleware::class,
         // 5. 请求清理（确保在最后执行）
         RequestCleanupMiddleWare::class,
-
     ],
     'api'   => [
         // API专用中间件

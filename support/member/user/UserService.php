@@ -42,7 +42,7 @@ class UserService extends Service
         try {
             // 确保用户已登录
             if (empty($this->memberModel) && !empty($uid)) {
-                $this->memberModel = $this->createModel($this->role);
+                $this->memberModel = new \support\member\user\UserModel();
                 $this->memberModel = $this->memberModel->findById($uid);
             }
 
@@ -57,7 +57,9 @@ class UserService extends Service
             \Webman\Event\Event::emit('user.menu.get.error', [
                 'uid' => $uid,
                 'error' => $e->getMessage(),
-                'role' => $this->role
+                'role' => $this->role,
+                'timestamp' => microtime(true),
+                'event_type' => 'menu_error'
             ]);
             return [];
         }

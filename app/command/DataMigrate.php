@@ -102,7 +102,7 @@ class DataMigrate extends Command
         $this->ensureMigrationsTableExists();
 
         // 5. 初始化日志记录
-        Event::on('data.migrate.*', function ($event, $data) {
+        \Webman\Event\Event::on('data.migrate.*', function ($event, $data) {
             // 可以在这里添加统一的日志处理逻辑
             error_log("Migration Event: {$event} - " . json_encode($data));
         });
@@ -156,8 +156,8 @@ class DataMigrate extends Command
             'action'    => 'create',
             'migration' => $filename,
         ];
-        Event::emit('data.migrate.create', $data);
-        Event::emit('log.data.migrate', $data);
+        \Webman\Event\Event::emit('data.migrate.create', $data);
+        \Webman\Event\Event::emit('log.data.migrate', $data);
 
         return self::SUCCESS;
     }
@@ -244,8 +244,8 @@ class DataMigrate extends Command
             'action'   => 'up',
             'count'    => $executedCount,
         ];
-        Event::emit('data.migrate.up', $data);
-        Event::emit('log.data.migrate', $data);
+        \Webman\Event\Event::emit('data.migrate.up', $data);
+        \Webman\Event\Event::emit('log.data.migrate', $data);
 
         return self::SUCCESS;
     }
@@ -332,8 +332,8 @@ class DataMigrate extends Command
             'action'   => 'down',
             'count'    => $rolledBackCount,
         ];
-        Event::emit('data.migrate.down', $data);
-        Event::emit('log.data.migrate', $data);
+        \Webman\Event\Event::emit('data.migrate.down', $data);
+        \Webman\Event\Event::emit('log.data.migrate', $data);
 
         return self::SUCCESS;
     }

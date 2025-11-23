@@ -22,11 +22,15 @@ class RequestCleanupMiddleWare
             // 处理请求
             $response = $handler($request);
             
+            // 在请求返回后清理上下文
+            $this->cleanupRequestContext();
+            
             return $response;
             
-        } finally {
-            // 确保在请求结束时清理上下文
+        } catch (\Throwable $e) {
+            // 即使发生异常也要清理上下文
             $this->cleanupRequestContext();
+            throw $e;
         }
     }
     
@@ -35,13 +39,27 @@ class RequestCleanupMiddleWare
      */
     private function cleanupRequestContext(): void
     {
-        // 清理成员上下文
-        $context = RequestContext::get('member_context');
-        if ($context) {
-            $context->clearAllRoleContexts();
+        // 1. 清理业务相关的上下文数据，保留请求基本信息用于日志记录
+        RequestContext::clearBusinessData();
+        
+        // 2. 清理临时存储的成员上下文引用（但不清理单例实例本身）
+        RequestContext::delete('member_context');
+        
+        // 3. 清理请求级别的临时数据
+        RequestContext::delete('payload');
+        RequestContext::delete('token_validated');
+        RequestContext::delete('user_initialized');
+        
+        // 4. 记录清理事件，用于调试
+        if (config('app.debug', false)) {
+            $remainingKeys = array_keys(RequestContext::get());
+            \Webman\Event\Event::emit('request.context.cleaned', [
+                'remaining_keys' => $remainingKeys,
+                'timestamp' => microtime(true)
+            ]);
         }
         
-        // 清理所有请求上下文数据
-        RequestContext::clear();
+        // 注意：不清理单例的Context实例，因为它在请求间共享
+        // 用户上下文的生命周期应该由Token过期机制和登出操作管理，而不是请求清理
     }
 }

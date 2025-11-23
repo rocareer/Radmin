@@ -30,7 +30,7 @@ class Index extends Backend
             return $this->error(__('No background menu, please contact super administrator!'));
         }
         return $this->success('', [
-            'adminInfo'  => RequestContext::get('member'),
+            'adminInfo'  => \support\member\Context::getInstance()->getCurrentMember(),
             'menus'      => $menus,
             'siteConfig' => [
                 'siteName'     => SystemUtil::get_sys_config('site_name'),
@@ -55,7 +55,7 @@ class Index extends Backend
     public function login(): Response
     {
         // 检查登录态
-        if (RequestContext::get('member')) {
+        if (\support\member\Context::getInstance()->getCurrentMember()) {
             return $this->success(__('You have already logged in. There is no need to log in again~'), [
                 'type' => 'logged in'
             ], 303);

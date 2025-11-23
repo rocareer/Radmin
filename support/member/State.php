@@ -84,8 +84,7 @@ class State
 
             $loginFailure = $this->memberModel->login_failure ?? 0;
             $this->memberModel->login_failure = (int)$loginFailure + 1;
-            $this->memberModel->last_login_time = time();
-            $this->memberModel->last_login_ip = request()->getRealIp();
+            // 注意：登录失败时不更新登录时间和IP，只在登录成功时更新
             $this->memberModel->save();
 
             // 记录登录日志
@@ -187,9 +186,8 @@ class State
                 $this->recordLoginLog(false);
             }
 
-            $this->memberModel->last_login_time = time();
-            $this->memberModel->last_login_ip   = request()->getRealIp();
-
+            // 注意：登录时间和IP的更新已移至登录成功事件中统一处理
+            // 这里只保存模型状态
             $this->memberModel->save();
 
             $this->memberModel->commit();
