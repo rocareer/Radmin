@@ -1,7 +1,7 @@
 import { ElNotification } from 'element-plus'
 import { defineStore } from 'pinia'
 import { nextTick, reactive } from 'vue'
-import { buildTerminalUrl, executeTerminalCommand } from '/@/api/common'
+import { buildTerminalUrl } from '/@/api/common'
 import { i18n } from '/@/lang'
 import { STORE_TERMINAL } from '/@/stores/constant/cacheKey'
 import { SYSTEM_ZINDEX } from '/@/stores/constant/common'
@@ -24,6 +24,8 @@ export const useTerminal = defineStore(
             phpDevelopmentServer: false,
             npmRegistry: 'unknown',
             composerRegistry: 'unknown',
+            configShow: false,
+            messageShow: false,
         })
 
         function init() {
