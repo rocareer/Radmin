@@ -278,7 +278,7 @@ class Config extends Backend
     public function sendTestMail(): Response
     {
         // 设置管理员日志标题
-        \app\admin\model\AdminLog::instance()->setTitle(__('Send test email'));
+        \app\admin\model\AdminLog::instance()->setTitle(__('System configuration') . '-' . __('Send test email'));
         
         $data = $this->request->post();
         $mail = new Email();

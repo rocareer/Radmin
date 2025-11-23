@@ -54,6 +54,9 @@ class Index extends Backend
      */
     public function login(): Response
     {
+        // 设置管理员日志标题
+        \app\admin\model\AdminLog::instance()->setTitle(__('Login'));
+        
         // 检查登录态
         if (\support\member\Context::getInstance()->getCurrentMember()) {
             return $this->success(__('You have already logged in. There is no need to log in again~'), [
@@ -96,6 +99,9 @@ class Index extends Backend
      */
     public function logout()
     {
+        // 设置管理员日志标题
+        \app\admin\model\AdminLog::instance()->setTitle(__('Logout'));
+        
         if ($this->request->isPost()) {
             $refreshToken = $this->request->post('refreshToken', '');
             if ($refreshToken) Token::destroy((string)$refreshToken);

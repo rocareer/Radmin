@@ -35,4 +35,7 @@ return [
     'Password is incorrect'                                                               => 'Wrong password',
     'You are not logged in'                                                               => 'You are not logged in',
     'Cache cleaned~'                                                                      => 'The cache has been cleaned up, please refresh the page.',
+    'Login'                                                                                => 'Login',
+    'Logout'                                                                               => 'Logout',
+    'System configuration'                                                                 => 'System configuration',
 ];

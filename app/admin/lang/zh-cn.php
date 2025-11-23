@@ -59,4 +59,7 @@ return [
     'Please delete the child element first, or use batch deletion'                        => '请首先删除子元素，或使用批量删除！',
     'Configuration write failed: %s'                                                      => '配置写入失败：%s',
     'Token expiration'                                                                    => '登录态过期，请重新登录！',
+    'Login'                                                                                => '登录',
+    'Logout'                                                                               => '注销登录',
+    'System configuration'                                                                 => '系统配置',
 ];
