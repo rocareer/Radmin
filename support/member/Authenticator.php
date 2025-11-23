@@ -251,15 +251,15 @@ abstract class Authenticator implements InterfaceAuthenticator
             $currentFailures = $this->memberModel->login_failure ?? 0;
             
             // 计算剩余重试次数
-            $remainingRetries = max(0, $maxRetry - $currentFailures - 1);
+            $remainingRetries = max(0, $maxRetry - $currentFailures-1);
             
-            if ($remainingRetries >= 0) {
+            if ($remainingRetries >0) {
                 throw new UnauthorizedHttpException(
                     "密码错误，您还有 {$remainingRetries} 次重试机会", 
                     StatusCode::PASSWORD_ERROR
                 );
             } else {
-                throw new UnauthorizedHttpException('密码错误', StatusCode::PASSWORD_ERROR);
+                throw new UnauthorizedHttpException('账号已锁定，请稍后重试', StatusCode::PASSWORD_ERROR);
             }
         }
     }
