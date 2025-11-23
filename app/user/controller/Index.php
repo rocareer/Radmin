@@ -168,8 +168,16 @@ class Index extends Frontend
             // 使用Member类进行注册
             $result = $this->registerUser($params);
             
+            // 获取Token信息（注册后自动登录）
+            $memberService = \support\member\Member::instance();
+            $tokenData = [
+                'token' => $memberService->memberModel->token ?? '',
+                'refresh_token' => $memberService->memberModel->refresh_token ?? ''
+            ];
+            
             return $this->success(__('Registration successful'), [
-                'userInfo' => $result
+                'userInfo' => $result,
+                'token' => $tokenData
             ]);
             
         } catch (Throwable $e) {
