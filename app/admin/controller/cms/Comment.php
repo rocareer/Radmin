@@ -2,9 +2,11 @@
 
 namespace app\admin\controller\cms;
 
+use extend\ra\FileUtil;
+use extend\ra\SystemUtil;
+use support\Response;
 use Throwable;
 use ParseDownExt;
-use ba\Filesystem;
 use think\facade\Db;
 use app\common\controller\Backend;
 use app\admin\library\module\Server;
@@ -41,7 +43,7 @@ class Comment extends Backend
      * 查看
      * @throws Throwable
      */
-    public function index(): void
+    public function index(): Response
     {
         // 如果是select则转发到select方法,若select未重写,其实还是继续执行index
         if ($this->request->input('select')) {
@@ -57,10 +59,10 @@ class Comment extends Backend
             ->visible(['user' => ['username'], 'cmsContent' => ['title']])
             ->paginate($limit);
 
-        $this->success('', [
+        return $this->success('', [
             'list'   => $res->items(),
             'total'  => $res->total(),
-            'remark' => get_route_remark(),
+            'remark' => SystemUtil::get_route_remark(),
         ]);
     }
 
@@ -68,23 +70,23 @@ class Comment extends Backend
      * 编辑
      * @throws Throwable
      */
-    public function edit(): void
+    public function edit(): Response
     {
         $id  = $this->request->input($this->model->getPk());
         $row = $this->model->find($id);
         if (!$row) {
-            $this->error(__('Record not found'));
+            return $this->error(__('Record not found'));
         }
 
         $dataLimitAdminIds = $this->getDataLimitAdminIds();
         if ($dataLimitAdminIds && !in_array($row[$this->dataLimitField], $dataLimitAdminIds)) {
-            $this->error(__('You have no permission'));
+            return $this->error(__('You have no permission'));
         }
 
         if ($this->request->isPost()) {
             $data = $this->request->post();
             if (!$data) {
-                $this->error(__('Parameter %s can not be empty', ['']));
+                return $this->error(__('Parameter %s can not be empty', ['']));
             }
 
             $data   = $this->excludeFields($data);
@@ -101,7 +103,7 @@ class Comment extends Backend
                     }
                 }
 
-                $interaction = Server::getIni(Filesystem::fsFit(root_path() . 'modules/interaction/'));
+                $interaction = Server::getIni(FileUtil::fsFit(root_path() . 'modules/interaction/'));
 
                 // 评论审核通过，向at用户发送私信
                 $commentsReview = Db::name('cms_config')
@@ -151,17 +153,17 @@ class Comment extends Backend
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
-                $this->error($e->getMessage());
+                return $this->error($e->getMessage());
             }
             if ($result !== false) {
-                $this->success(__('Update successful'));
+                return $this->success(__('Update successful'));
             } else {
-                $this->error(__('No rows updated'));
+                return $this->error(__('No rows updated'));
             }
 
         }
 
-        $this->success('', [
+        return $this->success('', [
             'row' => $row
         ]);
     }
@@ -169,7 +171,7 @@ class Comment extends Backend
     /**
      * 批量修改状态
      */
-    public function status(): void
+    public function status(): Response
     {
         $ids    = $this->request->input('ids/a', []);
         $status = $this->request->input('status/s', '');
@@ -180,6 +182,6 @@ class Comment extends Backend
                     'status' => $status,
                 ]);
         }
-        $this->success();
+        return $this->success();
     }
 }

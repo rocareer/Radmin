@@ -2,6 +2,7 @@
 
 namespace app\admin\controller\cms;
 
+use support\Response;
 use Throwable;
 use app\common\controller\Backend;
 
@@ -34,29 +35,29 @@ class Tags extends Backend
      * 编辑
      * @throws Throwable
      */
-    public function edit(): void
+    public function edit(): Response
     {
         $pk  = $this->model->getPk();
         $id  = $this->request->input($pk);
         $row = $this->model->find($id);
         if (!$row) {
-            $this->error(__('Record not found'));
+            return $this->error(__('Record not found'));
         }
 
         $dataLimitAdminIds = $this->getDataLimitAdminIds();
         if ($dataLimitAdminIds && !in_array($row[$this->dataLimitField], $dataLimitAdminIds)) {
-            $this->error(__('You have no permission'));
+            return $this->error(__('You have no permission'));
         }
 
         if ($this->request->isPost()) {
             $data = $this->request->post();
             if (!$data) {
-                $this->error(__('Parameter %s can not be empty', ['']));
+                return $this->error(__('Parameter %s can not be empty', ['']));
             }
 
             if (!array_diff_key($data, array_flip(['id', 'status']))) {
                 $row->save($data);
-                $this->success(__('Update successful'));
+                return $this->success(__('Update successful'));
             }
 
             $data   = $this->excludeFields($data);
@@ -77,16 +78,16 @@ class Tags extends Backend
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
-                $this->error($e->getMessage());
+                return $this->error($e->getMessage());
             }
             if ($result !== false) {
-                $this->success(__('Update successful'));
+                return $this->success(__('Update successful'));
             } else {
-                $this->error(__('No rows updated'));
+                return $this->error(__('No rows updated'));
             }
         }
 
-        $this->success('', [
+        return $this->success('', [
             'row' => $row
         ]);
     }

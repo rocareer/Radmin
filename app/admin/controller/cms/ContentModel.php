@@ -2,9 +2,10 @@
 
 namespace app\admin\controller\cms;
 
+use extend\ba\TableManager;
+use support\Response;
 use Throwable;
 use think\facade\Db;
-use ba\TableManager;
 use app\common\library\Menu;
 use app\admin\model\AdminRule;
 use app\common\controller\Backend;
@@ -34,7 +35,7 @@ class ContentModel extends Backend
         $this->model = new \app\admin\model\cms\ContentModel;
     }
 
-    public function info(): void
+    public function info(): Response
     {
         $id = $this->request->input($this->model->getPk(), 0);
         if (!$id) {
@@ -42,7 +43,7 @@ class ContentModel extends Backend
         } else {
             $info = $this->model->find($id);
         }
-        $this->success('', [
+        return $this->success('', [
             'info' => $info
         ]);
     }
@@ -52,12 +53,12 @@ class ContentModel extends Backend
      * 添加
      * @throws Throwable
      */
-    public function add(): void
+    public function add(): Response
     {
         if ($this->request->isPost()) {
             $data = $this->request->post();
             if (!$data) {
-                $this->error(__('Parameter %s can not be empty', ['']));
+                return $this->error(__('Parameter %s can not be empty', ['']));
             }
 
             $data = $this->excludeFields($data);
@@ -69,7 +70,7 @@ class ContentModel extends Backend
             $tables    = TableManager::getTableList();
             $tableName = TableManager::tableName($data['table']);
             if (array_key_exists($tableName, $tables)) {
-                $this->error(__('Data table already exists!'));
+                return $this->error(__('Data table already exists!'));
             }
 
             $result = false;
@@ -159,44 +160,44 @@ EOT;
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
-                $this->error($e->getMessage());
+                return $this->error($e->getMessage());
             }
             if ($result !== false) {
-                $this->success(__('Added successfully'));
+                return $this->success(__('Added successfully'));
             } else {
-                $this->error(__('No rows were added'));
+                return $this->error(__('No rows were added'));
             }
         }
 
-        $this->error(__('Parameter error'));
+        return $this->error(__('Parameter error'));
     }
 
     /**
      * 编辑
      * @throws Throwable
      */
-    public function edit(): void
+    public function edit(): Response
     {
         $id  = $this->request->input($this->model->getPk());
         $row = $this->model->find($id);
         if (!$row) {
-            $this->error(__('Record not found'));
+            return $this->error(__('Record not found'));
         }
 
         $dataLimitAdminIds = $this->getDataLimitAdminIds();
         if ($dataLimitAdminIds && !in_array($row[$this->dataLimitField], $dataLimitAdminIds)) {
-            $this->error(__('You have no permission'));
+            return $this->error(__('You have no permission'));
         }
 
         if ($this->request->isPost()) {
             $data = $this->request->post();
             if (!$data) {
-                $this->error(__('Parameter %s can not be empty', ['']));
+                return $this->error(__('Parameter %s can not be empty', ['']));
             }
 
             if (!array_diff_key($data, array_flip(['id', 'status']))) {
                 $row->save($data);
-                $this->success(__('Update successful'));
+                return $this->success(__('Update successful'));
             }
 
             $tableName = TableManager::tableName($data['table']);
@@ -204,7 +205,7 @@ EOT;
                 // 检查表是否已在数据库内存在
                 $tables = TableManager::getTableList();
                 if (array_key_exists($tableName, $tables)) {
-                    $this->error(__('Data table already exists!'));
+                    return $this->error(__('Data table already exists!'));
                 }
             }
 
@@ -243,17 +244,17 @@ EOT;
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
-                $this->error($e->getMessage());
+                return $this->error($e->getMessage());
             }
             if ($result !== false) {
-                $this->success(__('Update successful'));
+                return $this->success(__('Update successful'));
             } else {
-                $this->error(__('No rows updated'));
+                return $this->error(__('No rows updated'));
             }
 
         }
 
-        $this->success('', [
+        return $this->success('', [
             'row' => $row
         ]);
     }
@@ -263,10 +264,10 @@ EOT;
      * @param array $ids
      * @throws Throwable
      */
-    public function del(array $ids = []): void
+    public function del(array $ids = []): Response
     {
         if ($this->request->method() != 'DELETE' || !$ids) {
-            $this->error(__('Parameter error'));
+            return $this->error(__('Parameter error'));
         }
 
         $dataLimitAdminIds = $this->getDataLimitAdminIds();
@@ -295,12 +296,12 @@ EOT;
             $this->model->commit();
         } catch (Throwable $e) {
             $this->model->rollback();
-            $this->error($e->getMessage());
+            return $this->error($e->getMessage());
         }
         if ($count) {
-            $this->success(__('Deleted successfully'));
+            return $this->success(__('Deleted successfully'));
         } else {
-            $this->error(__('No rows were deleted'));
+            return $this->error(__('No rows were deleted'));
         }
     }
 }

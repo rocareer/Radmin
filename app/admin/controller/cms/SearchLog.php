@@ -2,6 +2,8 @@
 
 namespace app\admin\controller\cms;
 
+use extend\ra\SystemUtil;
+use support\Response;
 use Throwable;
 use app\common\controller\Backend;
 
@@ -37,7 +39,7 @@ class SearchLog extends Backend
      * 查看
      * @throws Throwable
      */
-    public function index(): void
+    public function index(): Response
     {
         // 如果是select则转发到select方法,若select未重写,其实还是继续执行index
         if ($this->request->input('select')) {
@@ -53,10 +55,10 @@ class SearchLog extends Backend
             ->visible(['user' => ['username']])
             ->paginate($limit);
 
-        $this->success('', [
+        return $this->success('', [
             'list'   => $res->items(),
             'total'  => $res->total(),
-            'remark' => get_route_remark(),
+            'remark' => SystemUtil::get_route_remark(),
         ]);
     }
 }

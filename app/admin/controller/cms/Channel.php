@@ -2,8 +2,10 @@
 
 namespace app\admin\controller\cms;
 
-use ba\Tree;
 use app\common\controller\Backend;
+use extend\ba\Tree;
+use extend\ra\SystemUtil;
+use support\Response;
 use Throwable;
 
 /**
@@ -42,7 +44,7 @@ class Channel extends Backend
      * 查看
      * @throws Throwable
      */
-    public function index(): void
+    public function index(): Response
     {
         // 如果是select则转发到select方法,若select未重写,其实还是继续执行index
         if ($this->request->input('select')) {
@@ -63,9 +65,9 @@ class Channel extends Backend
             $res = $this->tree->assembleTree($this->tree->getTreeArray($res));
         }
 
-        $this->success('', [
+        return $this->success('', [
             'list'   => $res,
-            'remark' => get_route_remark(),
+            'remark' => SystemUtil::get_route_remark(),
         ]);
     }
 }

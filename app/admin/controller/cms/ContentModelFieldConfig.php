@@ -2,9 +2,11 @@
 
 namespace app\admin\controller\cms;
 
+use extend\ba\TableManager;
+use extend\ra\SystemUtil;
+use support\orm\Db;
+use support\Response;
 use Throwable;
-use think\facade\Db;
-use ba\TableManager;
 use app\common\controller\Backend;
 
 /**
@@ -40,7 +42,7 @@ class ContentModelFieldConfig extends Backend
      * 查看
      * @throws Throwable
      */
-    public function index(): void
+    public function index(): Response
     {
         // 如果是select则转发到select方法,若select未重写,其实还是继续执行index
         if ($this->request->input('select')) {
@@ -63,9 +65,9 @@ class ContentModelFieldConfig extends Backend
         }
         $res->visible(['cmsContentModel' => ['name']]);
 
-        $this->success('', [
+        return $this->success('', [
             'list'   => $res,
-            'remark' => get_route_remark(),
+            'remark' => SystemUtil::get_route_remark(),
         ]);
     }
 
@@ -117,12 +119,12 @@ class ContentModelFieldConfig extends Backend
      * 添加
      * @throws Throwable
      */
-    public function add(): void
+    public function add(): Response
     {
         if ($this->request->isPost()) {
             $data = $this->request->post();
             if (!$data) {
-                $this->error(__('Parameter %s can not be empty', ['']));
+                return $this->error(__('Parameter %s can not be empty', ['']));
             }
 
             $data = $this->excludeFields($data);
@@ -133,7 +135,7 @@ class ContentModelFieldConfig extends Backend
             // 检查字段名称
             $fields = TableManager::getTableColumns('cms_content', true);
             if (array_key_exists($data['name'], $fields)) {
-                $this->error('字段名已在主表内存在，请更换！');
+                return $this->error('字段名已在主表内存在，请更换！');
             }
 
             // 建立字段
@@ -141,11 +143,11 @@ class ContentModelFieldConfig extends Backend
                 ->where('id', $data['content_model_id'])
                 ->find();
             if (!$contentModel) {
-                $this->error('所选模型不存在！');
+                return $this->error('所选模型不存在！');
             }
             $contentModelFields = TableManager::getTableColumns($contentModel['table'], true);
             if (array_key_exists($data['name'], $contentModelFields)) {
-                $this->error('字段名已在模型表内存在，请更换！');
+                return $this->error('字段名已在模型表内存在，请更换！');
             }
 
             $tableName = TableManager::tableName($contentModel['table']);
@@ -159,7 +161,7 @@ class ContentModelFieldConfig extends Backend
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
-                $this->error($e->getMessage());
+                return $this->error($e->getMessage());
             }
 
             $result = false;
@@ -178,33 +180,33 @@ class ContentModelFieldConfig extends Backend
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
-                $this->error($e->getMessage());
+                return $this->error($e->getMessage());
             }
             if ($result !== false) {
-                $this->success(__('Added successfully'));
+                return $this->success(__('Added successfully'));
             } else {
-                $this->error(__('No rows were added'));
+                return $this->error(__('No rows were added'));
             }
         }
 
-        $this->error(__('Parameter error'));
+        return $this->error(__('Parameter error'));
     }
 
     /**
      * 编辑
      * @throws Throwable
      */
-    public function edit(): void
+    public function edit(): Response
     {
         $id  = $this->request->input($this->model->getPk());
         $row = $this->model->find($id);
         if (!$row) {
-            $this->error(__('Record not found'));
+            return $this->error(__('Record not found'));
         }
 
         $dataLimitAdminIds = $this->getDataLimitAdminIds();
         if ($dataLimitAdminIds && !in_array($row[$this->dataLimitField], $dataLimitAdminIds)) {
-            $this->error(__('You have no permission'));
+            return $this->error(__('You have no permission'));
         }
 
         // 主表字段信息
@@ -213,7 +215,7 @@ class ContentModelFieldConfig extends Backend
             ->where('id', $row->content_model_id)
             ->find();
         if (!$contentModel) {
-            $this->error('所选模型不存在！');
+            return $this->error('所选模型不存在！');
         }
         // 字段是否是主表的？
         $row->main_field = array_key_exists($row->name, $fields);
@@ -224,14 +226,14 @@ class ContentModelFieldConfig extends Backend
         if ($this->request->isPost()) {
             $data = $this->request->post();
             if (!$data) {
-                $this->error(__('Parameter %s can not be empty', ['']));
+                return $this->error(__('Parameter %s can not be empty', ['']));
             }
 
             if (!$row->main_field && isset($data['name']) && isset($data['title']) && isset($data['data_type'])) {
                 $default = self::buildDefault($data['default_value'] ?? '');
                 if ($row->name != $data['name'] || $row->title != $data['title'] || $fieldInfo['COLUMN_TYPE'] != $data['data_type'] || $default != $fieldInfo['COLUMN_DEFAULT']) {
                     if ($row->name != $data['name'] && array_key_exists($data['name'], $contentModelFields)) {
-                        $this->error('字段名已在模型表内存在，请更换！');
+                        return $this->error('字段名已在模型表内存在，请更换！');
                     }
 
                     $tableName = TableManager::tableName($contentModel['table']);
@@ -244,7 +246,7 @@ class ContentModelFieldConfig extends Backend
                         $this->model->commit();
                     } catch (Throwable $e) {
                         $this->model->rollback();
-                        $this->error($e->getMessage());
+                        return $this->error($e->getMessage());
                     }
                 }
             }
@@ -266,12 +268,12 @@ class ContentModelFieldConfig extends Backend
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
-                $this->error($e->getMessage());
+                return $this->error($e->getMessage());
             }
             if ($result !== false) {
-                $this->success(__('Update successful'));
+                return $this->success(__('Update successful'));
             } else {
-                $this->error(__('No rows updated'));
+                return $this->error(__('No rows updated'));
             }
 
         }
@@ -279,7 +281,7 @@ class ContentModelFieldConfig extends Backend
         $row->dict          = self::restoreDict($fieldInfo['COLUMN_COMMENT']);
         $row->data_type     = $fieldInfo['COLUMN_TYPE'];
         $row->default_value = self::restoreDefault($fieldInfo['COLUMN_DEFAULT']);
-        $this->success('', [
+        return $this->success('', [
             'row' => $row
         ]);
     }
@@ -289,10 +291,10 @@ class ContentModelFieldConfig extends Backend
      * @param array $ids
      * @throws Throwable
      */
-    public function del(array $ids = []): void
+    public function del(array $ids = []): Response
     {
         if ($this->request->method() != 'DELETE' || !$ids) {
-            $this->error(__('Parameter error'));
+            return $this->error(__('Parameter error'));
         }
 
         $dataLimitAdminIds = $this->getDataLimitAdminIds();
@@ -326,12 +328,12 @@ class ContentModelFieldConfig extends Backend
             $this->model->commit();
         } catch (Throwable $e) {
             $this->model->rollback();
-            $this->error($e->getMessage());
+            return $this->error($e->getMessage());
         }
         if ($count) {
-            $this->success(__('Deleted successfully'));
+            return $this->success(__('Deleted successfully'));
         } else {
-            $this->error(__('No rows were deleted'));
+            return $this->error(__('No rows were deleted'));
         }
     }
 }

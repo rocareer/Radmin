@@ -4,6 +4,7 @@ namespace app\admin\controller\cms;
 
 use app\common\controller\Backend;
 use app\admin\model\cms\Config as ConfigModel;
+use support\Response;
 
 class Config extends Backend
 {
@@ -16,19 +17,19 @@ class Config extends Backend
         $this->request->filter('clean_xss');
     }
 
-    public function index(): void
+    public function index(): Response
     {
         $data   = $this->model->select();
         $config = [];
         foreach ($data as $k => $v) {
             $config[$v['name']] = $v['value'];
         }
-        $this->success('', [
+        return $this->success('', [
             'data' => $config,
         ]);
     }
 
-    public function save(): void
+    public function save(): Response
     {
         $data      = $this->request->post();
         $activeTab = $data['activeTab'] ?? 'base';
@@ -39,6 +40,6 @@ class Config extends Backend
                 ->where('group', $activeTab)
                 ->update(['value' => $v]);
         }
-        $this->success('当前页配置保存成功！');
+        return $this->success('当前页配置保存成功！');
     }
 }
