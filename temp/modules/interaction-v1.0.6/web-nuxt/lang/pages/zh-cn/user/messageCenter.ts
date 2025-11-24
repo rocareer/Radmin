@@ -1,0 +1,15 @@
+export default {
+    'Message Center': '消息中心',
+    'All read': '全部已读',
+    'User nickname fuzzy search': '用户昵称模糊搜索',
+    'Message content fuzzy search': '消息内容模糊搜索',
+    'Official account': '官方账号',
+    'Mark read': '标记已读',
+    'Speak civilly, ask questions sincerely, please enter what you want to send': '文明发言，真诚提问，请输入要发送的内容',
+    Send: '发送',
+    'Select all': '全选',
+    Delete: '删除',
+    'Batch delete message': '批量删除消息',
+    'Delete message': '删除消息',
+    'Are you sure to delete it?': '确定删除吗？',
+}

@@ -1,81 +1,83 @@
 {
-  "name": "rocareer/radmin",
-  "type": "project",
-  "keywords": [
-    "High Performance",
-    "Webman",
-    "Workerman",
-    "Radmin"
-  ],
-  "homepage": "https://rocareer.com",
-  "license": "Apache-2.0",
-  "description": "High performance HTTP Service Framework.",
-  "authors": [
-    {
-      "name": "albert",
-      "email": "albert@rocareer.com",
-      "homepage": "https://rocareer.com",
-      "role": "Developer"
-    }
-  ],
-  "support": {
-    "email": "albert@rocareer.com",
-    "issues": "https://gitee.com/rocarer/webman-radmin/issues",
-    "wiki": "https://gitee.com/doc/webman-radmin",
-    "source": "https://gitee.com/rocarer/webman-radmin"
-  },
-  "repositories": [
-    {
-      "type": "vcs",
-      "url": "https://gitee.com/rocareer/Radmin.git"
-    }
-  ],
-  "require": {
-    "php": ">=8.1",
-    "workerman/webman-framework": "^2.1",
-    "monolog/monolog": "^2.0",
-    "webman/event": "^1.0",
-    "webman/console": "^2.1",
-    "webman/think-orm": "^2.1",
-    "webman/think-cache": "^2.1",
-    "rocareer/webman-status-code": "^v1.0.1",
-    "rocareer/webman-migration": "^1.0.3",
-    "firebase/php-jwt": "^6.11",
-    "phpmailer/phpmailer": "^v6.8.1",
-    "vlucas/phpdotenv": "^5.6",
-    "doctrine/annotations": "^2.0",
-    "psr/container": "^2.0",
-    "nelexa/zip": "^4.0",
-    "ext-pdo": "*"
-  },
-  "require-dev": {
-    "rocareer/webman-dev": "dev-master",
-    "phpunit/phpunit": "^9.0",
-    "webman/admin": "~2.0"
-  },
-  "suggest": {
-    "ext-event": "For better performance. "
-  },
-  "autoload": {
-    "psr-4": {
-      "Rocareer\\RadminFramework\\": "vendor/rocareer/radmin-framework/src",
-      "": "./",
-      "app\\": "./app",
-      "App\\": "./app",
-      "app\\View\\Components\\": "./app/view/components"
-    }
-  },
-  "scripts": {
-    "post-package-install": [
-      "support\\Plugin::install"
+    "name": "rocareer/radmin",
+    "type": "project",
+    "keywords": [
+        "High Performance",
+        "Webman",
+        "Workerman",
+        "Radmin"
     ],
-    "post-package-update": [
-      "support\\Plugin::install"
+    "homepage": "https://rocareer.com",
+    "license": "Apache-2.0",
+    "description": "High performance HTTP Service Framework.",
+    "authors": [
+        {
+            "name": "albert",
+            "email": "albert@rocareer.com",
+            "homepage": "https://rocareer.com",
+            "role": "Developer"
+        }
     ],
-    "pre-package-uninstall": [
-      "support\\Plugin::uninstall"
-    ]
-  },
-  "minimum-stability": "dev",
-  "prefer-stable": true
+    "support": {
+        "email": "albert@rocareer.com",
+        "issues": "https://gitee.com/rocarer/webman-radmin/issues",
+        "wiki": "https://gitee.com/doc/webman-radmin",
+        "source": "https://gitee.com/rocarer/webman-radmin"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://gitee.com/rocareer/Radmin.git"
+        }
+    ],
+    "require": {
+        "php": ">=8.1",
+        "workerman/webman-framework": "^2.1",
+        "monolog/monolog": "^2.0",
+        "webman/event": "^1.0",
+        "webman/console": "^2.1",
+        "webman/think-orm": "^2.1",
+        "webman/think-cache": "^2.1",
+        "rocareer/webman-status-code": "^v1.0.1",
+        "rocareer/webman-migration": "^1.0.3",
+        "firebase/php-jwt": "^6.11",
+        "phpmailer/phpmailer": "^v6.8.1",
+        "vlucas/phpdotenv": "^5.6",
+        "doctrine/annotations": "^2.0",
+        "psr/container": "^2.0",
+        "nelexa/zip": "^4.0",
+        "ext-pdo": "*",
+        "erusev/parsedown": "^1.7",
+        "scrivo/highlight.php": "^9.18"
+    },
+    "require-dev": {
+        "rocareer/webman-dev": "dev-master",
+        "phpunit/phpunit": "^9.0",
+        "webman/admin": "~2.0"
+    },
+    "suggest": {
+        "ext-event": "For better performance. "
+    },
+    "autoload": {
+        "psr-4": {
+            "Rocareer\\RadminFramework\\": "vendor/rocareer/radmin-framework/src",
+            "": "./",
+            "app\\": "./app",
+            "App\\": "./app",
+            "app\\View\\Components\\": "./app/view/components"
+        }
+    },
+    "scripts": {
+        "post-package-install": [
+            "support\\Plugin::install"
+        ],
+        "post-package-update": [
+            "support\\Plugin::install"
+        ],
+        "pre-package-uninstall": [
+            "support\\Plugin::uninstall"
+        ]
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }

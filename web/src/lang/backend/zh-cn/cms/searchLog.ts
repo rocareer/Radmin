@@ -1,0 +1,16 @@
+export default {
+    id: 'ID',
+    user_id: '添加用户',
+    user__username: '添加用户',
+    search: '关键词',
+    count: '搜索次数',
+    hot: '热门搜索',
+    'hot 0': '关',
+    'hot 1': '开',
+    weigh: '权重',
+    status: '状态',
+    'status 0': '禁用',
+    'status 1': '启用',
+    create_time: '创建时间',
+    'quick Search Fields': 'ID、关键词',
+}

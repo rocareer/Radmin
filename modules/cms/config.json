@@ -1,0 +1,9 @@
+{
+    "require": {
+        "erusev/parsedown": "^1.7",
+        "scrivo/highlight.php": "^9.18"
+    },
+    "nuxtDependencies": {
+        "qrcode.vue": "^3.4.0"
+    }
+}
