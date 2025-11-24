@@ -5,6 +5,7 @@ namespace app\admin\controller;
 
 use app\common\controller\Backend;
 use app\exception\BusinessException;
+use support\member\Context;
 use support\RequestContext;
 use support\Response;
 use support\token\Token;
@@ -30,7 +31,7 @@ class Index extends Backend
             return $this->error(__('No background menu, please contact super administrator!'));
         }
         return $this->success('', [
-            'adminInfo'  => \support\member\Context::getInstance()->getCurrentMember(),
+            'adminInfo'  => $this->member,
             'menus'      => $menus,
             'siteConfig' => [
                 'siteName'     => SystemUtil::get_sys_config('site_name'),
@@ -58,7 +59,7 @@ class Index extends Backend
         \app\admin\model\AdminLog::instance()->setTitle(__('Login'));
         
         // 检查登录态
-        if (\support\member\Context::getInstance()->getCurrentMember()) {
+        if (Context::getInstance()->getCurrentMember()) {
             return $this->success(__('You have already logged in. There is no need to log in again~'), [
                 'type' => 'logged in'
             ], 303);

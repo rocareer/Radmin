@@ -3,6 +3,7 @@
 namespace app\common\controller;
 
 use support\member\Context;
+use support\member\role\admin\AdminService;
 use support\orm\Model;
 use support\member\Member;
 use support\RequestContext;
@@ -37,6 +38,8 @@ class Backend extends Api
      * @phpstan-var Model
      */
     protected object $model;
+
+    protected $adminService;
 
     /**
      * 权重字段
@@ -135,12 +138,15 @@ class Backend extends Api
     {
         parent::initialize();
 
+        $this->adminService = new AdminService();
+
         $needLogin = !action_in_arr($this->noNeedLogin);
+
 
         if ($needLogin) {
             try {
                 $this->member = Context::getInstance()->getCurrentMember();
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 // 获取用户信息失败，清理登录状态
                 $this->member = null;
                 
@@ -152,7 +158,7 @@ class Backend extends Api
                     if ($currentRole) {
                         Context::getInstance()->clearRoleContext($currentRole);
                     }
-                } catch (\Throwable $contextError) {
+                } catch (Throwable $contextError) {
                     // 忽略清理过程中的错误
                 }
             }
@@ -344,27 +350,27 @@ class Backend extends Api
      */
     protected function getDataLimitAdminIds(): array
     {
-
+        var_dump( Member::hasRole('super'));
         if (!$this->dataLimit || Member::hasRole('super')) {
             return [];
         }
         $adminIds = [];
         if ($this->dataLimit == 'parent') {
             // 取得当前管理员的下级分组们
-            $parentGroups = Member::getAdminChildGroups();
+            $parentGroups = $this->adminService->getAdminChildGroups();
             if ($parentGroups) {
                 // 取得分组内的所有管理员
-                $adminIds = Member::getGroupAdmins($parentGroups);
+                $adminIds = $this->adminService->getGroupAdmins($parentGroups);
             }
         } elseif (is_numeric($this->dataLimit) && $this->dataLimit > 0) {
             // 在组内，可查看所有，不在组内，可查看自己的
-            $adminIds = Member::getGroupAdmins([$this->dataLimit]);
+            $adminIds = $this->adminService->getGroupAdmins([$this->dataLimit]);
             return in_array($this->member->id, $adminIds) ? [] : [$this->member->id];
         } elseif ($this->dataLimit == 'allAuth' || $this->dataLimit == 'allAuthAndOthers') {
             // 取得拥有他所有权限的分组
-            $allAuthGroups = Member::getAllAuthGroups($this->dataLimit, []);
+            $allAuthGroups = $this->adminService->getAllAuthGroups($this->dataLimit, []);
             // 取得分组内的所有管理员
-            $adminIds = Member::getGroupAdmins($allAuthGroups);
+            $adminIds = $this->adminService->getGroupAdmins($allAuthGroups);
         }
         $adminIds[] = $this->member->id;
         return array_unique($adminIds);

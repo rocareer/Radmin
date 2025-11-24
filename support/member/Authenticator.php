@@ -610,6 +610,10 @@ abstract class Authenticator implements InterfaceAuthenticator
 
             // 设置用户信息
             $this->memberModel = $member;
+            
+            // 扩展用户信息，添加roles和super字段
+            $this->extendMemberInfo();
+            
             Log::info('用户信息初始化成功', [
                 'id'         => $member->id,
                 'name'       => $member->username,
