@@ -18,6 +18,12 @@ class Recent extends Model
     protected $autoWriteTimestamp = true;
     protected $updateTime         = false;
 
+
+    protected $type = [
+        'create_time'=>'integer',
+        'update_time'=>'integer',
+    ];
+
     /**
      * 入库前
      * @throws Throwable

@@ -2,20 +2,20 @@
 
 namespace app\api\controller\cms;
 
-use ba\Date;
-use ParseDownExt;
-use ba\Filesystem;
-use think\facade\Db;
-use think\facade\Config;
+use app\exception\BusinessException;
+use extend\ra\DateUtil;
+use extend\ra\FileUtil;
+use extend\ParseDownExt;
 use app\common\model\User;
 use app\admin\model\Admin;
-use app\common\library\Auth;
 use app\admin\model\cms\PayLog;
 use modules\cms\library\Helper;
 use app\admin\model\cms\Comment;
 use app\common\controller\Frontend;
 use app\admin\library\module\Server;
 use app\admin\model\cms\Content as ContentModel;
+use support\orm\Db;
+use support\Response;
 
 class Content extends Frontend
 {
@@ -33,17 +33,21 @@ class Content extends Frontend
 
         $id = $this->request->input('id');
         if (!$id) {
-            $this->error(__('Parameter error'));
+            throw new BusinessException(__('Parameter error'));
         }
         $this->info = ContentModel::where('id', $id)
             ->where('status', 'normal')
             ->find();
         if (!$this->info) {
-            $this->error(__('内容找不到啦！'));
+            throw new BusinessException(__('内容找不到啦！'));
         }
 
-        if (!$this->info->cmsChannel || !$this->info->cmsChannel->content_model_id) {
-            $this->error(__('内容模型错误，请为内容设置所属频道，并设置频道内容模型！'));
+        if (!$this->info->cmsChannel
+            || !$this->info->cmsChannel->content_model_id
+        ) {
+            throw new BusinessException(
+                __('内容模型错误，请为内容设置所属频道，并设置频道内容模型！')
+            );
         }
 
         // 附加表数据合入 $this->info
@@ -51,7 +55,9 @@ class Content extends Frontend
             ->where('id', $this->info->cmsChannel->content_model_id)
             ->find();
         if (!$this->modelInfo) {
-            $this->error(__('模型找不到啦！'));
+            throw new BusinessException(
+                __('模型找不到啦！')
+            );
         }
 
         $scheduleData      = Db::name($this->modelInfo['table'])
@@ -69,17 +75,19 @@ class Content extends Frontend
         }
         foreach ($scheduleData as $key => $scheduleDatum) {
             if (array_key_exists($key, $fieldsConfig)) {
-                $this->info->$key = ContentModel::modelDataOutput($scheduleDatum, $fieldsConfig[$key]['type']);
+                $this->info->$key = ContentModel::modelDataOutput(
+                    $scheduleDatum, $fieldsConfig[$key]['type']
+                );
             }
         }
     }
 
-    public function info(): void
+    public function info(): Response
     {
         if ($this->info->allow_visit_groups == 'user' && !$this->member) {
-            $this->error(__('Please login first'), [
-                'type' => Auth::NEED_LOGIN
-            ], Auth::LOGIN_RESPONSE_CODE);
+            return $this->error(__('Please login first'), [
+                'type' => 'need login'
+            ], 303);
         }
 
         // 阅读量+1
@@ -101,8 +109,10 @@ class Content extends Frontend
             Db::name('cms_statistics')->insert($statisticData);
         }
 
-        $template      = $this->request->get("template/s", $this->modelInfo['info']);
-        $defaultAvatar = Config::get('buildadmin.default_avatar');
+        $template      = $this->request->get(
+            "template/s", $this->modelInfo['info']
+        );
+        $defaultAvatar = config('buildadmin.default_avatar');
 
         // 面包屑
         $breadCrumbs = Helper::getParentChannel($this->info->cmsChannel->id);
@@ -119,7 +129,9 @@ class Content extends Frontend
         $parseDown = new ParseDownExt();
         if ($cmsConfigArr['content_language'] == 'markdown') {
             // 解析 markdown，已关闭 ParseDown 的安全模式，但使用 clean_xss 过滤 xss
-            $this->info->content = clean_xss($parseDown->text($this->info->content));
+            $this->info->content = clean_xss(
+                $parseDown->text($this->info->content)
+            );
         }
 
         // 上一篇
@@ -176,10 +188,14 @@ class Content extends Frontend
         // 作者信息
         $interactionInstalled = false;
         if ($this->info->user_id) {
-            $this->info->author = User::field('avatar,gender,nickname,motto,join_time,create_time')->where('id', $this->info->user_id)->find();
+            $this->info->author = User::field(
+                'avatar,gender,nickname,motto,join_time,create_time'
+            )->where('id', $this->info->user_id)->find();
 
             $dynamicCount = 0;
-            $interaction  = Server::getIni(Filesystem::fsFit(root_path() . 'modules/interaction/'));
+            $interaction  = Server::getIni(
+                FileUtil::fsFit(root_path() . 'modules/interaction/')
+            );
             if ($interaction && $interaction['state'] == 1) {
                 $interactionInstalled = true;
                 $dynamicCount         = Db::name('user_recent')
@@ -189,13 +205,19 @@ class Content extends Frontend
             }
 
             $this->info->author->statistics = [
-                'articleCount' => ContentModel::where('user_id', $this->info->user_id)->where('status', 'normal')->count(),
-                'joinTime'     => Date::human($this->info->author->join_time ?? $this->info->author->create_time),
+                'articleCount' => ContentModel::where(
+                    'user_id', $this->info->user_id
+                )->where('status', 'normal')->count(),
+                'joinTime'     => DateUtil::human(
+                    $this->info->author->join_time ??
+                    $this->info->author->create_time
+                ),
                 'dynamicCount' => $dynamicCount,
             ];
         }
         if ($this->info->admin_id) {
-            $this->info->author = Admin::field('id,avatar,nickname,motto')->where('id', $this->info->admin_id)->find();
+            $this->info->author = Admin::field('id,avatar,nickname,motto')
+                ->where('id', $this->info->admin_id)->find();
         }
 
         // 是否已经点赞和收藏
@@ -220,13 +242,21 @@ class Content extends Frontend
             ->order('weigh', 'desc')
             ->order('id', 'desc')
             ->visible(['user.id', 'user.avatar', 'user.nickname'])
-            ->paginate()->each(function ($item) use ($cmsConfigArr, $parseDown, $defaultAvatar) {
-                if ($cmsConfigArr['comment_language'] == 'markdown') {
-                    $item->content = clean_xss($parseDown->text($item->content));
+            ->paginate()->each(
+                function ($item) use ($cmsConfigArr, $parseDown, $defaultAvatar
+                ) {
+                    if ($cmsConfigArr['comment_language'] == 'markdown') {
+                        $item->content = clean_xss(
+                            $parseDown->text($item->content)
+                        );
+                    }
+                    $item->user->avatar = full_url(
+                        htmlspecialchars_decode($item->user->avatar), true,
+                        $defaultAvatar
+                    );
+                    $item->create_time  = DateUtil::human($item->create_time);
                 }
-                $item->user->avatar = full_url(htmlspecialchars_decode($item->user->avatar), true, $defaultAvatar);
-                $item->create_time  = Date::human($item->create_time);
-            });
+            );
 
         if ((float)$this->info->price > 0) {
             // 查询订单
@@ -244,9 +274,13 @@ class Content extends Frontend
 
         if ($template == 'download') {
             $this->info->commented = true;
-            if (isset($this->info->download_after_comment) && $this->info->download_after_comment == 'enable') {
+            if (isset($this->info->download_after_comment)
+                && $this->info->download_after_comment == 'enable'
+            ) {
                 // 检查当前用户是否有评论
-                $this->info->commented = Comment::where('content_id', $this->info->id)
+                $this->info->commented = Comment::where(
+                    'content_id', $this->info->id
+                )
                     ->where('user_id', $this->member->id)
                     ->where('type', 'content')
                     ->value('id');
@@ -268,7 +302,7 @@ class Content extends Frontend
             ->where('type', '2')
             ->count();
 
-        $this->success('', [
+        return $this->success('', [
             'template'             => $template,
             'content'              => $this->info,
             'breadCrumbs'          => array_reverse($breadCrumbs),
@@ -280,9 +314,9 @@ class Content extends Frontend
         ]);
     }
 
-    public function loadComments(): void
+    public function loadComments(): Response
     {
-        $defaultAvatar   = Config::get('buildadmin.default_avatar');
+        $defaultAvatar   = config('buildadmin.default_avatar');
         $commentLanguage = Db::name('cms_config')
             ->where('name', 'comment_language')
             ->value('value');
@@ -294,18 +328,27 @@ class Content extends Frontend
             ->order('weigh', 'desc')
             ->order('id', 'desc')
             ->visible(['user.avatar', 'user.nickname'])
-            ->paginate()->each(function ($item) use ($commentLanguage, $parseDown, $defaultAvatar) {
-                if ($commentLanguage == 'markdown') {
-                    // 解析 markdown，已关闭 ParseDown 的安全模式，但使用 clean_xss 过滤 xss
-                    $item->content = clean_xss($parseDown->text($item->content));
+            ->paginate()->each(
+                function ($item) use (
+                    $commentLanguage, $parseDown, $defaultAvatar
+                ) {
+                    if ($commentLanguage == 'markdown') {
+                        // 解析 markdown，已关闭 ParseDown 的安全模式，但使用 clean_xss 过滤 xss
+                        $item->content = clean_xss(
+                            $parseDown->text($item->content)
+                        );
+                    }
+                    $item->user->avatar = full_url(
+                        htmlspecialchars_decode($item->user->avatar), true,
+                        $defaultAvatar
+                    );
+                    $item->create_time  = DateUtil::human($item->create_time);
                 }
-                $item->user->avatar = full_url(htmlspecialchars_decode($item->user->avatar), true, $defaultAvatar);
-                $item->create_time  = Date::human($item->create_time);
-            });
-        $this->success('', $comments);
+            );
+        return $this->success('', $comments);
     }
 
-    public function like(): void
+    public function like(): Response
     {
         $statistics = Db::name('cms_statistics')
             ->where('user_id', $this->member->id)
@@ -313,7 +356,7 @@ class Content extends Frontend
             ->where('type', '1')
             ->find();
         if ($statistics) {
-            $this->error(__('您已经点过赞啦！'));
+            return $this->error(__('您已经点过赞啦！'));
         } else {
             Db::name('cms_statistics')->insert([
                 'user_id'     => $this->member->id,
@@ -322,11 +365,11 @@ class Content extends Frontend
                 'create_time' => time(),
             ]);
             $this->info->inc('likes')->save();
-            $this->success(__('点赞成功！'));
+            return $this->success(__('点赞成功！'));
         }
     }
 
-    public function collect(): void
+    public function collect(): Response
     {
         $statistics = Db::name('cms_statistics')
             ->where('user_id', $this->member->id)
@@ -340,7 +383,7 @@ class Content extends Frontend
                 ->where('content_id', $this->info->id)
                 ->where('type', '2')
                 ->delete();
-            $this->success(__('取消收藏成功！'), [
+            return $this->success(__('取消收藏成功！'), [
                 'collected' => false,
             ]);
         } else {
@@ -351,18 +394,18 @@ class Content extends Frontend
                 'type'        => '2',
                 'create_time' => time(),
             ]);
-            $this->success(__('收藏成功！'), [
+            return $this->success(__('收藏成功！'), [
                 'collected' => true,
             ]);
         }
     }
 
-    public function comment(): void
+    public function comment(): Response
     {
         $atUser  = $this->request->post('atUser/a', []);
         $content = $this->request->post('content');
         if (!$content) {
-            $this->error(__('评论内容不能为空！'));
+            return $this->error(__('评论内容不能为空！'));
         }
 
         $commentsReview   = Db::name('cms_config')
@@ -379,7 +422,7 @@ class Content extends Frontend
         if ($lastCommentTime && $commentsInterval) {
             $diff = time() - $lastCommentTime;
             if ($diff <= $commentsInterval) {
-                $this->error('频繁发表评论，请稍后再试~');
+                return $this->error('频繁发表评论，请稍后再试~');
             }
         }
 
@@ -394,24 +437,35 @@ class Content extends Frontend
         $this->info->comments++;
         $this->info->save();
 
-        $interaction = Server::getIni(Filesystem::fsFit(root_path() . 'modules/interaction/'));
+        $interaction = Server::getIni(
+            FileUtil::fsFit(root_path() . 'modules/interaction/')
+        );
 
-        if ($commentsReview == 'no' && $interaction && $interaction['state'] == 1) {
+        if ($commentsReview == 'no' && $interaction
+            && $interaction['state'] == 1
+        ) {
             $commentLanguage = Db::name('cms_config')
                 ->where('name', 'comment_language')
                 ->value('value');
             if ($commentLanguage == 'markdown') {
                 // 解析 markdown，已关闭 ParseDown 的安全模式，但使用 clean_xss 过滤 xss
                 $parseDown        = new ParseDownExt();
-                $comment->content = clean_xss($parseDown->text($comment->content));
+                $comment->content = clean_xss(
+                    $parseDown->text($comment->content)
+                );
             }
 
             // at了用户，向对应用户发送消息
             if ($atUser) {
                 foreach ($atUser as $userId) {
-                    if ($userId == $this->member->id) continue;
-                    $messageHtml = '我在 <a href="/cms/info/' . $this->info->id . '">' . $this->info->title . '</a> 的评论中@了你<br />';
-                    $messageHtml .= '<div style="margin-top: 10px;padding: 10px;border-left:4px solid #dedfe0;">' . $comment->content . '</div>';
+                    if ($userId == $this->member->id) {
+                        continue;
+                    }
+                    $messageHtml = '我在 <a href="/cms/info/' . $this->info->id
+                        . '">' . $this->info->title
+                        . '</a> 的评论中@了你<br />';
+                    $messageHtml .= '<div style="margin-top: 10px;padding: 10px;border-left:4px solid #dedfe0;">'
+                        . $comment->content . '</div>';
                     Db::name('user_message')
                         ->insert([
                             'user_id'      => $this->member->id,
@@ -423,17 +477,24 @@ class Content extends Frontend
             }
 
             // 用户动态
-            $recentHtml = '在 <a href="/cms/info/' . $this->info->id . '">' . $this->info->title . '</a> 发表了评论<br />';
-            $recentHtml .= '<div style="margin-top: 10px;padding: 10px;border-left:4px solid #dedfe0;">' . $comment->content . '</div>';
+            $recentHtml = '在 <a href="/cms/info/' . $this->info->id . '">'
+                . $this->info->title . '</a> 发表了评论<br />';
+            $recentHtml .= '<div style="margin-top: 10px;padding: 10px;border-left:4px solid #dedfe0;">'
+                . $comment->content . '</div>';
             \app\admin\model\user\Recent::create([
                 'user_id' => $this->member->id,
                 'content' => $recentHtml,
             ]);
         }
 
-        $this->success(__('评论成功' . ($commentsReview == 'yes' ? '，审核成功后展示' : '') . '！'), [
-            'comment'        => $comment,
-            'commentsReview' => $commentsReview
-        ]);
+        return $this->success(
+            __(
+                '评论成功' . ($commentsReview == 'yes' ? '，审核成功后展示' : '')
+                . '！'
+            ), [
+                'comment'        => $comment,
+                'commentsReview' => $commentsReview
+            ]
+        );
     }
 }

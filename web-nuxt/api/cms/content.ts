@@ -1,4 +1,4 @@
-const contentUrl = '/api/cms.Content/'
+const contentUrl = '/api/cms/content/'
 
 export function info(id: string) {
     return Http.fetch({

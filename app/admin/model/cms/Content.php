@@ -2,14 +2,14 @@
 
 namespace app\admin\model\cms;
 
+use app\common\model\BaseModel;
 use think\facade\Db;
-use think\Model;
 use think\model\relation\BelongsTo;
 
 /**
  * Content
  */
-class Content extends Model
+class Content extends BaseModel
 {
     // 表名
     protected $name = 'cms_content';
@@ -25,7 +25,9 @@ class Content extends Model
 
     // 字段类型转换
     protected $type = [
-        'publish_time' => 'timestamp:Y-m-d H:i:s',
+        'publish_time' => 'integer',
+        'create_time'=>'integer',
+        'update_time'=>'integer',
     ];
 
     protected string $contentLanguage = '';
@@ -123,7 +125,7 @@ class Content extends Model
     public function getCmsTagsAttr($value, $row): array
     {
         return [
-            'name' => \app\admin\model\cms\Tags::whereIn('id', $row['tags'])->column('name', 'id'),
+            'name' => Tags::whereIn('id', $row['tags'])->column('name', 'id'),
         ];
     }
 

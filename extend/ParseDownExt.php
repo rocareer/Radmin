@@ -1,6 +1,10 @@
 <?php
 
+namespace extend;
+
 use Highlight\Highlighter;
+use Parsedown;
+use Throwable;
 
 class ParseDownExt extends Parsedown
 {

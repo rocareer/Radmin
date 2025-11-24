@@ -15,4 +15,10 @@ class ContentModel extends Model
     // 自动写入时间戳字段
     protected $autoWriteTimestamp = true;
 
+    protected $type = [
+        'publish_time' => 'timestamp:Y-m-d H:i:s',
+        'create_time'=>'integer',
+        'update_time'=>'integer',
+    ];
+
 }
