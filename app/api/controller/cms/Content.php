@@ -76,7 +76,7 @@ class Content extends Frontend
 
     public function info(): void
     {
-        if ($this->info->allow_visit_groups == 'user' && !$this->auth->isLogin()) {
+        if ($this->info->allow_visit_groups == 'user' && !$this->member->isLogin()) {
             $this->error(__('Please login first'), [
                 'type' => Auth::NEED_LOGIN
             ], Auth::LOGIN_RESPONSE_CODE);
@@ -86,9 +86,9 @@ class Content extends Frontend
         $this->info->inc('views')->save();
 
         // 浏览记录
-        if ($this->auth->isLogin()) {
+        if ($this->member->isLogin()) {
             $statisticData = [
-                'user_id'    => $this->auth->id,
+                'user_id'    => $this->member->id,
                 'content_id' => $this->info->id,
                 'type'       => '0',
             ];
@@ -127,7 +127,7 @@ class Content extends Frontend
             ->where('channel_id', $this->info->channel_id)
             ->where('id', '<', $this->info->id)
             ->where(function ($query) {
-                if (!$this->auth->isLogin()) {
+                if (!$this->member->isLogin()) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -139,7 +139,7 @@ class Content extends Frontend
             ->where('channel_id', $this->info->channel_id)
             ->where('id', '>', $this->info->id)
             ->where(function ($query) {
-                if (!$this->auth->isLogin()) {
+                if (!$this->member->isLogin()) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -163,7 +163,7 @@ class Content extends Frontend
         $hotContent = ContentModel::where('status', 'normal')
             ->where('channel_id', 'in', $channelIds)
             ->where(function ($query) {
-                if (!$this->auth->isLogin()) {
+                if (!$this->member->isLogin()) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -199,14 +199,14 @@ class Content extends Frontend
         }
 
         // 是否已经点赞和收藏
-        if ($this->auth->isLogin()) {
+        if ($this->member->isLogin()) {
             $this->info->likeed    = Db::name('cms_statistics')
-                ->where('user_id', $this->auth->id)
+                ->where('user_id', $this->member->id)
                 ->where('content_id', $this->info->id)
                 ->where('type', '1')
                 ->value('id');
             $this->info->collected = Db::name('cms_statistics')
-                ->where('user_id', $this->auth->id)
+                ->where('user_id', $this->member->id)
                 ->where('content_id', $this->info->id)
                 ->where('type', '2')
                 ->value('id');
@@ -231,7 +231,7 @@ class Content extends Frontend
         if ((float)$this->info->price > 0) {
             // 查询订单
             $payId = PayLog::where('object_id', $this->info->id)
-                ->where('user_id', $this->auth->id)
+                ->where('user_id', $this->member->id)
                 ->where('project', 'content')
                 ->where('pay_time', '>', 0)
                 ->value('id');
@@ -247,7 +247,7 @@ class Content extends Frontend
             if (isset($this->info->download_after_comment) && $this->info->download_after_comment == 'enable') {
                 // 检查当前用户是否有评论
                 $this->info->commented = Comment::where('content_id', $this->info->id)
-                    ->where('user_id', $this->auth->id)
+                    ->where('user_id', $this->member->id)
                     ->where('type', 'content')
                     ->value('id');
                 if (!$this->info->commented) {
@@ -308,7 +308,7 @@ class Content extends Frontend
     public function like(): void
     {
         $statistics = Db::name('cms_statistics')
-            ->where('user_id', $this->auth->id)
+            ->where('user_id', $this->member->id)
             ->where('content_id', $this->info->id)
             ->where('type', '1')
             ->find();
@@ -316,7 +316,7 @@ class Content extends Frontend
             $this->error(__('您已经点过赞啦！'));
         } else {
             Db::name('cms_statistics')->insert([
-                'user_id'     => $this->auth->id,
+                'user_id'     => $this->member->id,
                 'content_id'  => $this->info->id,
                 'type'        => '1',
                 'create_time' => time(),
@@ -329,14 +329,14 @@ class Content extends Frontend
     public function collect(): void
     {
         $statistics = Db::name('cms_statistics')
-            ->where('user_id', $this->auth->id)
+            ->where('user_id', $this->member->id)
             ->where('content_id', $this->info->id)
             ->where('type', '2')
             ->find();
         if ($statistics) {
             // 取消收藏
             Db::name('cms_statistics')
-                ->where('user_id', $this->auth->id)
+                ->where('user_id', $this->member->id)
                 ->where('content_id', $this->info->id)
                 ->where('type', '2')
                 ->delete();
@@ -346,7 +346,7 @@ class Content extends Frontend
         } else {
             // 收藏
             Db::name('cms_statistics')->insert([
-                'user_id'     => $this->auth->id,
+                'user_id'     => $this->member->id,
                 'content_id'  => $this->info->id,
                 'type'        => '2',
                 'create_time' => time(),
@@ -372,7 +372,7 @@ class Content extends Frontend
             ->where('name', 'comments_interval')
             ->value('value');
 
-        $lastCommentTime = Comment::where('user_id', $this->auth->id)
+        $lastCommentTime = Comment::where('user_id', $this->member->id)
             ->where('type', 'content')
             ->order('create_time desc')
             ->value('create_time');
@@ -384,7 +384,7 @@ class Content extends Frontend
         }
 
         $comment = Comment::create([
-            'user_id'    => $this->auth->id,
+            'user_id'    => $this->member->id,
             'content_id' => $this->info->id,
             'type'       => 'content',
             'content'    => $content,
@@ -409,12 +409,12 @@ class Content extends Frontend
             // at了用户，向对应用户发送消息
             if ($atUser) {
                 foreach ($atUser as $userId) {
-                    if ($userId == $this->auth->id) continue;
+                    if ($userId == $this->member->id) continue;
                     $messageHtml = '我在 <a href="/cms/info/' . $this->info->id . '">' . $this->info->title . '</a> 的评论中@了你<br />';
                     $messageHtml .= '<div style="margin-top: 10px;padding: 10px;border-left:4px solid #dedfe0;">' . $comment->content . '</div>';
                     Db::name('user_message')
                         ->insert([
-                            'user_id'      => $this->auth->id,
+                            'user_id'      => $this->member->id,
                             'recipient_id' => $userId,
                             'content'      => $messageHtml,
                             'create_time'  => time()
@@ -426,7 +426,7 @@ class Content extends Frontend
             $recentHtml = '在 <a href="/cms/info/' . $this->info->id . '">' . $this->info->title . '</a> 发表了评论<br />';
             $recentHtml .= '<div style="margin-top: 10px;padding: 10px;border-left:4px solid #dedfe0;">' . $comment->content . '</div>';
             \app\admin\model\user\Recent::create([
-                'user_id' => $this->auth->id,
+                'user_id' => $this->member->id,
                 'content' => $recentHtml,
             ]);
         }

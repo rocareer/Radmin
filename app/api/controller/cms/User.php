@@ -106,7 +106,7 @@ class User extends Frontend
 
             if ($res === true) {
                 $this->success(__('Login succeeded!'), [
-                    'userInfo'  => $this->auth->getUserInfo(),
+                    'userInfo'  => $this->member->getUserInfo(),
                     'routePath' => '/user'
                 ]);
             } else {
@@ -177,7 +177,7 @@ class User extends Frontend
      */
     public function operateRecord(): void
     {
-        if (!$this->auth->check('cms/operateRecord')) {
+        if (!$this->member->check('cms/operateRecord')) {
             $this->error(__('You have no permission'), [], 401);
         }
 
@@ -198,7 +198,7 @@ class User extends Frontend
             ->alias('s')
             ->join('cms_content c', 's.content_id=c.id')
             ->join('cms_channel ch', 'c.channel_id=ch.id')
-            ->where('s.user_id', $this->auth->id)
+            ->where('s.user_id', $this->member->id)
             ->where('s.type', $typeMap[$type])
             ->order('s.create_time', 'desc')
             ->paginate($limit)
@@ -218,7 +218,7 @@ class User extends Frontend
 
     public function order(): void
     {
-        if (!$this->auth->check('cms/order')) {
+        if (!$this->member->check('cms/order')) {
             $this->error(__('You have no permission'), [], 401);
         }
 
@@ -227,7 +227,7 @@ class User extends Frontend
             ->field('p.*, c.id, c.title, c.images, c.description, c.channel_id, c.tags')
             ->alias('p')
             ->join('cms_content c', 'p.object_id=c.id', 'LEFT')
-            ->where('p.user_id', $this->auth->id)
+            ->where('p.user_id', $this->member->id)
             ->where('p.project', 'content')
             ->where('p.pay_time', 'not null')
             ->order('p.pay_time', 'desc')
@@ -248,7 +248,7 @@ class User extends Frontend
 
     public function comment(): void
     {
-        if (!$this->auth->check('cms/comment')) {
+        if (!$this->member->check('cms/comment')) {
             $this->error(__('You have no permission'), [], 401);
         }
 
@@ -261,7 +261,7 @@ class User extends Frontend
             ->alias('ct')
             ->field('ct.*, c.title')
             ->join('cms_content c', 'ct.content_id=c.id')
-            ->where('ct.user_id', $this->auth->id)
+            ->where('ct.user_id', $this->member->id)
             ->where('ct.type', 'content')
             ->order('ct.weigh desc,ct.create_time desc')
             ->paginate($limit)
@@ -282,7 +282,7 @@ class User extends Frontend
 
     public function content(): void
     {
-        if (!$this->auth->check('cms/content')) {
+        if (!$this->member->check('cms/content')) {
             $this->error(__('You have no permission'), [], 401);
         }
 
@@ -291,7 +291,7 @@ class User extends Frontend
             ->alias('c')
             ->field('c.id,c.title,c.title_style,c.images,c.price,c.publish_time,c.create_time,c.channel_id,c.views,c.comments,c.likes,c.status,c.memo,ch.name as channelName')
             ->join('cms_channel ch', 'c.channel_id=ch.id', 'LEFT')
-            ->where('user_id', $this->auth->id)
+            ->where('user_id', $this->member->id)
             ->order('create_time desc')
             ->paginate($limit)->each(function ($item) {
                 $item['publish_time'] = Date::human($item['publish_time'] ?? $item['create_time']);
@@ -316,13 +316,13 @@ class User extends Frontend
      */
     public function contentStatistics(): void
     {
-        if (!$this->auth->check('cms/content')) {
+        if (!$this->member->check('cms/content')) {
             $this->error(__('You have no permission'), [], 401);
         }
 
         $id   = $this->request->request('id');
         $info = Content::where('id', $id)
-            ->where('user_id', $this->auth->id)
+            ->where('user_id', $this->member->id)
             ->find();
 
         if (!$info) {
@@ -349,7 +349,7 @@ class User extends Frontend
 
     public function delContent(): void
     {
-        if (!$this->auth->check('cms/content')) {
+        if (!$this->member->check('cms/content')) {
             $this->error(__('You have no permission'), [], 401);
         }
 
@@ -361,7 +361,7 @@ class User extends Frontend
             ->join('cms_channel ch', 'co.channel_id=ch.id')
             ->join('cms_content_model cm', 'ch.content_model_id=cm.id')
             ->where('co.id', $id)
-            ->where('co.user_id', $this->auth->id)
+            ->where('co.user_id', $this->member->id)
             ->find();
         if (!$modelInfo) {
             $this->error('文章数据异常！');
@@ -369,7 +369,7 @@ class User extends Frontend
 
         Db::name('cms_content')
             ->where('id', $id)
-            ->where('user_id', $this->auth->id)
+            ->where('user_id', $this->member->id)
             ->delete();
         Db::name($modelInfo['table'])->where('id', $id)->delete();
 
@@ -378,14 +378,14 @@ class User extends Frontend
 
     public function delComment(): void
     {
-        if (!$this->auth->check('cms/comment')) {
+        if (!$this->member->check('cms/comment')) {
             $this->error(__('You have no permission'), [], 401);
         }
 
         $id   = $this->request->request('id');
         $info = Db::name('cms_comment')
             ->where('id', $id)
-            ->where('user_id', $this->auth->id)
+            ->where('user_id', $this->member->id)
             ->find();
 
         if (!$info) {
@@ -464,7 +464,7 @@ class User extends Frontend
         $info = false;
         if ($id) {
             $info      = $contentModel::where('id', $id)
-                ->where('user_id', $this->auth->id)
+                ->where('user_id', $this->member->id)
                 ->find();
             $channelId = $info->channel_id ?? $channelId;
         }
@@ -532,7 +532,7 @@ class User extends Frontend
             Db::startTrans();
             try {
                 $data['status']  = 'unaudited';
-                $data['user_id'] = $this->auth->id;
+                $data['user_id'] = $this->member->id;
 
                 // 自动新建标签
                 if (isset($data['tags'])) {

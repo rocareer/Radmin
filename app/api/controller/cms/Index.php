@@ -131,7 +131,7 @@ class Index extends Frontend
         // 标记最新的文章
         $newContent = Content::where('status', 'normal')
             ->where(function ($query) {
-                if (!$this->auth->isLogin()) {
+                if (!$this->member->isLogin()) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -150,7 +150,7 @@ class Index extends Frontend
         // 按更新时间排序的文章
         $newPublishContent = Content::where('status', 'normal')
             ->where(function ($query) {
-                if (!$this->auth->isLogin()) {
+                if (!$this->member->isLogin()) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -257,7 +257,7 @@ class Index extends Frontend
         $limit       = request()->request('limit');
         $newContents = Content::where('status', 'normal')
             ->where(function ($query) {
-                if (!$this->auth->isLogin()) {
+                if (!$this->member->isLogin()) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -289,7 +289,7 @@ class Index extends Frontend
         // 所有产品频道
         $channels = Channel::where('content_model_id', $productModelId)
             ->where(function ($query) {
-                if (!$this->auth->isLogin()) {
+                if (!$this->member->isLogin()) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -302,7 +302,7 @@ class Index extends Frontend
 
         $contents = Content::where('status', 'normal')
             ->where(function ($query) {
-                if (!$this->auth->isLogin()) {
+                if (!$this->member->isLogin()) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -450,7 +450,7 @@ class Index extends Frontend
         $content = Content::where('status', 'normal')
             ->where($where)
             ->where(function ($query) {
-                if (!$this->auth->isLogin()) {
+                if (!$this->member->isLogin()) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -549,7 +549,7 @@ class Index extends Frontend
         // 按更新时间排序的文章
         $newPublishContent = Content::where('status', 'normal')
             ->where(function ($query) {
-                if (!$this->auth->isLogin()) {
+                if (!$this->member->isLogin()) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })

@@ -140,7 +140,7 @@ class Pay extends Frontend
         } elseif ($type == 'uni-wx-mp') {
             $name     = 'wechat_mp';
             $oauthLog = Db::name('oauth_log')
-                ->where('user_id', $this->auth->id)
+                ->where('user_id', $this->member->id)
                 ->where('source', $name)
                 ->find();
             if (!$oauthLog) {
@@ -171,7 +171,7 @@ class Pay extends Frontend
         } elseif ($type == 'uni-wx-mini') {
             $name     = 'wechat_mini_program';
             $oauthLog = Db::name('oauth_log')
-                ->where('user_id', $this->auth->id)
+                ->where('user_id', $this->member->id)
                 ->where('source', $name)
                 ->find();
             if (!$oauthLog) {
@@ -230,14 +230,14 @@ class Pay extends Frontend
                 'info' => $payLog
             ]);
         } elseif ($type == 'balance') {
-            $user = $this->auth->getUserInfo();
+            $user = $this->member->getUserInfo();
             if ($user['money'] < $contentInfo['price']) {
                 $this->error('您的余额不足~');
             }
             Db::startTrans();
             try {
                 UserMoneyLog::create([
-                    'user_id' => $this->auth->id,
+                    'user_id' => $this->member->id,
                     'money'   => $contentInfo['price'] * (-1),
                     'memo'    => $title,
                 ]);
@@ -254,7 +254,7 @@ class Pay extends Frontend
                 'info' => $payLog,
             ]);
         } elseif ($type == 'score') {
-            $user = $this->auth->getUserInfo();
+            $user = $this->member->getUserInfo();
             if ($user['score'] < $contentInfo['price']) {
                 $this->error('您的积分不足~');
             }
@@ -262,7 +262,7 @@ class Pay extends Frontend
             Db::startTrans();
             try {
                 UserScoreLog::create([
-                    'user_id' => $this->auth->id,
+                    'user_id' => $this->member->id,
                     'score'   => $contentInfo['price'] * (-1),
                     'memo'    => $title,
                 ]);
@@ -377,14 +377,14 @@ class Pay extends Frontend
                 'info' => $payLog
             ]);
         } elseif ($type == 'balance') {
-            $user = $this->auth->getUserInfo();
+            $user = $this->member->getUserInfo();
             if ($user['money'] < $amount) {
                 $this->error('您的余额不足~');
             }
             Db::startTrans();
             try {
                 UserMoneyLog::create([
-                    'user_id' => $this->auth->id,
+                    'user_id' => $this->member->id,
                     'money'   => $amount * (-1),
                     'memo'    => $title,
                 ]);
