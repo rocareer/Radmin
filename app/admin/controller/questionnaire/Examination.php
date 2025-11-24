@@ -4,6 +4,7 @@ namespace app\admin\controller\questionnaire;
 
 use app\common\controller\Backend;
 use modules\questionnaire\library\Tool;
+use support\Response;
 use think\Exception;
 use Throwable;
 
@@ -38,7 +39,7 @@ class Examination extends Backend
     /**
      * 预览
      */
-    public function preview(): void
+    public function preview(): Response
     {
         $id  = $this->request->post('id');
         $row = $this->model->field('id,title,description,questions,begin_time,end_time')->find($id)->toArray();
@@ -52,7 +53,7 @@ class Examination extends Backend
 
         $row['questions'] = $questions;
 
-        $this->success('', [
+        return $this->success('', [
             'row' => $row
         ]);
     }
@@ -60,7 +61,7 @@ class Examination extends Backend
     /**
      * 更新二维码
      */
-    public function updateQrCode(): void
+    public function updateQrCode(): Response
     {
         $id     = $this->request->post('id');
         $type   = $this->request->post('type');
@@ -105,12 +106,12 @@ class Examination extends Backend
             }
             $result = $row->save();
         } catch (Throwable $e) {
-            $this->error($e->getMessage());
+            return $this->error($e->getMessage());
         }
 
         if ($result) {
             $domain = $this->request->domain();
-            $this->success('', [
+            return $this->success('', [
                 'id'   => $row->id,
                 'mini' => $row->mini ? $domain . $row->mini : '',
             ]);
@@ -120,11 +121,11 @@ class Examination extends Backend
     /**
      * 获取二维码
      */
-    public function getQrCode(): void
+    public function getQrCode(): Response
     {
         $id     = $this->request->post('id');
         $row    = $this->model->field('id,mini,link')->find($id);
-        $domain = $this->request->domain();
+        $domain = $this->request->host();
 
         if (!$row->link) {
             $config   = \modules\questionnaire\library\Config::getConfig();
@@ -135,7 +136,7 @@ class Examination extends Backend
             }
         }
 
-        $this->success('', [
+        return $this->success('', [
             'id'   => $row->id,
             'link' => $row->link,
             'mini' => $row->mini ? $domain . $row->mini : '',

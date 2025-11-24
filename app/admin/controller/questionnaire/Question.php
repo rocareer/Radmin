@@ -3,6 +3,7 @@
 namespace app\admin\controller\questionnaire;
 
 use app\common\controller\Backend;
+use support\Response;
 
 /**
  * 问题管理
@@ -36,7 +37,7 @@ class Question extends Backend
     /**
      * 获取题目
      */
-    public function getQuestions(): void
+    public function getQuestions(): Response
     {
         $res = $this->model
             ->field('id,title,type')
@@ -58,7 +59,7 @@ class Question extends Backend
             }
         }
 
-        $this->success('', [
+        return $this->success('', [
             'list'   => $list,
             'total'  => $res->total(),
             'remark' => '',

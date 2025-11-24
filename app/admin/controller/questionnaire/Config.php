@@ -3,8 +3,9 @@
 namespace app\admin\controller\questionnaire;
 
 use app\common\controller\Backend;
-use think\facade\Cache;
-use think\facade\Db;
+use support\cache\Cache;
+use support\orm\Db;
+use support\Response;
 
 class Config extends Backend
 {
@@ -12,20 +13,20 @@ class Config extends Backend
     /***
      * 获取配置
      */
-    public function getConfig(): void
+    public function getConfig(): Response
     {
         $config = \modules\questionnaire\library\Config::getConfig();
 
         $config['questionnaire_other']['size'] = intval($config['questionnaire_other']['size']);
         $config['questionnaire_other']['num']  = intval($config['questionnaire_other']['num']);
 
-        $this->success('', $config);
+        return $this->success('', $config);
     }
 
     /***
      * 保存配置
      */
-    public function saveConfig(): void
+    public function saveConfig(): Response
     {
         $type = $this->request->get('type');
         $post = $this->request->post();
@@ -43,10 +44,10 @@ class Config extends Backend
                     'value' => json_encode($post),
                 ]);
         } catch (\Throwable $e) {
-            $this->error('操作失败:' . $e->getMessage());
+            return $this->error('操作失败:' . $e->getMessage());
         }
         Cache::tag(\modules\questionnaire\library\Config::$cacheTag)->clear();
 
-        $this->success();
+        return $this->success();
     }
 }

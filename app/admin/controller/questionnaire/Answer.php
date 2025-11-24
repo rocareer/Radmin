@@ -3,6 +3,7 @@
 namespace app\admin\controller\questionnaire;
 
 use app\common\controller\Backend;
+use support\Response;
 use think\facade\Db;
 use Throwable;
 
@@ -39,9 +40,9 @@ class Answer extends Backend
      * 查看
      * @throws Throwable
      */
-    public function index(): void
+    public function index(): Response
     {
-        if ($this->request->param('select')) {
+        if ($this->request->input('select')) {
             $this->select();
         }
 
@@ -75,7 +76,7 @@ class Answer extends Backend
             unset($item);
         }
 
-        $this->success('', [
+        return $this->success('', [
             'list'   => $res->items(),
             'total'  => $res->total(),
             'remark' => '',
@@ -94,19 +95,17 @@ class Answer extends Backend
             ->cursor();
 
         $ids = [];
-        if ($cursor->valid()) {
-            foreach ($cursor as $value) {
-                $options = implode(',', $value['options']);
+        foreach ($cursor as $value) {
+            $options = implode(',', $value['options']);
 
-                $id = $this->model
-                    ->where('title', '=', $value['title'])
-                    ->where('type', '=', $value['type'])
-                    ->where('must', '=', $value['must'])
-                    ->where('options', '=', $options)
-                    ->value('id');
+            $id = $this->model
+                ->where('title', '=', $value['title'])
+                ->where('type', '=', $value['type'])
+                ->where('must', '=', $value['must'])
+                ->where('options', '=', $options)
+                ->value('id');
 
-                $ids[] = $id;
-            }
+            $ids[] = $id;
         }
         return $ids;
     }
@@ -114,7 +113,7 @@ class Answer extends Backend
     /**
      * 分析-单选、多选题
      */
-    public function analyse(): void
+    public function analyse(): Response
     {
         $params = $this->request->post();
 
@@ -159,7 +158,7 @@ class Answer extends Backend
         $zhu     = $compute['zhu'];
         $yuan    = $compute['yuan'];
 
-        $this->success('', [
+        return $this->success('', [
             'yuan' => $yuan,
             'zhu'  => $zhu,
         ]);
@@ -168,7 +167,7 @@ class Answer extends Backend
     /**
      * 分析-填空题
      */
-    public function gap(): void
+    public function gap(): Response
     {
         $params = $this->request->post();
 
@@ -195,7 +194,7 @@ class Answer extends Backend
         if (count($list) < 20) {
             $hasMore = false;
         }
-        $this->success('', [
+        return $this->success('', [
             'list'    => $list,
             'hasMore' => $hasMore
         ]);

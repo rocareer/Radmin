@@ -2,6 +2,7 @@
 
 namespace app\admin\model\questionnaire;
 
+use app\common\model\BaseModel;
 use modules\questionnaire\library\Config;
 use modules\questionnaire\library\Tool;
 use think\Model;
@@ -9,7 +10,7 @@ use think\Model;
 /**
  * Examination
  */
-class Examination extends Model
+class Examination extends BaseModel
 {
     // 表名
     protected $name = 'questionnaire_examination';

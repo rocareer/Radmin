@@ -126,7 +126,14 @@ class Questionnaire
             ['name' => 'questionnaire_mini', 'group' => 'questionnaire', 'title' => '小程序配置', 'type' => 'string', 'value' => '{"appid":"","secret":""}'],
             ['name' => 'questionnaire_other', 'group' => 'questionnaire', 'title' => '其它配置', 'type' => 'string', 'value' => '{"picture":"jpg,png,jpeg,gif","video":"mp4,mov","file":"pdf,ppt,xls,xlsx,zip,doc,docx","size":10,"num":5}']
         ];
-        Db::name('config')->insertAll($config);
+        
+        // 检查配置是否已存在，避免重复插入
+        foreach ($config as $item) {
+            $exists = Db::name('config')->where('name', $item['name'])->find();
+            if (!$exists) {
+                Db::name('config')->insert($item);
+            }
+        }
     }
 
     /**

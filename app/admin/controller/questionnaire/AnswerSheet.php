@@ -3,6 +3,7 @@
 namespace app\admin\controller\questionnaire;
 
 use app\common\controller\Backend;
+use support\Response;
 
 /**
  * 答卷管理
@@ -35,7 +36,7 @@ class AnswerSheet extends Backend
     /**
      * 查阅
      */
-    public function look(): void
+    public function look(): Response
     {
         $id = $this->request->post('id');
 
@@ -47,7 +48,7 @@ class AnswerSheet extends Backend
             ->toArray();
         $row['questions'] = $questions;
 
-        $this->success('', [
+        return $this->success('', [
             'row' => $row
         ]);
     }

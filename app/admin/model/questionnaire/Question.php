@@ -2,13 +2,14 @@
 
 namespace app\admin\model\questionnaire;
 
+use app\common\model\BaseModel;
 use modules\questionnaire\library\Tool;
 use think\Model;
 
 /**
  * Question
  */
-class Question extends Model
+class Question extends BaseModel
 {
     // 表名
     protected $name = 'questionnaire_question';
@@ -19,6 +20,10 @@ class Question extends Model
     protected $append = [
         'type_str',
         'checked'
+    ];
+    protected $type = [
+        'create_time' => 'integer',
+        'update_time' => 'integer',
     ];
 
     protected static function onAfterInsert($model)

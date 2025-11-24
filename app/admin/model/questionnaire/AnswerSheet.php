@@ -2,13 +2,14 @@
 
 namespace app\admin\model\questionnaire;
 
+use app\common\model\BaseModel;
 use modules\questionnaire\library\Tool;
 use think\Model;
 
 /**
  * AnswerSheet
  */
-class AnswerSheet extends Model
+class AnswerSheet extends BaseModel
 {
     // 表名
     protected $name = 'questionnaire_answer_sheet';
