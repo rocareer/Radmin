@@ -1,5 +1,5 @@
-const accountUrl = '/api/account/'
-const userUrl = '/user/Index/'
+const accountUrl = '/user/account/'
+const userUrl = '/user/index/'
 
 export function login(method: 'get' | 'post', params: object = {}) {
     const opt = method == 'get' ? {} : { body: params }
