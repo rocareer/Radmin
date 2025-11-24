@@ -1,6 +1,7 @@
 /runtime
 /temp
 /docs
+/web-nuxt
 /.idea
 /.vscode
 /.git
