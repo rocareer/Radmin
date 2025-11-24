@@ -2,7 +2,7 @@
 
 namespace app\common\controller;
 
-use support\Context;
+use support\member\Context;
 use support\orm\Model;
 use support\member\Member;
 use support\RequestContext;
@@ -139,18 +139,18 @@ class Backend extends Api
 
         if ($needLogin) {
             try {
-                $this->member = \support\member\Context::getInstance()->getCurrentMember();
+                $this->member = Context::getInstance()->getCurrentMember();
             } catch (\Throwable $e) {
                 // 获取用户信息失败，清理登录状态
                 $this->member = null;
                 
-                \support\RequestContext::delete('member');
-                \support\RequestContext::delete('role');
+                RequestContext::delete('member');
+                RequestContext::delete('role');
                 
                 try {
-                    $currentRole = \support\member\Context::getInstance()->getCurrentRole();
+                    $currentRole = Context::getInstance()->getCurrentRole();
                     if ($currentRole) {
-                        \support\member\Context::getInstance()->clearRoleContext($currentRole);
+                        Context::getInstance()->clearRoleContext($currentRole);
                     }
                 } catch (\Throwable $contextError) {
                     // 忽略清理过程中的错误
