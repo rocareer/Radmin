@@ -76,7 +76,7 @@
                                     <div class="title-box">
                                         <el-input
                                             class="title"
-                                            type="string"
+                                            type="text"
                                             v-model="baTable.form.items!.title"
                                             :placeholder="t('Please input field', { field: t('cms.content.title') })"
                                         ></el-input>

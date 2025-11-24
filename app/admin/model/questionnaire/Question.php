@@ -4,7 +4,6 @@ namespace app\admin\model\questionnaire;
 
 use app\common\model\BaseModel;
 use modules\questionnaire\library\Tool;
-use think\Model;
 
 /**
  * Question
