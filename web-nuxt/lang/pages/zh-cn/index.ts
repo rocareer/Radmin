@@ -1,3 +1,3 @@
 export default {
-    title: '欢迎使用 BuildAdmin-WebNuxt！',
+    title: '湖川：每一片波纹都是新的起点  --嘉禾',
 }

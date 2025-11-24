@@ -6,6 +6,7 @@ namespace app\api\controller;
 use extend\ra\DateUtil;
 use extend\ra\SystemUtil;
 use support\member\Context;
+use support\Response;
 use Throwable;
 use think\db\Query;
 use think\facade\Db;
@@ -22,7 +23,7 @@ class Interaction extends Frontend
 
     protected array $noNeedPermission = ['*'];
 
-    public function initialize(): void
+    public function initialize(): Void
     {
         parent::initialize();
     }
@@ -31,7 +32,7 @@ class Interaction extends Frontend
      * 会员名片
      * @throws Throwable
      */
-    public function userCard(): void
+    public function userCard(): Response
     {
         $userId = $this->request->get('userId');
         $user   = Db::name('user')
@@ -39,7 +40,7 @@ class Interaction extends Frontend
             ->where('id', $userId)
             ->find();
         if (!$user) {
-            $this->error(__("The user can't be found!"));
+            return $this->error(__("The user can't be found!"));
         }
         $user['join_time'] = DateUtil::human($user['join_time'] ?? $user['create_time']);
         $user['avatar']    = full_url($user['avatar'], true, config('buildadmin.default_avatar'));
@@ -62,7 +63,7 @@ class Interaction extends Frontend
             }
         }
 
-        $this->success('', [
+        return $this->success('', [
             'user'            => $user,
             'components'      => $components,
             'officialAccount' => SystemUtil::get_sys_config('official_account'),
@@ -73,10 +74,10 @@ class Interaction extends Frontend
      * 会员动态分页数据加载
      * @throws Throwable
      */
-    public function loadMoreUserRecent(): void
+    public function loadMoreUserRecent(): Response
     {
         $userId = $this->request->get('userId');
-        $this->success('', [
+        return $this->success('', [
             'data' => $this->userRecentData($userId),
         ]);
     }
@@ -85,7 +86,7 @@ class Interaction extends Frontend
      * 未读消息数量
      * @throws Throwable
      */
-    public function count(): void
+    public function count(): Response
     {
         $member = Context::getInstance()->getCurrentMember();
         $count = 0;
@@ -96,7 +97,7 @@ class Interaction extends Frontend
                 ->count('id');
         }
         
-        $this->success('', [
+        return $this->success('', [
             'pollingInterval' => SystemUtil::get_sys_config('polling_interval'),
             'count'           => $count,
         ]);
@@ -106,7 +107,7 @@ class Interaction extends Frontend
      * 消息列表
      * @throws Throwable
      */
-    public function messageList(): void
+    public function messageList(): Response
     {
         $limit         = $this->request->input('limit');
         $keywords      = $this->request->input('keywords');
@@ -166,7 +167,7 @@ class Interaction extends Frontend
             $sessions[$key]['create_time'] = DateUtil::human($item['create_time']);
         }
 
-        $this->success('', [
+        return $this->success('', [
             'list'            => $sessions,
             'total'           => $sessionRecipient->total(),
             'officialAccount' => SystemUtil::get_sys_config('official_account'),
@@ -178,7 +179,7 @@ class Interaction extends Frontend
      * 对话
      * @throws Throwable
      */
-    public function dialog(): void
+    public function dialog(): Response
     {
         $userId = $this->request->input('userId/d');
         $limit  = $this->request->input('limit');
@@ -188,7 +189,7 @@ class Interaction extends Frontend
             ->where('id', $userId)
             ->find();
         if (!$userInfo) {
-            $this->error(__("The user can't be found!"));
+            return $this->error(__("The user can't be found!"));
         }
 
         $defaultAvatar = config('buildadmin.default_avatar');
@@ -207,7 +208,7 @@ class Interaction extends Frontend
                 $item['user']['avatar']      = full_url($item['user']['avatar'], true, $defaultAvatar);
                 $item['recipient']['avatar'] = full_url($item['recipient']['avatar'], true, $defaultAvatar);
             });
-        $this->success('', [
+        return $this->success('', [
             'list'     => $res->items(),
             'total'    => $res->total(),
             'userInfo' => $userInfo,
@@ -218,7 +219,7 @@ class Interaction extends Frontend
      * 发送消息
      * @throws Throwable
      */
-    public function sendMessage(): void
+    public function sendMessage(): Response
     {
         $userId  = $this->request->post('userId');
         $content = $this->request->post('content');
@@ -230,16 +231,16 @@ class Interaction extends Frontend
             ]);
         } catch (Throwable $e) {
             if (env('app_debug', false)) throw $e;
-            $this->error(__('Message sending failed, please try again!'));
+            return $this->error(__('Message sending failed, please try again!'));
         }
-        $this->success();
+        return $this->success();
     }
 
     /**
      * 标记消息阅读
      * @throws Throwable
      */
-    public function markRead(): void
+    public function markRead(): Response
     {
         $ids = $this->request->post('ids');
 
@@ -255,7 +256,7 @@ class Interaction extends Frontend
             'status' => 'read'
         ]);
 
-        $this->success('', [
+        return $this->success('', [
             'count' => Message::where('recipient_id', $this->member->id)
                 ->where('status', 'unread')
                 ->count('id'),
@@ -266,7 +267,7 @@ class Interaction extends Frontend
      * 删除消息
      * @throws Throwable
      */
-    public function delMessage(): void
+    public function delMessage(): Response
     {
         $ids = $this->request->post('ids/a');
         Db::startTrans();
@@ -287,9 +288,9 @@ class Interaction extends Frontend
         } catch (Throwable $e) {
             Db::rollback();
             if (env('app_debug', false)) throw $e;
-            $this->error(__('Delete failed, please try again!'));
+            return $this->error(__('Delete failed, please try again!'));
         }
-        $this->success();
+        return $this->success();
     }
 
     /**
