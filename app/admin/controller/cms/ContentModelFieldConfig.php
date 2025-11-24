@@ -291,7 +291,7 @@ class ContentModelFieldConfig extends Backend
      */
     public function del(array $ids = []): void
     {
-        if (!$this->request->isDelete() || !$ids) {
+        if ($this->request->method() != 'DELETE' || !$ids) {
             $this->error(__('Parameter error'));
         }
 

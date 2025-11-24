@@ -209,7 +209,7 @@ class Content extends Backend
                 return $this->error(__('The model cannot be found'));
             }
 
-            $routePath = ($this->app->request->controllerPath ?? '') . "/{$modelInfo['table']}/{$this->request->action(true)}";
+            $routePath = ($this->request->controller() ?? '') . '/' . $this->request->action;
             if (!Member::check($routePath)) {
                 return $this->error(__('You have no permission'), [], 401);
             }
@@ -303,7 +303,7 @@ class Content extends Backend
             return $this->error(__('The model cannot be found'));
         }
 
-        $routePath = ($this->app->request->controllerPath ?? '') . "/{$modelInfo['table']}/{$this->request->action(true)}";
+        $routePath = ($this->request->controller() ?? '') . '/' . $this->request->action;
         if (!Member::check($routePath)) {
             return $this->error(__('You have no permission'), [], 401);
         }
@@ -428,7 +428,7 @@ class Content extends Backend
      */
     public function del(array $ids = []): Response
     {
-        if (!$this->request->isDelete() || !$ids) {
+        if ($this->request->method() != 'DELETE' || !$ids) {
             return $this->error(__('Parameter error'));
         }
 
@@ -440,7 +440,7 @@ class Content extends Backend
             return $this->error(__('The model cannot be found'));
         }
 
-        $routePath = ($this->app->request->controllerPath ?? '') . "/{$modelInfo['table']}/{$this->request->action(true)}";
+        $routePath = ($this->request->controller() ?? '') . '/' . $this->request->action;
         if (!Member::check($routePath)) {
             return $this->error(__('You have no permission'), [], 401);
         }
