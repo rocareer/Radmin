@@ -245,7 +245,7 @@ class Rule extends Backend
         $pk      = $this->model->getPk();
         $initKey = $this->request->input("initKey", $pk);
 
-        $ids = Member::getRuleIds($this->member->id);
+        $ids = $this->adminService->getRuleIds($this->member->id);
 
         // 如果没有 * 则只获取用户拥有的规则
         if (!in_array('*', $ids)) {

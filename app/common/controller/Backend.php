@@ -350,7 +350,7 @@ class Backend extends Api
      */
     protected function getDataLimitAdminIds(): array
     {
-        var_dump( Member::hasRole('super'));
+
         if (!$this->dataLimit || Member::hasRole('super')) {
             return [];
         }

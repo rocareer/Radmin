@@ -5,6 +5,7 @@ namespace app\admin\controller\cms;
 use extend\ba\TableManager;
 use extend\ra\FileUtil;
 use extend\ra\SystemUtil;
+use modules\cms\library\Helper;
 use support\member\Member;
 use support\Response;
 use Throwable;
@@ -68,10 +69,12 @@ class Content extends Backend
             ->select()
             ->toArray();
 
-        // 验查看权限
-        $routePath = ($this->app->request->controllerPath ?? '') . "/{$modelInfo['table']}/index";
-        if (!Member::check($routePath)) {
-            return $this->error(__('You have no permission'), [], 401);
+        // 验查看权限 - 超管直接通过
+        if (!Member::hasRole('super')) {
+            $routePath = ($this->app->request->controlle() ?? '') . "/{$modelInfo['table']}/index";
+            if (!Member::check($routePath)) {
+                return $this->error(__('You have no permission'), [], 401);
+            }
         }
 
         $fields             = [];
@@ -87,8 +90,8 @@ class Content extends Backend
             $fields[$key]['extend']              = str_attr_to_array($field['extend']);
             $fields[$key]['input_extend']        = str_attr_to_array($field['input_extend']);
             if (array_key_exists($field['name'], $contentModelFields)) {
-                $fields[$key]['default'] = \modules\cms\library\Helper::restoreDefault($contentModelFields[$field['name']]['COLUMN_DEFAULT'], $field['type']);
-                $fields[$key]['content'] = \modules\cms\library\Helper::restoreDict($contentModelFields[$field['name']]['COLUMN_COMMENT']);
+                $fields[$key]['default'] = Helper::restoreDefault($contentModelFields[$field['name']]['COLUMN_DEFAULT'], $field['type']);
+                $fields[$key]['content'] = Helper::restoreDict($contentModelFields[$field['name']]['COLUMN_COMMENT']);
             }
         }
 
@@ -116,9 +119,12 @@ class Content extends Backend
             return $this->error(__('The model cannot be found'));
         }
 
-        $routePath = ($this->app->request->controller ?? '') . "/$modelTable/{$this->request->action}";
-        if (!Member::check($routePath)) {
-            return $this->error(__('You have no permission'), [], 401);
+        // 超管直接通过
+        if (!Member::hasRole('super')) {
+            $routePath = ($this->app->request->controller ?? '') . "/$modelTable/{$this->request->action}";
+            if (!Member::check($routePath)) {
+                return $this->error(__('You have no permission'), [], 401);
+            }
         }
 
         $fullModelFieldsConfig = [];
@@ -252,7 +258,7 @@ class Content extends Backend
 
                 // 自动新建标签
                 if (isset($data['tags'])) {
-                    $data['tags'] = \modules\cms\library\Helper::autoCreateTags($data['tags']);
+                    $data['tags'] = Helper::autoCreateTags($data['tags']);
                     foreach ($data['tags'] as $tag) {
                         Tags::where('id', $tag)->inc('document_count')->save();
                     }
@@ -362,7 +368,7 @@ class Content extends Backend
 
                 if (isset($data['tags'])) {
                     // 自动新建标签
-                    $data['tags'] = \modules\cms\library\Helper::autoCreateTags($data['tags']);
+                    $data['tags'] = Helper::autoCreateTags($data['tags']);
                     // 增加的tag文档+1
                     foreach ($data['tags'] as $tag) {
                         if (!in_array($tag, $row->tags)) {

@@ -259,7 +259,7 @@ class Admin extends Backend
         if (Member::hasRole('super')) {
             return;
         }
-        $authGroups = Member::getAllAuthGroups('allAuthAndOthers');
+        $authGroups = $this->adminService->getAllAuthGroups('allAuthAndOthers');
         foreach ($groups as $group) {
             if (!in_array($group, $authGroups)) {
                 $this->error(__('You have no permission to add an administrator to this group!'));

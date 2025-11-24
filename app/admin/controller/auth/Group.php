@@ -291,7 +291,7 @@ class Group extends Backend
                 $data['rules'] = '*';
             } else {
                 // 当前管理员所拥有的权限节点
-                $ownedRuleIds = Member::getRuleIds($this->member->id);
+                $ownedRuleIds = $this->adminService->getRuleIds($this->member->id);
 
                 // 禁止添加`拥有自己全部权限`的分组
                 if (!array_diff($ownedRuleIds, $checkedRules)) {
@@ -338,12 +338,13 @@ class Group extends Backend
             $where[] = [$initKey, 'in', $this->initValue];
         }
 
-        // 超管获取所有分组
-        if (Member::hasRole('super')) {
-            $authGroups = Member::getAllAuthGroups($this->authMethod, $where);
+        // 超管获取所有分组，不需要权限限制
+        if (!Member::hasRole('super')) {
+            $authGroups = $this->adminService->getAllAuthGroups($this->authMethod, $where);
             if (!$absoluteAuth) $authGroups = array_merge($this->adminGroups, $authGroups);
             $where[] = ['id', 'in', $authGroups];
         }
+        
         $data = $this->model->where($where)->select()->toArray();
 
         // 获取第一个权限的名称供列表显示-s
@@ -375,7 +376,7 @@ class Group extends Backend
      */
     private function checkAuth($groupId): void
     {
-        $authGroups = Member::getAllAuthGroups($this->authMethod, []);
+        $authGroups = $this->adminService->getAllAuthGroups($this->authMethod, []);
         if (!Member::hasRole('super') && !in_array($groupId, $authGroups)) {
             $this->error(__($this->authMethod == 'allAuth' ? 'You need to have all permissions of this group to operate this group~' : 'You need to have all the permissions of the group and have additional permissions before you can operate the group~'));
         }
