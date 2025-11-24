@@ -87,7 +87,7 @@ class Interaction extends Frontend
     {
         $this->success('', [
             'pollingInterval' => get_sys_config('polling_interval'),
-            'count'           => Message::where('recipient_id', $this->auth->id)
+            'count'           => Message::where('recipient_id', $this->member->id)
                 ->where('status', 'unread')
                 ->count('id'),
         ]);
@@ -99,9 +99,9 @@ class Interaction extends Frontend
      */
     public function messageList(): void
     {
-        $limit         = $this->request->request('limit');
-        $keywords      = $this->request->request('keywords');
-        $nickname      = $this->request->request('nickname');
+        $limit         = $this->request->input('limit');
+        $keywords      = $this->request->input('keywords');
+        $nickname      = $this->request->input('nickname');
         $defaultAvatar = Config::get('buildadmin.default_avatar');
 
         $userInfoFields = ['id', 'avatar', 'nickname', 'motto'];
@@ -111,7 +111,7 @@ class Interaction extends Frontend
         ])
             // ROW_NUMBER() 是 MySQL8.0 才引入的窗口函数
             ->fieldRaw('ROW_NUMBER() OVER ( PARTITION BY user_id + recipient_id ORDER BY create_time DESC ) AS rn')
-            ->where('user_id|recipient_id', $this->auth->id)
+            ->where('user_id|recipient_id', $this->member->id)
             ->where(function (Query $query) use ($nickname, $keywords) {
                 if ($nickname) {
                     $query->whereOr('user.nickname|recipient.nickname', 'like', '%' . str_replace('%', '\%', $nickname) . '%');
@@ -120,7 +120,7 @@ class Interaction extends Frontend
                     $query->where('content', 'like', '%' . str_replace('%', '\%', $keywords) . '%');
                 }
             })
-            ->where('del_user_id', '<>', $this->auth->id)
+            ->where('del_user_id', '<>', $this->member->id)
             ->order('create_time', 'desc')
             ->buildSql();
 
@@ -133,7 +133,7 @@ class Interaction extends Frontend
         $sessions    = $sessionRecipient->getCollection()->toArray();
 
         foreach ($sessions as $key => $item) {
-            if ($item['user__id'] == $this->auth->id) {
+            if ($item['user__id'] == $this->member->id) {
                 $sessions[$key]['show_user'] = [
                     'id'       => $item['recipient__id'],
                     'avatar'   => full_url($item['recipient__avatar'], true, $defaultAvatar),
@@ -171,8 +171,8 @@ class Interaction extends Frontend
      */
     public function dialog(): void
     {
-        $userId = $this->request->request('userId/d');
-        $limit  = $this->request->request('limit');
+        $userId = $this->request->input('userId/d');
+        $limit  = $this->request->input('limit');
 
         $userInfo = Db::name('user')
             ->field('id,avatar,nickname')
@@ -185,13 +185,13 @@ class Interaction extends Frontend
         $defaultAvatar = Config::get('buildadmin.default_avatar');
         $res           = Message::withJoin(['user', 'recipient'])
             // think-orm 3.0.10 参数绑定失效，以下SQL已确保字符串安全
-            ->whereRaw("(user_id={$this->auth->id} and recipient_id=$userId) OR (user_id=$userId and recipient_id={$this->auth->id})")
-            ->where('del_user_id', '<>', $this->auth->id)
+            ->whereRaw("(user_id={$this->member->id} and recipient_id=$userId) OR (user_id=$userId and recipient_id={$this->member->id})")
+            ->where('del_user_id', '<>', $this->member->id)
             ->visible(['user.id', 'user.avatar', 'user.nickname', 'user.motto', 'recipient.avatar', 'recipient.nickname', 'recipient.motto'])
             ->order('create_time', 'desc')
             ->paginate($limit)
             ->each(function ($item) use ($defaultAvatar) {
-                if ($item['recipient_id'] == $this->auth->id && $item['status'] == 'unread') {
+                if ($item['recipient_id'] == $this->member->id && $item['status'] == 'unread') {
                     $item->save(['status' => 'read']);
                 }
                 $item['create_time']         = Date::human($item['create_time']);
@@ -215,7 +215,7 @@ class Interaction extends Frontend
         $content = $this->request->post('content');
         try {
             Message::create([
-                'user_id'      => $this->auth->id,
+                'user_id'      => $this->member->id,
                 'recipient_id' => $userId,
                 'content'      => $content,
             ]);
@@ -235,7 +235,7 @@ class Interaction extends Frontend
         $ids = $this->request->post('ids');
 
         $where   = [];
-        $where[] = ['recipient_id', '=', $this->auth->id];
+        $where[] = ['recipient_id', '=', $this->member->id];
         $where[] = ['status', '=', 'unread'];
 
         if ($ids != 'all') {
@@ -247,7 +247,7 @@ class Interaction extends Frontend
         ]);
 
         $this->success('', [
-            'count' => Message::where('recipient_id', $this->auth->id)
+            'count' => Message::where('recipient_id', $this->member->id)
                 ->where('status', 'unread')
                 ->count('id'),
         ]);
@@ -263,14 +263,14 @@ class Interaction extends Frontend
         Db::startTrans();
         try {
             $messages = Message::where('id', 'in', $ids)
-                ->where('user_id|recipient_id', $this->auth->id)
+                ->where('user_id|recipient_id', $this->member->id)
                 ->select();
             foreach ($messages as $message) {
-                $oppositeId = $message->user_id == $this->auth->id ? $message->recipient_id : $message->user_id;
+                $oppositeId = $message->user_id == $this->member->id ? $message->recipient_id : $message->user_id;
                 if ($message->del_user_id == $oppositeId) {
                     $message->delete();
                 } else {
-                    $message->del_user_id = $this->auth->id;
+                    $message->del_user_id = $this->member->id;
                     $message->save();
                 }
             }
@@ -289,7 +289,7 @@ class Interaction extends Frontend
      */
     private function userRecentData($userId): array
     {
-        $limit  = $this->request->request('limit', 10);
+        $limit  = $this->request->input('limit', 10);
         $recent = Recent::where('user_id', $userId)
             ->where('status', '1')
             ->order(['weigh' => 'desc', 'create_time' => 'desc'])

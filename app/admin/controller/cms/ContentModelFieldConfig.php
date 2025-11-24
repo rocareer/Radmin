@@ -43,7 +43,7 @@ class ContentModelFieldConfig extends Backend
     public function index(): void
     {
         // 如果是select则转发到select方法,若select未重写,其实还是继续执行index
-        if ($this->request->param('select')) {
+        if ($this->request->input('select')) {
             $this->select();
         }
 
@@ -127,7 +127,7 @@ class ContentModelFieldConfig extends Backend
 
             $data = $this->excludeFields($data);
             if ($this->dataLimit && $this->dataLimitFieldAutoFill) {
-                $data[$this->dataLimitField] = $this->auth->id;
+                $data[$this->dataLimitField] = $this->member->id;
             }
 
             // 检查字段名称
@@ -196,7 +196,7 @@ class ContentModelFieldConfig extends Backend
      */
     public function edit(): void
     {
-        $id  = $this->request->param($this->model->getPk());
+        $id  = $this->request->input($this->model->getPk());
         $row = $this->model->find($id);
         if (!$row) {
             $this->error(__('Record not found'));

@@ -31,7 +31,7 @@ class Content extends Frontend
     {
         parent::initialize();
 
-        $id = $this->request->param('id');
+        $id = $this->request->input('id');
         if (!$id) {
             $this->error(__('Parameter error'));
         }

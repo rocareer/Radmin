@@ -2,9 +2,12 @@
 
 namespace app\admin\controller\cms;
 
+use extend\ba\TableManager;
+use extend\ra\FileUtil;
+use extend\ra\SystemUtil;
+use support\member\Member;
+use support\Response;
 use Throwable;
-use ba\Filesystem;
-use ba\TableManager;
 use think\facade\Db;
 use app\common\controller\Backend;
 use app\admin\library\module\Server;
@@ -41,9 +44,9 @@ class Content extends Backend
         $this->request->filter('clean_xss');
     }
 
-    public function fields(): void
+    public function fields(): Response
     {
-        $id        = $this->request->request('id');
+        $id        = $this->request->input('id');
         $modelInfo = Db::name('cms_content_model')
             ->where(function ($query) use ($id) {
                 if (is_numeric($id)) {
@@ -54,7 +57,7 @@ class Content extends Backend
             })
             ->find();
         if (!$modelInfo) {
-            $this->error(__('The model cannot be found'));
+            return $this->error(__('The model cannot be found'));
         }
 
         $modelInfo['full_table'] = TableManager::tableName($modelInfo['table']);
@@ -67,8 +70,8 @@ class Content extends Backend
 
         // 验查看权限
         $routePath = ($this->app->request->controllerPath ?? '') . "/{$modelInfo['table']}/index";
-        if (!$this->auth->check($routePath)) {
-            $this->error(__('You have no permission'), [], 401);
+        if (!Member::check($routePath)) {
+            return $this->error(__('You have no permission'), [], 401);
         }
 
         $fields             = [];
@@ -89,7 +92,7 @@ class Content extends Backend
             }
         }
 
-        $this->success('', [
+        return $this->success('', [
             'fields'    => $fields,
             'modelInfo' => $modelInfo
         ]);
@@ -99,23 +102,23 @@ class Content extends Backend
      * 查看
      * @throws Throwable
      */
-    public function index(): void
+    public function index(): Response
     {
         // 如果是select则转发到select方法
-        if ($this->request->param('select')) {
+        if ($this->request->input('select')) {
             $this->select();
         }
-        $modelTable = $this->request->request('table', '');
+        $modelTable = $this->request->input('table', '');
         $modelInfo  = Db::name('cms_content_model')
             ->where('table', $modelTable)
             ->find();
         if (!$modelInfo) {
-            $this->error(__('The model cannot be found'));
+            return $this->error(__('The model cannot be found'));
         }
 
-        $routePath = ($this->app->request->controllerPath ?? '') . "/$modelTable/{$this->request->action(true)}";
-        if (!$this->auth->check($routePath)) {
-            $this->error(__('You have no permission'), [], 401);
+        $routePath = ($this->app->request->controller ?? '') . "/$modelTable/{$this->request->action}";
+        if (!Member::check($routePath)) {
+            return $this->error(__('You have no permission'), [], 401);
         }
 
         $fullModelFieldsConfig = [];
@@ -156,10 +159,10 @@ class Content extends Backend
                 }
             });
 
-        $this->success('', [
+        return $this->success('', [
             'list'      => $res->items(),
             'total'     => $res->total(),
-            'remark'    => get_route_remark(),
+            'remark'    => SystemUtil::get_route_remark(),
             'modelInfo' => $modelInfo,
         ]);
     }
@@ -168,7 +171,7 @@ class Content extends Backend
      * 重写select
      * @throws Throwable
      */
-    public function select(): void
+    public function select(): Response
     {
         list($where, $alias, $limit, $order) = $this->queryBuilder();
         $res = $this->model
@@ -179,10 +182,10 @@ class Content extends Backend
             ->order($order)
             ->paginate($limit);
 
-        $this->success('', [
+        return $this->success('', [
             'list'   => $res->items(),
             'total'  => $res->total(),
-            'remark' => get_route_remark(),
+            'remark' => SystemUtil::get_route_remark(),
         ]);
     }
 
@@ -190,12 +193,12 @@ class Content extends Backend
      * 添加
      * @throws Throwable
      */
-    public function add(): void
+    public function add(): Response
     {
         if ($this->request->isPost()) {
             $data = $this->request->post();
             if (!$data) {
-                $this->error(__('Parameter %s can not be empty', ['']));
+                return $this->error(__('Parameter %s can not be empty', ['']));
             }
 
             // 模型表数据
@@ -203,12 +206,12 @@ class Content extends Backend
                 ->where('table', $data['content_model_table'])
                 ->find();
             if (!$modelInfo) {
-                $this->error(__('The model cannot be found'));
+                return $this->error(__('The model cannot be found'));
             }
 
             $routePath = ($this->app->request->controllerPath ?? '') . "/{$modelInfo['table']}/{$this->request->action(true)}";
-            if (!$this->auth->check($routePath)) {
-                $this->error(__('You have no permission'), [], 401);
+            if (!Member::check($routePath)) {
+                return $this->error(__('You have no permission'), [], 401);
             }
 
             $modelTableData     = [];
@@ -227,7 +230,7 @@ class Content extends Backend
 
             $data = $this->excludeFields($data);
             if ($this->dataLimit && $this->dataLimitFieldAutoFill) {
-                $data[$this->dataLimitField] = $this->auth->id;
+                $data[$this->dataLimitField] = $this->member->id;
             }
 
             if (empty($data['publish_time']) && $data['status'] == 'normal') {
@@ -261,7 +264,7 @@ class Content extends Backend
 
                 // 用户动态
                 if ($data['status'] == 'normal' && !empty($data['user_id'])) {
-                    $interaction = Server::getIni(Filesystem::fsFit(root_path() . 'modules/interaction/'));
+                    $interaction = Server::getIni(FileUtil::fsFit(root_path() . 'modules/interaction/'));
                     if ($interaction && $interaction['state'] == 1) {
                         $recentHtml = '发表了内容 <a href="/cms/info/' . $this->model->id . '">' . $data['title'] . '</a>';
                         \app\admin\model\user\Recent::create([
@@ -274,35 +277,35 @@ class Content extends Backend
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
-                $this->error($e->getMessage());
+                return $this->error($e->getMessage());
             }
             if ($result !== false) {
-                $this->success(__('Added successfully'));
+                return $this->success(__('Added successfully'));
             } else {
-                $this->error(__('No rows were added'));
+                return $this->error(__('No rows were added'));
             }
         }
 
-        $this->error(__('Parameter error'));
+        return $this->error(__('Parameter error'));
     }
 
     /**
      * 编辑
      * @throws Throwable
      */
-    public function edit(): void
+    public function edit(): Response
     {
-        $modelTable = $this->request->param('content_model_table', '');
+        $modelTable = $this->request->input('content_model_table', '');
         $modelInfo  = Db::name('cms_content_model')
             ->where('table', $modelTable)
             ->find();
         if (!$modelInfo) {
-            $this->error(__('The model cannot be found'));
+            return $this->error(__('The model cannot be found'));
         }
 
         $routePath = ($this->app->request->controllerPath ?? '') . "/{$modelInfo['table']}/{$this->request->action(true)}";
-        if (!$this->auth->check($routePath)) {
-            $this->error(__('You have no permission'), [], 401);
+        if (!Member::check($routePath)) {
+            return $this->error(__('You have no permission'), [], 401);
         }
 
         $modelTableFullName = TableManager::tableName($modelInfo['table']);
@@ -312,21 +315,21 @@ class Content extends Backend
             ->where('status', 1)
             ->column('type', 'name');
 
-        $id  = $this->request->param($this->model->getPk());
+        $id  = $this->request->input($this->model->getPk());
         $row = $this->model->find($id);
         if (!$row) {
-            $this->error(__('Record not found'));
+            return $this->error(__('Record not found'));
         }
 
         $dataLimitAdminIds = $this->getDataLimitAdminIds();
         if ($dataLimitAdminIds && !in_array($row[$this->dataLimitField], $dataLimitAdminIds)) {
-            $this->error(__('You have no permission'));
+            return $this->error(__('You have no permission'));
         }
 
         if ($this->request->isPost()) {
             $data = $this->request->post();
             if (!$data) {
-                $this->error(__('Parameter %s can not be empty', ['']));
+                return $this->error(__('Parameter %s can not be empty', ['']));
             }
 
             // 模型表数据
@@ -396,12 +399,12 @@ class Content extends Backend
                 $this->model->commit();
             } catch (Throwable $e) {
                 $this->model->rollback();
-                $this->error($e->getMessage());
+                return $this->error($e->getMessage());
             }
             if ($result !== false) {
-                $this->success(__('Update successful'));
+                return $this->success(__('Update successful'));
             } else {
-                $this->error(__('No rows updated'));
+                return $this->error(__('No rows updated'));
             }
 
         }
@@ -413,7 +416,7 @@ class Content extends Backend
                 if ($key != 'id') $row[$modelTableFullName . '__' . $key] = $this->model::getModelTableData($modelTableDatum, $modelFieldsConfig[$key] ?? '');
             }
         }
-        $this->success('', [
+        return $this->success('', [
             'row' => $row
         ]);
     }
@@ -423,23 +426,23 @@ class Content extends Backend
      * @param array $ids
      * @throws Throwable
      */
-    public function del(array $ids = []): void
+    public function del(array $ids = []): Response
     {
         if (!$this->request->isDelete() || !$ids) {
-            $this->error(__('Parameter error'));
+            return $this->error(__('Parameter error'));
         }
 
-        $modelTable = $this->request->param('content_model_table', '');
+        $modelTable = $this->request->input('content_model_table', '');
         $modelInfo  = Db::name('cms_content_model')
             ->where('table', $modelTable)
             ->find();
         if (!$modelInfo) {
-            $this->error(__('The model cannot be found'));
+            return $this->error(__('The model cannot be found'));
         }
 
         $routePath = ($this->app->request->controllerPath ?? '') . "/{$modelInfo['table']}/{$this->request->action(true)}";
-        if (!$this->auth->check($routePath)) {
-            $this->error(__('You have no permission'), [], 401);
+        if (!Member::check($routePath)) {
+            return $this->error(__('You have no permission'), [], 401);
         }
 
         $dataLimitAdminIds = $this->getDataLimitAdminIds();
@@ -459,28 +462,28 @@ class Content extends Backend
             $this->model->commit();
         } catch (Throwable $e) {
             $this->model->rollback();
-            $this->error($e->getMessage());
+            return $this->error($e->getMessage());
         }
         if ($count) {
-            $this->success(__('Deleted successfully'));
+            return $this->success(__('Deleted successfully'));
         } else {
-            $this->error(__('No rows were deleted'));
+            return $this->error(__('No rows were deleted'));
         }
     }
 
     /**
      * 批量修改状态
      */
-    public function status(): void
+    public function status(): Response
     {
         // 验 cms/content 权限
         $routePath = ($this->app->request->controllerPath ?? '');
-        if (!$this->auth->check($routePath)) {
-            $this->error(__('You have no permission'), [], 401);
+        if (!Member::check($routePath)) {
+            return $this->error(__('You have no permission'), [], 401);
         }
 
-        $ids    = $this->request->param('ids/a', []);
-        $status = $this->request->param('status/s', '');
+        $ids    = $this->request->input('ids/a', []);
+        $status = $this->request->input('status/s', '');
         foreach ($ids as $id) {
             Db::name('cms_content')
                 ->where('id', $id)
@@ -488,6 +491,6 @@ class Content extends Backend
                     'status' => $status,
                 ]);
         }
-        $this->success();
+        return $this->success();
     }
 }

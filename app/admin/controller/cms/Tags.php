@@ -37,7 +37,7 @@ class Tags extends Backend
     public function edit(): void
     {
         $pk  = $this->model->getPk();
-        $id  = $this->request->param($pk);
+        $id  = $this->request->input($pk);
         $row = $this->model->find($id);
         if (!$row) {
             $this->error(__('Record not found'));

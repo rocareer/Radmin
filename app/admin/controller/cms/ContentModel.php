@@ -36,7 +36,7 @@ class ContentModel extends Backend
 
     public function info(): void
     {
-        $id = $this->request->param($this->model->getPk(), 0);
+        $id = $this->request->input($this->model->getPk(), 0);
         if (!$id) {
             $info = $this->model->where('status', 1)->order('create_time desc')->find();
         } else {
@@ -62,7 +62,7 @@ class ContentModel extends Backend
 
             $data = $this->excludeFields($data);
             if ($this->dataLimit && $this->dataLimitFieldAutoFill) {
-                $data[$this->dataLimitField] = $this->auth->id;
+                $data[$this->dataLimitField] = $this->member->id;
             }
 
             // 检查表是否已在数据库内存在
@@ -177,7 +177,7 @@ EOT;
      */
     public function edit(): void
     {
-        $id  = $this->request->param($this->model->getPk());
+        $id  = $this->request->input($this->model->getPk());
         $row = $this->model->find($id);
         if (!$row) {
             $this->error(__('Record not found'));

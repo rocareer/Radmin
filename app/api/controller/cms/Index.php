@@ -210,8 +210,8 @@ class Index extends Frontend
     public function unIndex(): void
     {
         $recChannelId = 'recommend';
-        $page         = $this->request->request('page', 1);
-        $channel      = $this->request->request('channel');
+        $page         = $this->request->input('page', 1);
+        $channel      = $this->request->input('channel');
 
         // 加载下一页
         if ($page > 1) {
@@ -424,7 +424,7 @@ class Index extends Frontend
                 $searchLog->inc('count')->save();
             } else {
                 SearchLog::create([
-                    'user_id' => $this->auth->isLogin() ? $this->auth->id : 0,
+                    'user_id' => $this->auth->isLogin() ? $this->member->id : 0,
                     'search'  => $keywords,
                     'count'   => 1,
                     'hot'     => 0,
@@ -596,7 +596,7 @@ class Index extends Frontend
                 $this->error(__('Captcha error'));
             }
 
-            $data['user_id'] = $this->auth->id;
+            $data['user_id'] = $this->member->id;
             $data['status']  = 'pending_trial';
             $data['remark']  = $data['remark'] . ($data['contact'] ? ' 联系人：' . $data['contact'] : '');
             FriendlyLink::create($data);

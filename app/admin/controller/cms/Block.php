@@ -38,7 +38,7 @@ class Block extends Backend
      */
     public function edit(): void
     {
-        $id  = $this->request->param($this->model->getPk());
+        $id  = $this->request->input($this->model->getPk());
         $row = $this->model->find($id);
         if (!$row) {
             $this->error(__('Record not found'));

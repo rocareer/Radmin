@@ -28,8 +28,8 @@ class Pay extends Frontend
 
     public function create(): void
     {
-        $project = $this->request->request('project', 'admire');
-        $type    = $this->request->request('type', 'wx');
+        $project = $this->request->input('project', 'admire');
+        $type    = $this->request->input('type', 'wx');
 
         $pay = Server::getIni(Filesystem::fsFit(root_path() . 'modules/pay/'));
         if (in_array($type, ['wx', 'alipay', 'uni-wx-mini', 'uni-wx-mp']) && (!$pay || $pay['state'] != 1)) {
@@ -64,7 +64,7 @@ class Pay extends Frontend
      */
     public function content(): void
     {
-        $objectId = $this->request->request('object');
+        $objectId = $this->request->input('object');
 
         /**
          * 支付方式，已实现的支付方式如下
@@ -75,7 +75,7 @@ class Pay extends Frontend
          * balance=全端余额支付
          * score=全端积分支付
          */
-        $type = $this->request->request('type', 'wx');
+        $type = $this->request->input('type', 'wx');
 
         $contentInfo = Db::name('cms_content')
             ->where('id', $objectId)
@@ -104,7 +104,7 @@ class Pay extends Frontend
 
             $payLogType = in_array($type, ['wx', 'uni-wx-mini', 'uni-wx-mp']) ? 'wx' : $type;
             $payLog     = PayLog::create([
-                'user_id'   => $this->auth->id,
+                'user_id'   => $this->member->id,
                 'object_id' => $objectId,
                 'title'     => $title,
                 'project'   => 'content',
@@ -175,7 +175,7 @@ class Pay extends Frontend
                 ->where('source', $name)
                 ->find();
             if (!$oauthLog) {
-                $code   = $this->request->param('code');
+                $code   = $this->request->input('code');
                 $config = config('oauth');
                 if (!isset($config[$name]) || !self::checkState($config[$name])) {
                     $this->error('支付需要 openid，请先安装第三方授权登录模块，完成微信小程序登录配置');
@@ -307,10 +307,10 @@ class Pay extends Frontend
      */
     public function admire(): void
     {
-        $objectId = $this->request->request('object');
-        $amount   = $this->request->request('amount');
-        $type     = $this->request->request('type', 'wx');
-        $remark   = $this->request->request('remark');
+        $objectId = $this->request->input('object');
+        $amount   = $this->request->input('amount');
+        $type     = $this->request->input('type', 'wx');
+        $remark   = $this->request->input('remark');
 
         Db::startTrans();
         try {
@@ -329,7 +329,7 @@ class Pay extends Frontend
             $title = '赞赏《' . $contentTitle . '》';
 
             $payLog = PayLog::create([
-                'user_id'   => $this->auth->id,
+                'user_id'   => $this->member->id,
                 'object_id' => $objectId,
                 'title'     => $title,
                 'project'   => 'admire',

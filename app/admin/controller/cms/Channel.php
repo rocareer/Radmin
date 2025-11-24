@@ -45,7 +45,7 @@ class Channel extends Backend
     public function index(): void
     {
         // 如果是select则转发到select方法,若select未重写,其实还是继续执行index
-        if ($this->request->param('select')) {
+        if ($this->request->input('select')) {
             $this->select();
         }
 
@@ -59,7 +59,7 @@ class Channel extends Backend
             ->select();
         $res = $this->tree->assembleChild($res->toArray());
 
-        if ($this->request->param('select')) {
+        if ($this->request->input('select')) {
             $res = $this->tree->assembleTree($this->tree->getTreeArray($res));
         }
 

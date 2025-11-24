@@ -44,7 +44,7 @@ class Comment extends Backend
     public function index(): void
     {
         // 如果是select则转发到select方法,若select未重写,其实还是继续执行index
-        if ($this->request->param('select')) {
+        if ($this->request->input('select')) {
             $this->select();
         }
 
@@ -70,7 +70,7 @@ class Comment extends Backend
      */
     public function edit(): void
     {
-        $id  = $this->request->param($this->model->getPk());
+        $id  = $this->request->input($this->model->getPk());
         $row = $this->model->find($id);
         if (!$row) {
             $this->error(__('Record not found'));
@@ -171,8 +171,8 @@ class Comment extends Backend
      */
     public function status(): void
     {
-        $ids    = $this->request->param('ids/a', []);
-        $status = $this->request->param('status/s', '');
+        $ids    = $this->request->input('ids/a', []);
+        $status = $this->request->input('status/s', '');
         foreach ($ids as $id) {
             Db::name('cms_comment')
                 ->where('id', $id)

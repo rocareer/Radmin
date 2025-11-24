@@ -41,7 +41,7 @@ class Recent extends Backend
     {
         $this->request->filter(['strip_tags', 'trim']);
         // 如果是select则转发到select方法,若select未重写,其实还是继续执行index
-        if ($this->request->param('select')) {
+        if ($this->request->input('select')) {
             $this->select();
         }
 

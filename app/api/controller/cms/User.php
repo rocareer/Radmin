@@ -181,8 +181,8 @@ class User extends Frontend
             $this->error(__('You have no permission'), [], 401);
         }
 
-        $limit   = $this->request->request('limit');
-        $type    = $this->request->request('type', 'collect');
+        $limit   = $this->request->input('limit');
+        $type    = $this->request->input('type', 'collect');
         $typeMap = [
             'view'    => 0,
             'like'    => 1,
@@ -222,7 +222,7 @@ class User extends Frontend
             $this->error(__('You have no permission'), [], 401);
         }
 
-        $limit = $this->request->request('limit');
+        $limit = $this->request->input('limit');
         $res   = Db::name('cms_pay_log')
             ->field('p.*, c.id, c.title, c.images, c.description, c.channel_id, c.tags')
             ->alias('p')
@@ -256,7 +256,7 @@ class User extends Frontend
             ->where('name', 'comment_language')
             ->value('value');
         $parseDown       = new ParseDownExt();
-        $limit           = $this->request->request('limit');
+        $limit           = $this->request->input('limit');
         $res             = Db::name('cms_comment')
             ->alias('ct')
             ->field('ct.*, c.title')
@@ -286,7 +286,7 @@ class User extends Frontend
             $this->error(__('You have no permission'), [], 401);
         }
 
-        $limit = $this->request->request('limit');
+        $limit = $this->request->input('limit');
         $res   = Db::name('cms_content')
             ->alias('c')
             ->field('c.id,c.title,c.title_style,c.images,c.price,c.publish_time,c.create_time,c.channel_id,c.views,c.comments,c.likes,c.status,c.memo,ch.name as channelName')
@@ -320,7 +320,7 @@ class User extends Frontend
             $this->error(__('You have no permission'), [], 401);
         }
 
-        $id   = $this->request->request('id');
+        $id   = $this->request->input('id');
         $info = Content::where('id', $id)
             ->where('user_id', $this->member->id)
             ->find();
@@ -353,7 +353,7 @@ class User extends Frontend
             $this->error(__('You have no permission'), [], 401);
         }
 
-        $id = $this->request->request('id');
+        $id = $this->request->input('id');
 
         $modelInfo = Db::name('cms_content')
             ->alias('co')
@@ -382,7 +382,7 @@ class User extends Frontend
             $this->error(__('You have no permission'), [], 401);
         }
 
-        $id   = $this->request->request('id');
+        $id   = $this->request->input('id');
         $info = Db::name('cms_comment')
             ->where('id', $id)
             ->where('user_id', $this->member->id)
@@ -415,8 +415,8 @@ class User extends Frontend
 
     public function buyLog(): void
     {
-        $id    = $this->request->request('id');
-        $limit = $this->request->request('limit');
+        $id    = $this->request->input('id');
+        $limit = $this->request->input('limit');
         $res   = Db::name('cms_pay_log')
             ->alias('p')
             ->field('p.*,u.nickname')
@@ -456,8 +456,8 @@ class User extends Frontend
 
     public function contribute(): void
     {
-        $id        = $this->request->param('id');
-        $channelId = $this->request->param('channel_id');
+        $id        = $this->request->input('id');
+        $channelId = $this->request->input('channel_id');
 
         $contentModel = new Content;
 
@@ -584,7 +584,7 @@ class User extends Frontend
 
     public function agreement(): void
     {
-        $type = $this->request->param('type');
+        $type = $this->request->input('type');
         if (!in_array($type, ['terms', 'privacy', 'about'])) {
             $this->error(__('Parameter error'));
         }
