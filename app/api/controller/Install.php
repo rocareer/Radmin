@@ -1,17 +1,15 @@
 <?php
 /**
- * File:        Install.php
+ * File:        InstallOptimized.php
  * Author:      albert <albert@rocareer.com>
- * Created:     2025/5/14 10:17
- * Description:
+ * Created:     2025/11/23 10:00
+ * Description: 优化后的安装控制器
  *
  * Copyright [2014-2026] [https://rocareer.com]
  * Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0)
  */
 
-
 namespace app\api\controller;
-
 
 use app\admin\model\Config;
 use app\admin\model\User as UserModel;
@@ -29,57 +27,33 @@ use think\db\exception\DbException;
 use Throwable;
 
 /**
- * 安装控制器
+ * 优化后的安装控制器
  */
 class Install
 {
-    //todo
-    protected bool $useSystemSettings = false;
+    // 安装状态常量
+    const STATUS_OK = 'ok';
+    const STATUS_FAIL = 'fail';
+    const STATUS_WARN = 'warn';
 
-    /**
-     * 环境检查状态
-     */
-    static string $ok   = 'ok';
-    static string $fail = 'fail';
-    static string $warn = 'warn';
+    // 安装锁文件
+    const LOCK_FILE = 'install.lock';
+    const INSTALL_COMPLETE_MARK = 'install-end';
 
-    /**
-     * 安装锁文件名称
-     */
-    static string $lockFileName = 'install.lock';
+    // 配置文件
+    const DB_CONFIG_FILE = 'think-orm.php';
+    const BUILD_CONFIG_FILE = 'buildadmin.php';
+    const DIST_DIR = 'web' . DIRECTORY_SEPARATOR . 'dist';
 
-    /**
-     * 配置文件
-     */
-    //    static string $dbConfigFileName    = 'database.php';
-    static string $dbConfigFileName    = 'think-orm.php';
-    static string $buildConfigFileName = 'buildadmin.php';
-
-    /**
-     * 自动构建的前端文件的 outDir 相对于根目录
-     */
-    static string $distDir = 'web' . DIRECTORY_SEPARATOR . 'dist';
-
-    /**
-     * 需要的依赖版本
-     */
-    static array $needDependentVersion = [
-        'php'  => '8.0.2',
-        'npm'  => '9.8.1',
+    // 依赖版本要求
+    const DEPENDENT_VERSIONS = [
+        'php' => '8.0.2',
+        'npm' => '9.8.1',
         'cnpm' => '7.1.0',
         'node' => '20.14.0',
         'yarn' => '1.2.0',
         'pnpm' => '6.32.13',
     ];
-
-    /**
-     * 安装完成标记
-     * 配置完成则建立lock文件
-     * 执行命令成功执行再写入标记到lock文件
-     * 实现命令执行失败，重载页面可重新执行
-     */
-    static string $InstallationCompletionMark = 'install-end';
-
 
     protected $request;
 
@@ -90,194 +64,274 @@ class Install
 
     /**
      * 命令执行窗口
-     * @throws Throwable
      */
     public function terminal()
     {
         if ($this->isInstallComplete()) {
-            return;
+            return $this->error(__('Installation already completed'));
         }
-
         (new Terminal())->exec(false);
     }
 
+    /**
+     * 切换包管理器
+     */
     public function changePackageManager()
     {
         if ($this->isInstallComplete()) {
-            return;
+            return $this->error(__('Installation already completed'));
         }
 
         $newPackageManager = request()->post('manager', config('terminal.npm_package_manager'));
         if (Terminal::changeTerminalConfig()) {
-            return $this->success('', [
-                'manager' => $newPackageManager
-            ]);
-        } else {
-            return $this->error(__('Failed to switch package manager. Please modify the configuration file manually:%s', ['config/buildadmin.php']));
+            return $this->success('', ['manager' => $newPackageManager]);
         }
+
+        return $this->error(__('Failed to switch package manager. Please modify configuration file manually:%s', ['config/buildadmin.php']));
     }
 
     /**
-     * 环境基础检查
+     * 环境基础检查 - 优化版
      */
     public function envBaseCheck()
     {
         if ($this->isInstallComplete()) {
-            return $this->error(__('The system has completed installation. If you need to reinstall, please delete the %s file first', ['public/' . self::$lockFileName]), []);
+            return $this->error(__('The system has completed installation. If you need to reinstall, please delete the %s file first', ['public/' . self::LOCK_FILE]));
         }
+
         if (env('MYSQL_PASSWORD')) {
             return $this->error(__('检测到带有数据库配置的 .env 文件。请清理后再试一次!'));
         }
 
-        // php版本-start
-        $phpVersion        = phpversion();
-        $phpVersionCompare = Version::compare(self::$needDependentVersion['php'], $phpVersion);
-        if (!$phpVersionCompare) {
-            $phpVersionLink = [
-                [
-                    // 需要PHP版本
-                    'name' => __('need') . ' >= ' . self::$needDependentVersion['php'],
-                    'type' => 'text'
-                ],
-                [
-                    // 如何解决
-                    'name'  => __('How to solve?'),
-                    'title' => __('Click to see how to solve it'),
-                    'type'  => 'faq',
-                    'url'   => 'https://doc.buildadmin.com/guide/install/preparePHP.html'
-                ]
-            ];
-        }
-        // php版本-end
+        $checks = $this->performEnvironmentChecks();
 
-        // 配置文件-start
-        $dbConfigFile     = base_path() . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . self::$dbConfigFileName;
-        $configIsWritable = FileUtil::pathIsWritable(base_path() . DIRECTORY_SEPARATOR . 'config') && FileUtil::pathIsWritable($dbConfigFile);
-        if (!$configIsWritable) {
-            $configIsWritableLink = [
-                [
-                    // 查看原因
-                    'name'  => __('View reason'),
-                    'title' => __('Click to view the reason'),
-                    'type'  => 'faq',
-                    'url'   => 'https://doc.buildadmin.com/guide/install/dirNoPermission.html'
-                ]
-            ];
-        }
-        // 配置文件-end
-
-        // public-start
-        $publicIsWritable = FileUtil::pathIsWritable(public_path());
-        if (!$publicIsWritable) {
-            $publicIsWritableLink = [
-                [
-                    'name'  => __('View reason'),
-                    'title' => __('Click to view the reason'),
-                    'type'  => 'faq',
-                    'url'   => 'https://doc.buildadmin.com/guide/install/dirNoPermission.html'
-                ]
-            ];
-        }
-        // public-end
-
-        // PDO-start
-        $phpPdo = extension_loaded("PDO") && extension_loaded('pdo_mysql');
-        if (!$phpPdo) {
-            $phpPdoLink = [
-                [
-                    'name' => __('PDO extensions need to be installed'),
-                    'type' => 'text'
-                ],
-                [
-                    'name'  => __('How to solve?'),
-                    'title' => __('Click to see how to solve it'),
-                    'type'  => 'faq',
-                    'url'   => 'https://doc.buildadmin.com/guide/install/missingExtension.html'
-                ]
-            ];
-        }
-        // PDO-end
-
-        // GD2和freeType-start
-        $phpGd2 = extension_loaded('gd') && function_exists('imagettftext');
-        if (!$phpGd2) {
-            $phpGd2Link = [
-                [
-                    'name' => __('The gd extension and freeType library need to be installed'),
-                    'type' => 'text'
-                ],
-                [
-                    'name'  => __('How to solve?'),
-                    'title' => __('Click to see how to solve it'),
-                    'type'  => 'faq',
-                    'url'   => 'https://doc.buildadmin.com/guide/install/gdFail.html'
-                ]
-            ];
-        }
-        // GD2和freeType-end
-
-        // proc_open
-        $phpProc = function_exists('proc_open') && function_exists('proc_close') && function_exists('proc_get_status');
-        if (!$phpProc) {
-            $phpProcLink = [
-                [
-                    'name'  => __('View reason'),
-                    'title' => __('proc_open or proc_close functions in PHP Ini is disabled'),
-                    'type'  => 'faq',
-                    'url'   => 'https://doc.buildadmin.com/guide/install/disablement.html'
-                ],
-                [
-                    'name'  => __('How to modify'),
-                    'title' => __('Click to view how to modify'),
-                    'type'  => 'faq',
-                    'url'   => 'https://doc.buildadmin.com/guide/install/disablement.html'
-                ],
-                [
-                    'name'  => __('Security assurance?'),
-                    'title' => __('Using the installation service correctly will not cause any potential security problems. Click to view the details'),
-                    'type'  => 'faq',
-                    'url'   => 'https://doc.buildadmin.com/guide/install/senior.html'
-                ],
-            ];
-        }
-        // proc_open-end
-
-        return $this->success('', [
-            'php_version'        => [
-                'describe' => $phpVersion,
-                'state'    => $phpVersionCompare ? self::$ok : self::$fail,
-                'link'     => $phpVersionLink ?? [],
-            ],
-            'config_is_writable' => [
-                'describe' => self::writableStateDescribe($configIsWritable),
-                'state'    => $configIsWritable ? self::$ok : self::$fail,
-                'link'     => $configIsWritableLink ?? []
-            ],
-            'public_is_writable' => [
-                'describe' => self::writableStateDescribe($publicIsWritable),
-                'state'    => $publicIsWritable ? self::$ok : self::$fail,
-                'link'     => $publicIsWritableLink ?? []
-            ],
-            'php_pdo'            => [
-                'describe' => $phpPdo ? __('already installed') : __('Not installed'),
-                'state'    => $phpPdo ? self::$ok : self::$fail,
-                'link'     => $phpPdoLink ?? []
-            ],
-            'php_gd2'            => [
-                'describe' => $phpGd2 ? __('already installed') : __('Not installed'),
-                'state'    => $phpGd2 ? self::$ok : self::$fail,
-                'link'     => $phpGd2Link ?? []
-            ],
-            'php_proc'           => [
-                'describe' => $phpProc ? __('Allow execution') : __('disabled'),
-                'state'    => $phpProc ? self::$ok : self::$warn,
-                'link'     => $phpProcLink ?? []
-            ],
-        ]);
+        return $this->success('', $checks);
     }
 
     /**
-     * npm环境检查
+     * 执行环境检查 - 抽取为独立方法
+     */
+    private function performEnvironmentChecks(): array
+    {
+        $checks = [];
+
+        // PHP版本检查
+        $phpVersion = phpversion();
+        $checks['php_version'] = [
+            'describe' => $phpVersion,
+            'state' => Version::compare(self::DEPENDENT_VERSIONS['php'], $phpVersion) ? self::STATUS_OK : self::STATUS_FAIL,
+            'link' => $this->getPhpVersionLinks($phpVersion),
+        ];
+
+        // 配置文件权限检查
+        $configWritable = $this->checkConfigWritable();
+        $checks['config_is_writable'] = [
+            'describe' => self::writableStateDescribe($configWritable),
+            'state' => $configWritable ? self::STATUS_OK : self::STATUS_FAIL,
+            'link' => $this->getConfigWritableLinks($configWritable),
+        ];
+
+        // Public目录权限检查
+        $publicWritable = FileUtil::pathIsWritable(public_path());
+        $checks['public_is_writable'] = [
+            'describe' => self::writableStateDescribe($publicWritable),
+            'state' => $publicWritable ? self::STATUS_OK : self::STATUS_FAIL,
+            'link' => $this->getPublicWritableLinks($publicWritable),
+        ];
+
+        // PDO扩展检查
+        $pdoAvailable = $this->checkPdoExtensions();
+        $checks['php_pdo'] = [
+            'describe' => $pdoAvailable ? __('already installed') : __('Not installed'),
+            'state' => $pdoAvailable ? self::STATUS_OK : self::STATUS_FAIL,
+            'link' => $this->getPdoLinks($pdoAvailable),
+        ];
+
+        // GD扩展检查
+        $gdAvailable = $this->checkGdExtension();
+        $checks['php_gd2'] = [
+            'describe' => $gdAvailable ? __('already installed') : __('Not installed'),
+            'state' => $gdAvailable ? self::STATUS_OK : self::STATUS_FAIL,
+            'link' => $this->getGdLinks($gdAvailable),
+        ];
+
+        // proc_open函数检查
+        $procAvailable = $this->checkProcFunctions();
+        $checks['php_proc'] = [
+            'describe' => $procAvailable ? __('Allow execution') : __('disabled'),
+            'state' => $procAvailable ? self::STATUS_OK : self::STATUS_WARN,
+            'link' => $this->getProcLinks($procAvailable),
+        ];
+
+        return $checks;
+    }
+
+    /**
+     * 检查配置文件权限
+     */
+    private function checkConfigWritable(): bool
+    {
+        $configDir = base_path() . DIRECTORY_SEPARATOR . 'config';
+        $dbConfigFile = $configDir . DIRECTORY_SEPARATOR . self::DB_CONFIG_FILE;
+        return FileUtil::pathIsWritable($configDir) && FileUtil::pathIsWritable($dbConfigFile);
+    }
+
+    /**
+     * 检查PDO扩展
+     */
+    private function checkPdoExtensions(): bool
+    {
+        return extension_loaded("PDO") && extension_loaded('pdo_mysql');
+    }
+
+    /**
+     * 检查GD扩展
+     */
+    private function checkGdExtension(): bool
+    {
+        return extension_loaded('gd') && function_exists('imagettftext');
+    }
+
+    /**
+     * 检查proc_open函数
+     */
+    private function checkProcFunctions(): bool
+    {
+        return function_exists('proc_open') && function_exists('proc_close') && function_exists('proc_get_status');
+    }
+
+    /**
+     * 获取PHP版本相关链接
+     */
+    private function getPhpVersionLinks(string $phpVersion): array
+    {
+        $phpVersionCompare = Version::compare(self::DEPENDENT_VERSIONS['php'], $phpVersion);
+        if ($phpVersionCompare) {
+            return [];
+        }
+
+        return [
+            ['name' => __('need') . ' >= ' . self::DEPENDENT_VERSIONS['php'], 'type' => 'text'],
+            [
+                'name' => __('How to solve?'),
+                'title' => __('Click to see how to solve it'),
+                'type' => 'faq',
+                'url' => 'https://doc.buildadmin.com/guide/install/preparePHP.html'
+            ]
+        ];
+    }
+
+    /**
+     * 获取配置文件权限相关链接
+     */
+    private function getConfigWritableLinks(bool $writable): array
+    {
+        if ($writable) {
+            return [];
+        }
+
+        return [
+            [
+                'name' => __('View reason'),
+                'title' => __('Click to view reason'),
+                'type' => 'faq',
+                'url' => 'https://doc.buildadmin.com/guide/install/dirNoPermission.html'
+            ]
+        ];
+    }
+
+    /**
+     * 获取Public目录权限相关链接
+     */
+    private function getPublicWritableLinks(bool $writable): array
+    {
+        if ($writable) {
+            return [];
+        }
+
+        return [
+            [
+                'name' => __('View reason'),
+                'title' => __('Click to view reason'),
+                'type' => 'faq',
+                'url' => 'https://doc.buildadmin.com/guide/install/dirNoPermission.html'
+            ]
+        ];
+    }
+
+    /**
+     * 获取PDO相关链接
+     */
+    private function getPdoLinks(bool $available): array
+    {
+        if ($available) {
+            return [];
+        }
+
+        return [
+            ['name' => __('PDO extensions need to be installed'), 'type' => 'text'],
+            [
+                'name' => __('How to solve?'),
+                'title' => __('Click to see how to solve it'),
+                'type' => 'faq',
+                'url' => 'https://doc.buildadmin.com/guide/install/missingExtension.html'
+            ]
+        ];
+    }
+
+    /**
+     * 获取GD相关链接
+     */
+    private function getGdLinks(bool $available): array
+    {
+        if ($available) {
+            return [];
+        }
+
+        return [
+            ['name' => __('The gd extension and freeType library need to be installed'), 'type' => 'text'],
+            [
+                'name' => __('How to solve?'),
+                'title' => __('Click to see how to solve it'),
+                'type' => 'faq',
+                'url' => 'https://doc.buildadmin.com/guide/install/gdFail.html'
+            ]
+        ];
+    }
+
+    /**
+     * 获取proc相关链接
+     */
+    private function getProcLinks(bool $available): array
+    {
+        if ($available) {
+            return [];
+        }
+
+        return [
+            [
+                'name' => __('View reason'),
+                'title' => __('proc_open or proc_close functions in PHP Ini is disabled'),
+                'type' => 'faq',
+                'url' => 'https://doc.buildadmin.com/guide/install/disablement.html'
+            ],
+            [
+                'name' => __('How to modify'),
+                'title' => __('Click to view how to modify'),
+                'type' => 'faq',
+                'url' => 'https://doc.buildadmin.com/guide/install/disablement.html'
+            ],
+            [
+                'name' => __('Security assurance?'),
+                'title' => __('Using the installation service correctly will not cause any potential security problems. Click to view the details'),
+                'type' => 'faq',
+                'url' => 'https://doc.buildadmin.com/guide/install/senior.html'
+            ]
+        ];
+    }
+
+    /**
+     * NPM环境检查 - 优化版
      */
     public function envNpmCheck()
     {
@@ -286,115 +340,83 @@ class Install
         }
 
         $packageManager = request()->post('manager', 'none');
+        $checks = $this->performNpmChecks($packageManager);
 
-        // npm
-        $npmVersion        = Version::getVersion('npm');
-        $npmVersionCompare = Version::compare(self::$needDependentVersion['npm'], $npmVersion);
-        if (!$npmVersionCompare || !$npmVersion) {
-            $npmVersionLink = [
-                [
-                    // 需要版本
-                    'name' => __('need') . ' >= ' . self::$needDependentVersion['npm'],
-                    'type' => 'text'
-                ],
-                [
-                    // 如何解决
-                    'name'  => __('How to solve?'),
-                    'title' => __('Click to see how to solve it'),
-                    'type'  => 'faq',
-                    'url'   => 'https://doc.buildadmin.com/guide/install/prepareNpm.html'
-                ]
-            ];
-        }
-
-        // 包管理器
-        if (in_array($packageManager, ['npm', 'cnpm', 'pnpm', 'yarn'])) {
-            $pmVersion        = Version::getVersion($packageManager);
-            $pmVersionCompare = Version::compare(self::$needDependentVersion[$packageManager], $pmVersion);
-
-            if (!$pmVersion) {
-                // 安装
-                $pmVersionLink[] = [
-                    // 需要版本
-                    'name' => __('need') . ' >= ' . self::$needDependentVersion[$packageManager],
-                    'type' => 'text'
-                ];
-                if ($npmVersionCompare) {
-                    $pmVersionLink[] = [
-                        // 点击安装
-                        'name'  => __('Click Install %s', [$packageManager]),
-                        'title' => '',
-                        'type'  => 'install-package-manager'
-                    ];
-                } else {
-                    $pmVersionLink[] = [
-                        // 请先安装npm
-                        'name' => __('Please install NPM first'),
-                        'type' => 'text'
-                    ];
-                }
-            } elseif (!$pmVersionCompare) {
-                // 版本不足
-                $pmVersionLink[] = [
-                    // 需要版本
-                    'name' => __('need') . ' >= ' . self::$needDependentVersion[$packageManager],
-                    'type' => 'text'
-                ];
-                $pmVersionLink[] = [
-                    // 请升级
-                    'name' => __('Please upgrade %s version', [$packageManager]),
-                    'type' => 'text'
-                ];
-            }
-        } elseif ($packageManager == 'ni') {
-            $pmVersion        = __('nothing');
-            $pmVersionCompare = true;
-        } else {
-            $pmVersion        = __('nothing');
-            $pmVersionCompare = false;
-        }
-
-        // nodejs
-        $nodejsVersion        = Version::getVersion('node');
-        $nodejsVersionCompare = Version::compare(self::$needDependentVersion['node'], $nodejsVersion);
-        if (!$nodejsVersionCompare || !$nodejsVersion) {
-            $nodejsVersionLink = [
-                [
-                    // 需要版本
-                    'name' => __('need') . ' >= ' . self::$needDependentVersion['node'],
-                    'type' => 'text'
-                ],
-                [
-                    // 如何解决
-                    'name'  => __('How to solve?'),
-                    'title' => __('Click to see how to solve it'),
-                    'type'  => 'faq',
-                    'url'   => 'https://doc.buildadmin.com/guide/install/prepareNodeJs.html'
-                ]
-            ];
-        }
-
-        return $this->success('', [
-            'npm_version'         => [
-                'describe' => $npmVersion ?: __('Acquisition failed'),
-                'state'    => $npmVersionCompare ? self::$ok : self::$warn,
-                'link'     => $npmVersionLink ?? [],
-            ],
-            'nodejs_version'      => [
-                'describe' => $nodejsVersion ?: __('Acquisition failed'),
-                'state'    => $nodejsVersionCompare ? self::$ok : self::$warn,
-                'link'     => $nodejsVersionLink ?? []
-            ],
-            'npm_package_manager' => [
-                'describe' => $pmVersion ?: __('Acquisition failed'),
-                'state'    => $pmVersionCompare ? self::$ok : self::$warn,
-                'link'     => $pmVersionLink ?? [],
-            ]
-        ]);
+        return $this->success('', $checks);
     }
 
     /**
-     * 测试数据库连接
+     * 执行NPM相关检查
+     */
+    private function performNpmChecks(string $packageManager): array
+    {
+        $checks = [];
+
+        // NPM版本检查
+        $npmVersion = Version::getVersion('npm');
+        $npmVersionCompare = Version::compare(self::DEPENDENT_VERSIONS['npm'], $npmVersion);
+        $checks['npm_version'] = [
+            'describe' => $npmVersion ?: __('Acquisition failed'),
+            'state' => $npmVersionCompare ? self::STATUS_OK : self::STATUS_WARN,
+            'link' => $this->getNpmVersionLinks($npmVersion, $npmVersionCompare),
+        ];
+
+        // 包管理器版本检查
+        if ($packageManager !== 'none') {
+            $pmVersion = Version::getVersion($packageManager);
+            $pmVersionCompare = Version::compare(self::DEPENDENT_VERSIONS[$packageManager], $pmVersion);
+            $checks['pm_version'] = [
+                'describe' => $pmVersion ?: __('Acquisition failed'),
+                'state' => $pmVersionCompare ? self::STATUS_OK : self::STATUS_WARN,
+                'link' => $this->getPmVersionLinks($packageManager, $pmVersion, $pmVersionCompare),
+            ];
+        }
+
+        return $checks;
+    }
+
+    /**
+     * 获取NPM版本相关链接
+     */
+    private function getNpmVersionLinks(?string $npmVersion, bool $compare): array
+    {
+        if ($compare && $npmVersion) {
+            return [];
+        }
+
+        return [
+            ['name' => __('need') . ' >= ' . self::DEPENDENT_VERSIONS['npm'], 'type' => 'text'],
+            [
+                'name' => __('How to solve?'),
+                'title' => __('Click to see how to solve it'),
+                'type' => 'faq',
+                'url' => 'https://doc.buildadmin.com/guide/install/npmNode.html'
+            ]
+        ];
+    }
+
+    /**
+     * 获取包管理器版本相关链接
+     */
+    private function getPmVersionLinks(string $packageManager, ?string $version, bool $compare): array
+    {
+        if ($compare && $version) {
+            return [];
+        }
+
+        return [
+            ['name' => __('need') . ' >= ' . self::DEPENDENT_VERSIONS[$packageManager], 'type' => 'text'],
+            [
+                'name' => __('How to solve?'),
+                'title' => __('Click to see how to solve it'),
+                'type' => 'faq',
+                'url' => 'https://doc.buildadmin.com/guide/install/npmNode.html'
+            ]
+        ];
+    }
+
+    /**
+     * 测试数据库连接 - 优化版
      */
     public function testDatabase()
     {
@@ -406,219 +428,206 @@ class Install
             'database' => '',
         ];
 
+        $result = $this->connectDb($database);
 
-        $conn = $this->connectDb($database);
-        if ($conn['code'] == 0) {
-            return $this->error($conn['msg']);
-        } else {
-            return $this->success('', [
-                'databases' => $conn['databases']
-            ]);
+        if ($result['code'] == 0) {
+            return $this->error($result['msg']);
         }
+
+        return $this->success('', ['databases' => $result['databases']]);
     }
 
     /**
-     * 系统基础配置
-     * post请求=开始安装
+     * 系统基础配置 - 优化版
      */
     public function baseConfig()
     {
-        if ($this->isInstallComplete()) {
-            return $this->error(__('The system has completed installation. If you need to reinstall, please delete the %s file first', ['public/' . self::$lockFileName]));
-        }
-
-
-        $envOk    = $this->commandExecutionCheck();
+        $envOk = $this->commandExecutionCheck();
         $rootPath = str_replace('\\', '/', base_path());
+
         if (request()->isGet()) {
             return $this->success('', [
-                'rootPath'            => $rootPath,
+                'rootPath' => $rootPath,
                 'executionWebCommand' => $envOk
             ]);
         }
 
-        $connectData = $databaseParam = request()->only(['hostname', 'username', 'password', 'hostport', 'database', 'prefix']);
-
-        // 数据库配置测试
-        $connectData['database'] = '';
-
-        $connect = $this->connectDb($connectData, true);
-        if ($connect['code'] == 0) {
-            return $this->error($connect['msg']);
-        }
-
-
-        // 建立数据库
-        if (!in_array($databaseParam['database'], $connect['databases'])) {
-            $sql = "CREATE DATABASE IF NOT EXISTS `{$databaseParam['database']}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
-            $connect['pdo']->exec($sql);
-        }
-
-        // 写入数据库配置文件
-        $dbConfigFile = base_path() . '/config/' . self::$dbConfigFileName;
-
-
-        try {
-            $dbConfigContent = @file_get_contents($dbConfigFile);
-            if (!$dbConfigContent) {
-                return $this->error(__('File not found: %s', ['config/' . self::$dbConfigFileName]));
-            }
-
-            $callback = function ($matches) use ($databaseParam) {
-                // 从 $databaseParam 中获取对应的值
-                $key   = $matches[1];
-                $value = $databaseParam[$key] ?? $matches[4]; // 如果 $databaseParam 中没有值，则保留原来的默认值
-
-                // 特殊处理 hostport，因为环境变量名称是 MYSQL_PORT
-                $envKey = ($key == 'hostport') ? 'HOSTPORT' : strtoupper($key);
-
-                return "'{$key}' => env('MYSQL_{$envKey}', '{$value}'),";
-            };
-
-            $dbConfigText = preg_replace_callback(
-                "/'(hostname|database|username|password|hostport|prefix)'(\s+)=>(\s+)env\('.*?',\s*'(.*?)'\),/",
-                $callback,
-                $dbConfigContent
-            );
-
-            $result = @file_put_contents($dbConfigFile, $dbConfigText);
-
-            if (!$result) {
-                return $this->error(__('File has no write permission: %s', ['config/' . self::$dbConfigFileName]));
-            }
-
-        } catch (\Exception $e) {
-            throw new Exception($e->getMessage(), $e->getCode(), $e);
-        }
-
-        // 写入环境变量配置文件
-        try {
-            $envFile = base_path() . '/.env-example';
-            $env     = base_path() . '/.env';
-
-            // 读取现有的环境变量文件内容
-            $envFileContent = is_file($envFile) ? file_get_contents($envFile) : '';
-            if ($envFileContent === false) {
-                throw new \Exception(__('Failed to read file:%s', ['/.env-example']));
-            }
-
-            // 清理已有的数据库配置
-            $databasePos = stripos($envFileContent, '#MYSQL');
-            if ($databasePos !== false) {
-                $envFileContent = substr($envFileContent, 0, $databasePos);
-            }
-
-            // 准备新的数据库配置
-            $envConfig = [
-                '#MYSQL',
-                'MYSQL_TYPE=mysql',
-                'MYSQL_HOSTNAME=' . $databaseParam['hostname'],
-                'MYSQL_DATABASE=' . $databaseParam['database'],
-                'MYSQL_USERNAME=' . $databaseParam['username'],
-                'MYSQL_PASSWORD=' . $databaseParam['password'],
-                'MYSQL_HOSTPORT=' . $databaseParam['hostport'],
-                'MYSQL_PREFIX=' . $databaseParam['prefix'],
-                'MYSQL_CHARSET=utf8mb4',
-                'MYSQL_DEBUG=true',
-                'MYSQL_MIGRATION_TABLE=migrations'
-
-            ];
-
-            // 合并现有内容和新配置
-            $envFileContent = rtrim($envFileContent, "\n") . "\n\n" . implode("\n", $envConfig) . "\n";
-
-            // // 写入 .env-example 文件
-            // if (file_put_contents($envFile, $envFileContent) === false) {
-            //     throw new \Exception(__('File has no write permission:%s', ['/.env-example']));
-            // }
-
-            // 写入 .env 文件
-            if (file_put_contents($env, $envFileContent) === false) {
-                throw new \Exception(__('File has no write permission:%s', ['/.env']));
-            }
-
-        } catch (\Exception $e) {
-            return $this->error($e->getMessage());
-        }
-
-        // 设置新的Token随机密钥key
-        $oldTokenKey        = config('buildadmin.token.key');
-        $newTokenKey        = Random::build('alnum', 32);
-        $buildConfigFile    = base_path() . '/config/' . self::$buildConfigFileName;
-        $buildConfigContent = @file_get_contents($buildConfigFile);
-        $buildConfigContent = preg_replace("/'key'(\s+)=>(\s+)'$oldTokenKey'/", "'key'\$1=>\$2'$newTokenKey'", $buildConfigContent);
-        $result             = @file_put_contents($buildConfigFile, $buildConfigContent);
-        if (!$result) {
-            return $this->error(__('File has no write permission:%s', ['/config/' . self::$buildConfigFileName]));
-        }
-
-        // 建立安装锁文件
-        // $result = @file_put_contents(base_path().'/public/' . self::$lockFileName, date('Y-m-d H:i:s'));
-        // if (!$result) {
-        //     return $this->error(__('File has no write permission:%s', ['public/' . self::$lockFileName]));
-        // }
-
-
-        return $this->success('', [
-            'rootPath'            => $rootPath,
-            'executionWebCommand' => $envOk
-        ]);
-    }
-
-    protected function isInstallComplete(): bool
-    {
-        if (is_file(public_path() . DIRECTORY_SEPARATOR . self::$lockFileName)) {
-            $contents = @file_get_contents(public_path() . DIRECTORY_SEPARATOR . self::$lockFileName);
-            // 打开event
-            modify_config('app.php', ['enable' => true,], "webman/event");
-            if ($contents == self::$InstallationCompletionMark && config('plugin.webman.event.app.enable')) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->handleDatabaseConfiguration();
     }
 
     /**
-     * 标记命令执行完毕
-     * @throws Throwable
+     * 处理数据库配置
+     */
+    private function handleDatabaseConfiguration(): Response
+    {
+        $databaseParam = request()->only(['hostname', 'username', 'password', 'hostport', 'database', 'prefix']);
+
+        // 测试数据库连接
+        if (!$this->testDatabaseConnection($databaseParam)) {
+            return $this->error(__('Database connection failed'));
+        }
+
+        // 创建数据库
+        $this->createDatabaseIfNotExists($databaseParam);
+
+        // 写入配置文件
+        $this->writeConfigurationFiles($databaseParam);
+
+        // 生成新的Token密钥
+        $this->generateNewTokenKey();
+
+        return $this->success('', [
+            'rootPath' => str_replace('\\', '/', base_path()),
+            'executionWebCommand' => $this->commandExecutionCheck()
+        ]);
+    }
+
+    /**
+     * 测试数据库连接
+     */
+    private function testDatabaseConnection(array $databaseParam): bool
+    {
+        $connectData = $databaseParam;
+        $connectData['database'] = '';
+
+        $connect = $this->connectDb($connectData, true);
+        return $connect['code'] != 0;
+    }
+
+    /**
+     * 创建数据库（如果不存在）
+     */
+    private function createDatabaseIfNotExists(array $databaseParam): void
+    {
+        $connectData = $databaseParam;
+        $connectData['database'] = '';
+
+        $connect = $this->connectDb($connectData, true);
+        $databases = $connect['databases'] ?? [];
+
+        if (!in_array($databaseParam['database'], $databases)) {
+            $sql = "CREATE DATABASE IF NOT EXISTS `{$databaseParam['database']}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+            $connect['pdo']->exec($sql);
+        }
+    }
+
+    /**
+     * 写入配置文件
+     */
+    private function writeConfigurationFiles(array $databaseParam): void
+    {
+        $this->writeDatabaseConfig($databaseParam);
+        $this->writeEnvFile($databaseParam);
+    }
+
+    /**
+     * 写入数据库配置文件
+     */
+    private function writeDatabaseConfig(array $databaseParam): void
+    {
+        $dbConfigFile = base_path() . '/config/' . self::DB_CONFIG_FILE;
+        $dbConfigContent = file_get_contents($dbConfigFile);
+
+        if (!$dbConfigContent) {
+            throw new Exception(__('File not found: %s', ['config/' . self::DB_CONFIG_FILE]));
+        }
+
+        $callback = function ($matches) use ($databaseParam) {
+            $key = $matches[1];
+            $value = $databaseParam[$key] ?? $matches[4];
+            $envKey = ($key == 'hostport') ? 'HOSTPORT' : strtoupper($key);
+            return "'{$key}' => env('MYSQL_{$envKey}', '{$value}'),";
+        };
+
+        $dbConfigText = preg_replace_callback(
+            "/'(hostname|database|username|password|hostport|prefix)'(\s+)=>(\s+)env\('.*?',\s*'(.*?)'\),/",
+            $callback,
+            $dbConfigContent
+        );
+
+        if (file_put_contents($dbConfigFile, $dbConfigText) === false) {
+            throw new Exception(__('File has no write permission: %s', ['config/' . self::DB_CONFIG_FILE]));
+        }
+    }
+
+    /**
+     * 写入环境变量文件 - 从模板文件复制优化版
+     */
+    private function writeEnvFile(array $databaseParam): void
+    {
+        $envExampleFile = base_path() . '/.env.example';
+        $envFile = base_path() . '/.env';
+
+        // 检查模板文件是否存在
+        if (!is_file($envExampleFile)) {
+            throw new Exception(__('Template file not found: %s', ['.env.example']));
+        }
+
+        // 读取模板文件内容
+        $templateContent = file_get_contents($envExampleFile);
+        if ($templateContent === false) {
+            throw new Exception(__('Failed to read template file: %s', ['.env.example']));
+        }
+
+        // 替换数据库配置参数
+        $replacements = [
+            'MYSQL_HOSTNAME=' => 'MYSQL_HOSTNAME=' . $databaseParam['hostname'],
+            'MYSQL_DATABASE=' => 'MYSQL_DATABASE=' . $databaseParam['database'],
+            'MYSQL_USERNAME=' => 'MYSQL_USERNAME=' . $databaseParam['username'],
+            'MYSQL_PASSWORD=' => 'MYSQL_PASSWORD=' . $databaseParam['password'],
+            'MYSQL_HOSTPORT=' => 'MYSQL_HOSTPORT=' . $databaseParam['hostport'],
+            'MYSQL_PREFIX=' => 'MYSQL_PREFIX=' . $databaseParam['prefix'],
+        ];
+
+        // 执行替换
+        $envContent = $templateContent;
+        foreach ($replacements as $search => $replace) {
+            $envContent = preg_replace('/^' . preg_quote($search, '/') . '.*$/m', $replace, $envContent);
+        }
+
+        // 写入环境文件
+        if (file_put_contents($envFile, $envContent) === false) {
+            throw new Exception(__('File has no write permission: %s', ['/.env']));
+        }
+    }
+
+    /**
+     * 生成新的Token密钥
+     */
+    private function generateNewTokenKey(): void
+    {
+        $oldTokenKey = config('buildadmin.token.key');
+        $newTokenKey = Random::build('alnum', 32);
+        $buildConfigFile = base_path() . '/config/' . self::BUILD_CONFIG_FILE;
+        $buildConfigContent = file_get_contents($buildConfigFile);
+
+        $buildConfigContent = preg_replace(
+            "/'key'(\s+)=>(\s+)'$oldTokenKey'/",
+            "'key'\$1=>\$2'$newTokenKey'",
+            $buildConfigContent
+        );
+
+        if (file_put_contents($buildConfigFile, $buildConfigContent) === false) {
+            throw new Exception(__('File has no write permission:%s', ['/config/' . self::BUILD_CONFIG_FILE]));
+        }
+    }
+
+    /**
+     * 标记命令执行完毕 - 优化版
      */
     public function commandExecComplete(): Response
     {
-
         try {
             if ($this->isInstallComplete()) {
-                return $this->error(__('The system has completed installation. If you need to reinstall, please delete the %s file first', ['public/' . self::$lockFileName]));
+                return $this->error(__('The system has completed installation. If you need to reinstall, please delete the %s file first', ['public/' . self::LOCK_FILE]));
             }
+
             $param = $this->request->only(['type', 'adminname', 'adminpassword', 'sitename']);
+
             if ($param['type'] == 'web') {
-                $result = @file_put_contents(base_path() . '/public/' . self::$lockFileName, self::$InstallationCompletionMark);
-                if (!$result) {
-                    return $this->error(__('File has no write permission:%s', ['public/' . self::$lockFileName]));
-                }
+                $this->createInstallLockFile();
             } else {
-                // 管理员配置入库
-                try {
-                    // 管理员配置入库
-                    $adminModel             = new AdminModel();
-                    $defaultAdmin           = $adminModel->where('username', 'admin')->find();
-                    $defaultAdmin->username = $param['adminname'];
-                    $defaultAdmin->nickname = ucfirst($param['adminname']);
-                    $defaultAdmin->save();
-
-                    if (isset($param['adminpassword']) && $param['adminpassword']) {
-                        $adminModel->resetPassword($defaultAdmin->id, $param['adminpassword']);
-                    }
-
-                    // 默认用户密码修改
-                    $user = new UserModel();
-                    $user->resetPassword(1, Random::build());
-                    Config::where('name', 'site_name')->update([
-                        'value' => $param['sitename']
-                    ]);
-                } catch (DbException $e) {
-                    throw new BusinessException($e->getMessage(), $e->getCode(), false, [], $e);
-                }
+                $this->configureAdminSettings($param);
             }
 
             return $this->success();
@@ -628,8 +637,67 @@ class Install
     }
 
     /**
-     * 获取命令执行检查的结果
-     * @return bool 是否拥有执行命令的条件
+     * 创建安装锁文件
+     */
+    private function createInstallLockFile(): void
+    {
+        $result = file_put_contents(base_path() . '/public/' . self::LOCK_FILE, self::INSTALL_COMPLETE_MARK);
+        if (!$result) {
+            throw new Exception(__('File has no write permission:%s', ['public/' . self::LOCK_FILE]));
+        }
+    }
+
+    /**
+     * 配置管理员设置
+     */
+    private function configureAdminSettings(array $param): void
+    {
+        try {
+            // 更新管理员信息
+            $adminModel = new AdminModel();
+            $defaultAdmin = $adminModel->where('username', 'admin')->find();
+            if ($defaultAdmin) {
+                $defaultAdmin->username = $param['adminname'];
+                $defaultAdmin->nickname = ucfirst($param['adminname']);
+                $defaultAdmin->save();
+
+                if (!empty($param['adminpassword'])) {
+                    $adminModel->resetPassword($defaultAdmin->id, $param['adminpassword']);
+                }
+            }
+
+            // 更新默认用户密码
+            $user = new UserModel();
+            $user->resetPassword(1, Random::build());
+
+            // 更新站点名称
+            Config::where('name', 'site_name')->update([
+                'value' => $param['sitename']
+            ]);
+        } catch (DbException $e) {
+            throw new BusinessException($e->getMessage(), $e->getCode(), false, [], $e);
+        }
+    }
+
+    /**
+     * 检查安装是否完成
+     */
+    protected function isInstallComplete(): bool
+    {
+        $lockFile = public_path() . DIRECTORY_SEPARATOR . self::LOCK_FILE;
+
+        if (is_file($lockFile)) {
+            $contents = @file_get_contents($lockFile);
+            // 打开event
+            modify_config('app.php', ['enable' => true], "webman/event");
+            return $contents == self::INSTALL_COMPLETE_MARK && config('plugin.webman.event.app.enable');
+        }
+
+        return false;
+    }
+
+    /**
+     * 命令执行检查
      */
     private function commandExecutionCheck(): bool
     {
@@ -637,23 +705,55 @@ class Install
         if ($pm == 'none') {
             return false;
         }
-        $check['phpPopen']             = function_exists('proc_open') && function_exists('proc_close');
-        $check['npmVersionCompare']    = Version::compare(self::$needDependentVersion['npm'], Version::getVersion('npm'));
-        $check['pmVersionCompare']     = Version::compare(self::$needDependentVersion[$pm], Version::getVersion($pm));
-        $check['nodejsVersionCompare'] = Version::compare(self::$needDependentVersion['node'], Version::getVersion('node'));
 
-        $envOk = true;
-        foreach ($check as $value) {
-            if (!$value) {
-                $envOk = false;
-                break;
-            }
-        }
-        return $envOk;
+        $checks = [
+            'phpPopen' => function_exists('proc_open') && function_exists('proc_close'),
+            'npmVersionCompare' => Version::compare(self::DEPENDENT_VERSIONS['npm'], Version::getVersion('npm')),
+            'pmVersionCompare' => Version::compare(self::DEPENDENT_VERSIONS[$pm], Version::getVersion($pm)),
+            'nodejsVersionCompare' => Version::compare(self::DEPENDENT_VERSIONS['node'], Version::getVersion('node')),
+        ];
+
+        return !in_array(false, $checks, true);
     }
 
     /**
-     * 安装指引
+     * 数据库连接
+     */
+    private function connectDb(array $database, bool $returnPdo = false): array
+    {
+        try {
+            $dbConfig = config('think-orm');
+            $dbConfig['connections']['mysql'] = array_merge($dbConfig['connections']['mysql'], $database);
+            Db::setConfig($dbConfig);
+            Db::connect('mysql');
+            Db::execute("SELECT 1");
+        } catch (PDOException $e) {
+            return [
+                'code' => 0,
+                'msg' => __('Database connection failed:%s', [mb_convert_encoding($e->getMessage() ?: 'unknown', 'UTF-8', 'UTF-8,GBK,GB2312,BIG5')])
+            ];
+        }
+
+        $databases = [];
+        $excludeDatabases = ['information_schema', 'mysql', 'performance_schema', 'sys'];
+        $res = Db::query("SHOW DATABASES");
+
+        foreach ($res as $row) {
+            if (!in_array($row['Database'], $excludeDatabases)) {
+                $databases[] = $row['Database'];
+            }
+        }
+
+        return [
+            'code' => 1,
+            'msg' => '',
+            'databases' => $databases,
+            'pdo' => $returnPdo ? Db::getPdo() : '',
+        ];
+    }
+
+    /**
+     * 手动安装指引
      */
     public function manualInstall()
     {
@@ -662,24 +762,59 @@ class Install
         ]);
     }
 
+    /**
+     * 移动前端文件
+     */
     public function mvDist()
     {
-        if (!is_file(base_path() . self::$distDir . DIRECTORY_SEPARATOR . 'index.html')) {
+        if (!is_file(base_path() . self::DIST_DIR . DIRECTORY_SEPARATOR . 'index.html')) {
             return $this->error(__('No built front-end file found, please rebuild manually!'));
         }
 
-        if (Terminal::mvDist()) {
-            // copy(base_path().'/vendor/rocareer/radmin/config/event.php',base_path().'/config/event.php');
-            return $this->success();
-        } else {
-            return $this->error(__('Failed to move the front-end file, please move it manually!'));
+        $distDir = base_path() . self::DIST_DIR;
+        $targetDir = public_path();
+
+        try {
+            $this->moveDirectory($distDir, $targetDir);
+            return $this->success(__('Front-end files moved successfully!'));
+        } catch (Exception $e) {
+            return $this->error($e->getMessage());
         }
     }
 
     /**
-     * 目录是否可写
-     * @param $writable
-     * @return string
+     * 移动目录内容
+     */
+    private function moveDirectory(string $source, string $target): void
+    {
+        if (!is_dir($source)) {
+            throw new Exception(__('Source directory does not exist'));
+        }
+
+        if (!FileUtil::pathIsWritable($target)) {
+            throw new Exception(__('Target directory is not writable'));
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($source, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            $targetPath = $target . DIRECTORY_SEPARATOR . $iterator->getSubPathName();
+
+            if ($item->isDir()) {
+                if (!is_dir($targetPath)) {
+                    mkdir($targetPath, 0755, true);
+                }
+            } else {
+                copy($item->getPathname(), $targetPath);
+            }
+        }
+    }
+
+    /**
+     * 获取可写状态描述
      */
     private static function writableStateDescribe($writable): string
     {
@@ -687,121 +822,28 @@ class Install
     }
 
     /**
-     * 数据库连接-获取数据表列表
-     * @param array $database
-     * @param bool  $returnPdo
-     * @return array
+     * 操作成功响应
      */
-    private function connectDb(array $database, bool $returnPdo = false): array
+    private function success(string $msg = '', $data = null, int $code = 1): Response
     {
-
-        try {
-            $dbConfig                         = config('think-orm');
-            $dbConfig['connections']['mysql'] = array_merge($dbConfig['connections']['mysql'], $database);
-
-            Db::setConfig($dbConfig);
-            Db::connect('mysql');
-            Db::execute("SELECT 1");
-
-        } catch (PDOException $e) {
-            $errorMsg = $e->getMessage();
-            return [
-                'code' => 0,
-                'msg'  => __('Database connection failed:%s', [mb_convert_encoding($errorMsg ?: 'unknown', 'UTF-8', 'UTF-8,GBK,GB2312,BIG5')])
-            ];
-        }
-
-        $databases = [];
-        // 不需要的数据表
-        $databasesExclude = ['information_schema', 'mysql', 'performance_schema', 'sys'];
-        $res              = Db::query("SHOW DATABASES");
-        foreach ($res as $row) {
-            if (!in_array($row['Database'], $databasesExclude)) {
-                $databases[] = $row['Database'];
-            }
-        }
-
-        return [
-            'code'      => 1,
-            'msg'       => '',
-            'databases' => $databases,
-            'pdo'       => $returnPdo ? Db::getPdo() : '',
-        ];
-    }
-
-    /**
-     * 操作成功
-     * By albert  2025/04/13 15:07:30
-     *
-     * @param string      $msg
-     * @param mixed|null  $data
-     * @param int         $code
-     * @param string|null $type
-     * @param array       $header
-     *
-     * @return Response
-     */
-    protected function success(?string $msg = '', mixed $data = null, int $code = 1, ?string $type = null, array $header = []): Response
-    {
-        $response = $this->result($msg, $data, $code, $type, $header);
-        return $response;
-    }
-
-
-    /**
-     * 操作失败
-     * By albert  2025/04/13 15:07:37
-     *
-     * @param string      $msg
-     * @param mixed|null  $data
-     * @param int         $code
-     * @param string|null $type
-     * @param array       $header
-     *
-     * @return Response
-     */
-    protected function error(?string $msg = '', mixed $data = null, ?int $code = 0, ?string $type = null, array $header = []): Response
-    {
-        return $this->result($msg, $data, $code, $type, $header);
-    }
-
-
-    /**
-     * 返回封装后的 API 数据
-     * By albert  2025/04/13 15:11:51
-     *
-     * ThinkPHP 的响应是动态解析的
-     * Webman 的 Response 是 immutable 对象，更适合高并发场景
-     *
-     * @param string      $msg
-     * @param mixed|null  $data
-     * @param int         $code
-     * @param string|null $contentType
-     * @param array       $headers
-     *
-     * @return Response
-     */
-
-    public function result(string $msg, mixed $data = null, int $code = 0, ?string $contentType = null, array $headers = []): Response
-    {
-        $start = microtime(true);
-
-        $responseData = [
+        return json([
             'code' => $code,
-            'msg'  => $msg,
-            'time' => time(),
+            'msg' => $msg,
             'data' => $data,
-        ];
-
-        $json     = json_encode($responseData, JSON_UNESCAPED_UNICODE);
-        $response = new Response($headers['statusCode'] ?? 200, array_diff_key($headers, ['statusCode' => null]), $json);
-
-        // 使用更高效的头信息设置方式
-        $response->withHeaders([
-            'Content-Type' => $contentType ?: $this->responseType ?? 'application/json',
+            'time' => time()
         ]);
+    }
 
-
-        return $response;
+    /**
+     * 操作失败响应
+     */
+    private function error(string $msg = '', $data = null, int $code = 0): Response
+    {
+        return json([
+            'code' => $code,
+            'msg' => $msg,
+            'data' => $data,
+            'time' => time()
+        ]);
     }
 }
