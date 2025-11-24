@@ -673,6 +673,9 @@ abstract class Service implements InterfaceService
     public function check(string $name, ?int $uid = null,
         string $relation = 'or', string $mode = 'url'
     ): bool {
+        if ($uid === null) {
+            $uid = $this->memberModel->id;
+        }
         // 委托给权限规则管理器处理
         $rule = $this->getRule();
         return $rule->check($name, $uid, $relation, $mode);
