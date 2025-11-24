@@ -208,9 +208,18 @@ class Backend extends Api
             }
             $where[] = [implode("|", $quickSearchArr), "LIKE", '%' . str_replace('%', '\%', $quickSearch) . '%'];
         }
+
+        // 增强远程下拉查询 增加空值判断
         if ($initValue) {
-            $where[] = [$initKey, $initOperator, $initValue];
-            $limit   = 999999;
+            // 过滤空值（0, '', null等），避免查询无效数据
+            $filteredInitValue = array_filter($initValue, function($value) {
+                return !in_array($value, ['', null, 0, '0'], true);
+            });
+            
+            if (!empty($filteredInitValue)) {
+                $where[] = [$initKey, $initOperator, $filteredInitValue];
+                $limit   = 999999;
+            }
         }
 
         // 通用搜索组装
@@ -350,7 +359,7 @@ class Backend extends Api
      */
     protected function getDataLimitAdminIds(): array
     {
-        var_dump( Member::hasRole('super'));
+
         if (!$this->dataLimit || Member::hasRole('super')) {
             return [];
         }

@@ -46,7 +46,7 @@ class Admin extends Backend
     public function index(): Response
     {
         if ($this->request->input('select')) {
-             $this->select();
+             return $this->select();
         }
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
@@ -259,12 +259,34 @@ class Admin extends Backend
         if (Member::hasRole('super')) {
             return;
         }
-        $authGroups = Member::getAllAuthGroups('allAuthAndOthers');
+        $authGroups = $this->adminService->getAllAuthGroups('allAuthAndOthers');
         foreach ($groups as $group) {
             if (!in_array($group, $authGroups)) {
                 $this->error(__('You have no permission to add an administrator to this group!'));
                 return;
             }
         }
+    }
+
+    /**
+     * 远程下拉
+     * @throws Throwable
+     */
+    public function select(): Response
+    {
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+        $res = $this->model
+            ->withoutField('login_failure,password')
+            ->withJoin($this->withJoinTable, $this->withJoinType)
+            ->alias($alias)
+            ->where($where)
+            ->order($order)
+            ->paginate($limit);
+
+        return $this->success('', [
+            'list'   => $res->items(),
+            'total'  => $res->total(),
+            'remark' => SystemUtil::get_route_remark(),
+        ]);
     }
 }
