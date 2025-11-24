@@ -4,6 +4,7 @@
 /.idea
 /.vscode
 /web-nuxt
+/modules/*
 /.git
 /.codebuddy
 /public/assets
