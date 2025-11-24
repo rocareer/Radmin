@@ -112,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { index, getNewPublish } from '~/api/cms/index'
+import { index, getNewPublish } from '~/api/cms'
 
 definePageMeta({
     name: 'cmsIndex',
