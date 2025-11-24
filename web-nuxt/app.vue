@@ -18,7 +18,16 @@ const { locale, getLocaleMessage } = useI18n()
 const messages = getLocaleMessage(locale.value) as Language
 
 // 前端初始化请求
-await initialize()
+try {
+    await initialize()
+} catch (error) {
+    console.error('应用初始化失败:', error)
+    // 初始化失败时，确保清理用户信息
+    const userInfo = useUserInfo()
+    if (userInfo.isLogin()) {
+        userInfo.clear()
+    }
+}
 
 // 根据站点名称设置默认标题模板
 useSeoMeta({

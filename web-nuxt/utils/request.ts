@@ -3,7 +3,6 @@ import { ElLoading, ElNotification } from 'element-plus'
 import { isArray } from 'lodash-es'
 import { getLanguage } from '~/lang'
 import { i18n } from '~/plugins/i18n'
-import { USER_TOKEN_KEY } from '~/stores/constant/keys'
 
 const requestStatus: RequestStatus = {
     loading: {
@@ -110,10 +109,10 @@ export const requestConfig = <OptionsType extends NitroFetchOptions | FetchOptio
                 }
             }
 
-            // 自动携带token
-            if (!options.headers.has(USER_TOKEN_KEY)) {
+            // 自动携带token - 使用标准的Authorization头格式（与web项目保持一致）
+            if (!options.headers.has('Authorization')) {
                 const userToken = userInfo.getToken('auth')
-                if (userToken) options.headers.set(USER_TOKEN_KEY, userToken)
+                if (userToken) options.headers.set('Authorization', `Bearer ${userToken}`)
             }
 
             if (import.meta.server && requestEvent) {
@@ -169,9 +168,9 @@ const onResponseInterceptor = (
             let newRouteName = 'user'
 
             if ((data.data.type && data.data.type == 'need login') || data.code == 409) {
-                // 需要重新登录
+                // 需要重新登录，清理用户信息和缓存
                 const userInfo = useUserInfo()
-                userInfo.removeToken()
+                userInfo.clear()
 
                 newRouteName += 'Login'
             }

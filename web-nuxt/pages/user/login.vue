@@ -304,7 +304,7 @@
 <script setup lang="ts">
 import type { FormItemRule } from 'element-plus'
 import { sendEms, sendSms } from '~/api/common'
-import { checkIn, retrievePassword } from '~/api/user/index'
+import { login, retrievePassword } from '~/api/user/index'
 import LoginFooterMixin from '~/composables/mixins/loginFooter.vue'
 import clickCaptcha from '~/composables/clickCaptcha'
 import { useI18n } from 'vue-i18n'
@@ -440,7 +440,7 @@ const onLoginSubmitPre = () => {
 const onLoginSubmit = (captchaInfo = '') => {
     state.loading.login = true
     state.login.captchaInfo = captchaInfo
-    checkIn('post', { ...state.login, tab: state.tab.toLocaleLowerCase() })
+    login('post', { ...state.login, tab: state.tab.toLocaleLowerCase() })
         .then((res) => {
             if (res.code != 1) return
             userInfo.dataFill(res.data.userInfo, false)
@@ -511,7 +511,7 @@ const onRegisterSubmit = () => {
     registerRef.value?.validate((valid) => {
         if (!valid) return
         state.loading.register = true
-        checkIn('post', { ...state.register, tab: state.tab.toLocaleLowerCase() })
+        login('post', { ...state.register, tab: state.tab.toLocaleLowerCase() })
             .then((res) => {
                 if (res.code != 1) return
                 userInfo.dataFill(res.data.userInfo, false)
@@ -570,7 +570,7 @@ const dialogSize = () => {
     state.retrieveDialogWidth = width
 }
 
-checkIn('get').then((res) => {
+login('get').then((res) => {
     if (res.code != 1) return
     state.userLoginCaptchaSwitch = res.data.userLoginCaptchaSwitch
     state.accountVerificationType = res.data.accountVerificationType

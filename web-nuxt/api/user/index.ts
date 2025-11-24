@@ -1,5 +1,14 @@
 const accountUrl = '/api/account/'
-const controllerUrl = '/api/user/'
+const userUrl = '/user/Index/'
+
+export function login(method: 'get' | 'post', params: object = {}) {
+    const opt = method == 'get' ? {} : { body: params }
+    return Http.$fetch({
+        url: userUrl + 'login',
+        method: method,
+        ...opt,
+    })
+}
 
 export function overview() {
     return Http.fetch({
@@ -37,12 +46,14 @@ export function getBalanceLog(page: number, pageSize: number) {
     })
 }
 
-export function checkIn(method: 'get' | 'post', params: object = {}) {
-    const opt = method == 'get' ? {} : { body: params }
+export function postLogout() {
+    const userInfo = useUserInfo()
     return Http.$fetch({
-        url: controllerUrl + 'checkIn',
-        method: method,
-        ...opt,
+        url: userUrl + 'logout',
+        method: 'POST',
+        body: {
+            refresh_token: userInfo.getToken('refresh'),
+        },
     })
 }
 

@@ -1,4 +1,4 @@
-import { userLogout } from '~/api/common'
+import { postLogout } from '~/api/common'
 import { USER_INFO } from '~/stores/constant/keys'
 import type { UserInfo } from '~/stores/interface'
 
@@ -55,6 +55,25 @@ export const useUserInfo = defineStore('userInfo', {
         getToken(type: 'auth' | 'refresh' = 'auth') {
             return type === 'auth' ? this.token : this.refresh_token
         },
+        /**
+         * 检查Token是否即将过期（前端检查）
+         * @param threshold 提前刷新时间阈值（秒）
+         */
+        shouldRefreshToken(threshold: number = 300): boolean {
+            if (!this.token) return false
+            
+            try {
+                // 解析JWT Token获取过期时间
+                const payload = JSON.parse(atob(this.token.split('.')[1]))
+                const currentTime = Math.floor(Date.now() / 1000)
+                const timeRemaining = payload.exp - currentTime
+                
+                return timeRemaining > 0 && timeRemaining < threshold
+            } catch (error) {
+                console.error('Token解析失败:', error)
+                return false
+            }
+        },
         getGenderIcon() {
             let icon = { name: 'fa fa-transgender-alt', color: 'var(--el-text-color-secondary)' }
             switch (this.gender) {
@@ -68,20 +87,29 @@ export const useUserInfo = defineStore('userInfo', {
             return icon
         },
         logout() {
-            userLogout().then((res) => {
+            postLogout().then((res) => {
                 if (res.code == 1) {
-                    this.removeToken()
+                    this.clear()
                     const router = useRouter()
                     router.go(0)
                 }
             })
         },
         isLogin() {
-            return this.id && this.token
+            return this.id > 0 && this.token !== ''
+        },
+        /**
+         * 完全清除状态
+         */
+        clear() {
+            this.$reset()
+            // 清除持久化存储
+            if (import.meta.client) {
+                localStorage.removeItem(USER_INFO)
+            }
         },
     },
     persist: {
         key: USER_INFO,
-        pick: ['id', 'username', 'nickname', 'avatar', 'token', 'refresh_token'],
     },
 })

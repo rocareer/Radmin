@@ -30,28 +30,61 @@ export async function initialize(requiredLogin?: boolean) {
     if (!userInfo.isLogin() && siteConfig.initialize) return
     if (userInfo.isLogin() && siteConfig.userInitialize) return
 
-    const { data } = await Http.fetch({
-        url: indexUrl,
-        method: 'get',
-        params: {
-            requiredLogin: requiredLogin ? 1 : 0,
-        },
-    })
-    if (data.value?.code == 1) {
-        siteConfig.dataFill(data.value.data.site)
-        memberCenter.setStatus(data.value.data.openMemberCenter)
-        registerMenus(data.value.data.rules, data.value.data.menus)
+    try {
+        const { data } = await Http.fetch({
+            url: indexUrl,
+            method: 'get',
+            params: {
+                requiredLogin: requiredLogin ? 1 : 0,
+            },
+        })
+        
+        if (data.value?.code == 1) {
+            siteConfig.dataFill(data.value.data.site)
+            memberCenter.setStatus(data.value.data.openMemberCenter)
+            registerMenus(data.value.data.rules, data.value.data.menus)
 
-        if (!isEmpty(data.value.data.userInfo)) {
-            userInfo.dataFill(data.value.data.userInfo)
+            if (!isEmpty(data.value.data.userInfo)) {
+                userInfo.dataFill(data.value.data.userInfo)
 
-            // 请求到会员信息才设置会员中心初始化是成功的
-            siteConfig.setUserInitialize(true)
+                // 请求到会员信息才设置会员中心初始化是成功的
+                siteConfig.setUserInitialize(true)
+            }
+
+            siteConfig.setInitialize(true)
+        } else if (data.value?.code == 303 || data.value?.code == 409) {
+            // 需要重新登录或Token无效，清理用户信息
+            userInfo.clear()
+            siteConfig.setUserInitialize(false)
+            
+            // 如果在客户端，跳转到登录页
+            if (import.meta.client) {
+                const route = useRoute()
+                if (route.name !== 'userLogin') {
+                    navigateTo({ name: 'userLogin' })
+                }
+            }
         }
-
-        siteConfig.setInitialize(true)
+        return data
+    } catch (error) {
+        console.error('初始化失败:', error)
+        
+        // 初始化失败时，如果用户已登录，清理用户信息
+        if (userInfo.isLogin()) {
+            userInfo.clear()
+            siteConfig.setUserInitialize(false)
+            
+            // 如果在客户端，跳转到登录页
+            if (import.meta.client) {
+                const route = useRoute()
+                if (route.name !== 'userLogin') {
+                    navigateTo({ name: 'userLogin' })
+                }
+            }
+        }
+        
+        throw error
     }
-    return data
 }
 
 /**
@@ -187,7 +220,7 @@ export function checkClickCaptcha(id: string, info: string, unset: boolean, apiB
 /**
  * 用户注销登录
  */
-export function userLogout() {
+export function postLogout() {
     const userInfo = useUserInfo()
     return Http.$fetch({
         url: '/api/user/logout',
