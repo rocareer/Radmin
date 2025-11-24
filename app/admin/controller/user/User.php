@@ -36,7 +36,7 @@ class User extends Backend
     public function index(): Response
     {
         if ($this->request->input('select')) {
-            return $this->select();
+            $this->select();
         }
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
@@ -134,7 +134,7 @@ class User extends Backend
      * 重写select
      * @throws Throwable
      */
-    public function select()
+    public function select(): ?Response
     {
         list($where, $alias, $limit, $order) = $this->queryBuilder();
         $res = $this->model

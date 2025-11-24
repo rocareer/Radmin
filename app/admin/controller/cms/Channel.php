@@ -48,7 +48,7 @@ class Channel extends Backend
     {
         // 如果是select则转发到select方法,若select未重写,其实还是继续执行index
         if ($this->request->input('select')) {
-            $this->select();
+           // return $this->select();
         }
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();

@@ -249,7 +249,7 @@ class Group extends Backend
      * 远程下拉
      * @throws Throwable
      */
-    public function select()
+    public function select():Response
     {
         $data = $this->getGroups([['status', '=', 1]]);
 

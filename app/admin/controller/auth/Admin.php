@@ -46,7 +46,7 @@ class Admin extends Backend
     public function index(): Response
     {
         if ($this->request->input('select')) {
-             $this->select();
+             return $this->select();
         }
 
         list($where, $alias, $limit, $order) = $this->queryBuilder();
@@ -266,5 +266,27 @@ class Admin extends Backend
                 return;
             }
         }
+    }
+
+    /**
+     * 远程下拉
+     * @throws Throwable
+     */
+    public function select(): Response
+    {
+        list($where, $alias, $limit, $order) = $this->queryBuilder();
+        $res = $this->model
+            ->withoutField('login_failure,password')
+            ->withJoin($this->withJoinTable, $this->withJoinType)
+            ->alias($alias)
+            ->where($where)
+            ->order($order)
+            ->paginate($limit);
+
+        return $this->success('', [
+            'list'   => $res->items(),
+            'total'  => $res->total(),
+            'remark' => SystemUtil::get_route_remark(),
+        ]);
     }
 }
