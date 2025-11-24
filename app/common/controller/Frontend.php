@@ -84,8 +84,23 @@ class Frontend extends Api
 
             return !empty($this->member);
         } catch (\Throwable $e) {
-            // 初始化失败（如Token无效），保持member为空，不抛出异常
+            // 初始化失败（如Token无效），静默清理登录信息
             $this->member = null;
+            
+            // 清理RequestContext中的登录信息
+            \support\RequestContext::delete('member');
+            \support\RequestContext::delete('role');
+            
+            // 清理Context中的用户信息
+            try {
+                $currentRole = \support\member\Context::getInstance()->getCurrentRole();
+                if ($currentRole) {
+                    \support\member\Context::getInstance()->clearRoleContext($currentRole);
+                }
+            } catch (\Throwable $contextError) {
+                // 忽略清理过程中的错误
+            }
+            
             return false;
         }
     }

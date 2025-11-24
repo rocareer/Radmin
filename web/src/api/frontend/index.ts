@@ -38,6 +38,13 @@ export function initialize(callback?: (res: ApiResponse) => void) {
 
                 // 请求到会员信息才设置会员中心初始化是成功的
                 siteConfig.setUserInitialize(true)
+            } else {
+                // 如果用户信息为空，但本地有登录状态，说明登录已失效，需要清理本地状态
+                if (userInfo.isLogin()) {
+                    userInfo.clear()
+                    Local.remove(USER_INFO)
+                    siteConfig.setUserInitialize(false)
+                }
             }
 
             if (!res.data.openMemberCenter) memberCenter.setLayoutMode('Disable')

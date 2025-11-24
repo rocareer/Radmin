@@ -260,6 +260,12 @@ abstract class Service implements InterfaceService
             $this->checkStatus('login');
 
         } catch (Exception $e) {
+            // 静默清理登录信息
+            $this->resetMember();
+            
+            // 清理Context中的用户信息
+            Context::getInstance()->clearRoleContext($this->role);
+            
             // 触发初始化失败事件
             Event::emit("member.initialization.failure", [
                 'role'          => $this->role,

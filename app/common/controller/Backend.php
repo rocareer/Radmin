@@ -138,7 +138,25 @@ class Backend extends Api
         $needLogin = !action_in_arr($this->noNeedLogin);
 
         if ($needLogin) {
-            $this->member = \support\member\Context::getInstance()->getCurrentMember();
+            try {
+                $this->member = \support\member\Context::getInstance()->getCurrentMember();
+            } catch (\Throwable $e) {
+                // 获取用户信息失败，清理登录状态
+                $this->member = null;
+                
+                \support\RequestContext::delete('member');
+                \support\RequestContext::delete('role');
+                
+                try {
+                    $currentRole = \support\member\Context::getInstance()->getCurrentRole();
+                    if ($currentRole) {
+                        \support\member\Context::getInstance()->clearRoleContext($currentRole);
+                    }
+                } catch (\Throwable $contextError) {
+                    // 忽略清理过程中的错误
+                }
+            }
+            
             if (empty($this->member)) {
                 throw new UnauthorizedHttpException('请先登录', StatusCode::NEED_LOGIN);
             }

@@ -69,7 +69,20 @@ class Api extends BaseController
 
         if (!empty($this->role)) {
             Member::setCurrentRole($this->role);
-            $this->member = \support\member\Context::getInstance()->getCurrentMember();
+            try {
+                $this->member = \support\member\Context::getInstance()->getCurrentMember();
+            } catch (\Throwable $e) {
+                // 获取用户信息失败，清理登录状态
+                $this->member = null;
+                \support\RequestContext::delete('member');
+                \support\RequestContext::delete('role');
+                
+                try {
+                    \support\member\Context::getInstance()->clearRoleContext($this->role);
+                } catch (\Throwable $contextError) {
+                    // 忽略清理过程中的错误
+                }
+            }
         }
     }
 
