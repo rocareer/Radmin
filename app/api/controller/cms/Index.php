@@ -2,13 +2,14 @@
 
 namespace app\api\controller\cms;
 
-use ba\Tree;
-use ba\Date;
+use extend\ba\ClickCaptcha;
+use extend\ba\Tree;
+use extend\ra\DateUtil;
+use extend\ra\SystemUtil;
+use support\orm\Db;
+use support\Response;
 use Throwable;
-use ba\ClickCaptcha;
-use think\facade\Db;
 use think\facade\Validate;
-use app\common\library\Auth;
 use app\admin\model\cms\Tags;
 use modules\cms\library\Helper;
 use app\admin\model\cms\Channel;
@@ -36,7 +37,7 @@ class Index extends Frontend
     /**
      * CMS初始化接口
      */
-    public function init(): void
+    public function init(): Response
     {
         // CMS配置
         $cmsConfigArr  = [];
@@ -60,7 +61,7 @@ class Index extends Frontend
                 'content'  => Content::where('status', 'normal')
                     ->where('channel_id', 'in', $channelIds)
                     ->where(function ($query) {
-                        if (!$this->auth->isLogin()) {
+                        if (!$this->member) {
                             $query->where('allow_visit_groups', 'all');
                         }
                     })
@@ -118,7 +119,7 @@ class Index extends Frontend
             ->order('weigh', 'desc')
             ->select();
 
-        $this->success('', [
+        return $this->success('', [
             'config' => $cmsConfigArr,
         ]);
     }
@@ -126,12 +127,12 @@ class Index extends Frontend
     /**
      * 首页
      */
-    public function index(): void
+    public function index(): Response
     {
         // 标记最新的文章
         $newContent = Content::where('status', 'normal')
             ->where(function ($query) {
-                if (!$this->member->isLogin()) {
+                if (!$this->member) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -144,13 +145,13 @@ class Index extends Frontend
             array_pop($newContent);
         }
         foreach ($newContent as &$item) {
-            $item['create_time'] = Date::human($item['create_time']);
+            $item['create_time'] = DateUtil::human($item['create_time']);
         }
 
         // 按更新时间排序的文章
         $newPublishContent = Content::where('status', 'normal')
             ->where(function ($query) {
-                if (!$this->member->isLogin()) {
+                if (!$this->member) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -164,7 +165,7 @@ class Index extends Frontend
             array_pop($newPublishContent);
         }
         foreach ($newPublishContent as &$item) {
-            $item['create_time'] = Date::human($item['create_time']);
+            $item['create_time'] = DateUtil::human($item['create_time']);
         }
 
         // 封面频道前五
@@ -175,7 +176,7 @@ class Index extends Frontend
             ->limit(5)
             ->select();
 
-        $this->success('', [
+        return $this->success('', [
             'indexTopBar'       => Helper::getBlock('index-top-bar'),
             'indexCarousel'     => Helper::getBlock('index-carousel'),
             'indexFocus'        => Helper::getBlock('index-focus'),
@@ -189,13 +190,13 @@ class Index extends Frontend
      * uni-app 初始化接口
      * @throws Throwable
      */
-    public function unInit(): void
+    public function unInit(): Response
     {
         $h5Domain = Db::name('cms_config')->where('name', 'h5_domain')->value('value');
-        $this->success('', [
+        return $this->success('', [
             'site' => [
-                'siteName' => get_sys_config('site_name'),
-                'version'  => get_sys_config('version'),
+                'siteName' => SystemUtil::get_sys_config('site_name'),
+                'version'  => SystemUtil::get_sys_config('version'),
                 'cdnUrl'   => full_url(),
                 'upload'   => keys_to_camel_case(get_upload_config(), ['max_size', 'save_name', 'allowed_suffixes', 'allowed_mime_types']),
                 'h5Domain' => $h5Domain,
@@ -207,7 +208,7 @@ class Index extends Frontend
      * uni-app 首页接口
      * @throws Throwable
      */
-    public function unIndex(): void
+    public function unIndex(): Response
     {
         $recChannelId = 'recommend';
         $page         = $this->request->input('page', 1);
@@ -215,8 +216,8 @@ class Index extends Frontend
 
         // 加载下一页
         if ($page > 1) {
-            $this->success('', [
-                'content' => Helper::getUnIndexContents($this->auth->isLogin(), $channel == $recChannelId ? false : $channel),
+            return $this->success('', [
+                'content' => Helper::getUnIndexContents($this->member, $channel == $recChannelId ? false : $channel),
             ]);
         }
 
@@ -225,7 +226,7 @@ class Index extends Frontend
                 'id'   => $recChannelId,
                 'name' => '推荐',
             ],
-            'content' => Helper::getUnIndexContents($this->auth->isLogin(), false),
+            'content' => Helper::getUnIndexContents($this->member, false),
         ];
 
         // 封面频道
@@ -238,11 +239,11 @@ class Index extends Frontend
         foreach ($coverChannel as $item) {
             $channels[] = [
                 'channel' => $item,
-                'content' => Helper::getUnIndexContents($this->auth->isLogin(), $item['id']),
+                'content' => Helper::getUnIndexContents($this->member, $item['id']),
             ];
         }
 
-        $this->success('', [
+        return $this->success('', [
             'channels'      => $channels,
             'indexCarousel' => Helper::getBlock('uni-index-carousel'),
         ]);
@@ -252,12 +253,12 @@ class Index extends Frontend
      * uni-app 最新资讯接口
      * @throws Throwable
      */
-    public function uniNews(): void
+    public function uniNews(): Response
     {
-        $limit       = request()->request('limit');
+        $limit       = request()->input('limit');
         $newContents = Content::where('status', 'normal')
             ->where(function ($query) {
-                if (!$this->member->isLogin()) {
+                if (!$this->member) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -265,7 +266,7 @@ class Index extends Frontend
             ->orderRaw("IF(flag LIKE '%top%', 1, 0) DESC")
             ->order('weigh', 'desc')
             ->paginate($limit);
-        $this->success('', [
+        return $this->success('', [
             'contents'    => $newContents,
             'newCarousel' => Helper::getBlock('uni-news-carousel'),
         ]);
@@ -275,21 +276,21 @@ class Index extends Frontend
      * uni-app 产品接口
      * @throws Throwable
      */
-    public function uniProduct(): void
+    public function uniProduct(): Response
     {
-        $limit = request()->request('limit');
+        $limit = request()->input('limit');
 
         $productModelId = ContentModel::where('table', 'cms_products')
             ->where('status', 1)
             ->value('id');
         if (!$productModelId) {
-            $this->error('未找到产品模型和频道，请联系管理员！');
+            return $this->error('未找到产品模型和频道，请联系管理员！');
         }
 
         // 所有产品频道
         $channels = Channel::where('content_model_id', $productModelId)
             ->where(function ($query) {
-                if (!$this->member->isLogin()) {
+                if (!$this->member) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -297,12 +298,12 @@ class Index extends Frontend
             ->column('id');
 
         if (!$channels) {
-            $this->error('未找到产品频道，请联系管理员！');
+            return $this->error('未找到产品频道，请联系管理员！');
         }
 
         $contents = Content::where('status', 'normal')
             ->where(function ($query) {
-                if (!$this->member->isLogin()) {
+                if (!$this->member) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -310,7 +311,7 @@ class Index extends Frontend
             ->orderRaw("IF(flag LIKE '%top%', 1, 0) DESC")
             ->order('weigh', 'desc')
             ->paginate($limit);
-        $this->success('', [
+        return $this->success('', [
             'contents' => $contents,
         ]);
     }
@@ -318,17 +319,17 @@ class Index extends Frontend
     /**
      * 文章列表、频道首页
      */
-    public function articleList(): void
+    public function articleList(): Response
     {
-        $tagId        = $this->request->get('tag');
-        $channelId    = $this->request->get('channel');
-        $userId       = $this->request->get('user');
-        $keywords     = $this->request->get("keywords/s", '');
-        $order        = $this->request->get("order/s", '');
-        $sort         = $this->request->get("sort/s", '');
-        $limit        = $this->request->get("limit/d", 16);
-        $filter       = $this->request->get("filter/s", '');
-        $template     = $this->request->get("template/s", 'doubleColumnList');
+        $tagId        = $this->request->input('tag');
+        $channelId    = $this->request->input('channel');
+        $userId       = $this->request->input('user');
+        $keywords     = $this->request->input("keywords/s", '');
+        $order        = $this->request->input("order/s", '');
+        $sort         = $this->request->input("sort/s", '');
+        $limit        = $this->request->input("limit/d", 16);
+        $filter       = $this->request->input("filter/s", '');
+        $template     = $this->request->input("template/s", 'doubleColumnList');
         $breadcrumb   = [];
         $where        = [];
         $title        = [];
@@ -341,8 +342,8 @@ class Index extends Frontend
                 ->where('status', 1)
                 ->find();
             if ($info) {
-                if ($info['allow_visit_groups'] == 'user' && !$this->auth->isLogin()) {
-                    $this->error(__('Please login first'), [
+                if ($info['allow_visit_groups'] == 'user' && !$this->member) {
+                    return $this->error(__('Please login first'), [
                         'type' => Auth::NEED_LOGIN
                     ], Auth::LOGIN_RESPONSE_CODE);
                 }
@@ -424,7 +425,7 @@ class Index extends Frontend
                 $searchLog->inc('count')->save();
             } else {
                 SearchLog::create([
-                    'user_id' => $this->auth->isLogin() ? $this->member->id : 0,
+                    'user_id' => $this->member ? $this->member->id : 0,
                     'search'  => $keywords,
                     'count'   => 1,
                     'hot'     => 0,
@@ -450,13 +451,13 @@ class Index extends Frontend
         $content = Content::where('status', 'normal')
             ->where($where)
             ->where(function ($query) {
-                if (!$this->member->isLogin()) {
+                if (!$this->member) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
             ->order($order)
             ->paginate($limit)->each(function ($item) {
-                $item->create_time = Date::human($item->create_time);
+                $item->create_time = DateUtil::human($item->create_time);
             });
 
         // 多个标题，加上双引号
@@ -466,7 +467,7 @@ class Index extends Frontend
             }
         }
 
-        $this->success('', [
+        return $this->success('', [
             'list'         => $content->items(),
             'total'        => $content->total(),
             'info'         => $info,
@@ -480,20 +481,20 @@ class Index extends Frontend
     /**
      * 封面频道
      */
-    public function coverChannel($id, $info = []): void
+    public function coverChannel($id, $info = []): Response
     {
         if (!$info) {
             $info = Channel::where('id', $id)
                 ->where('status', 1)
                 ->where(function ($query) {
-                    if (!$this->auth->isLogin()) {
+                    if (!$this->member) {
                         $query->where('allow_visit_groups', 'all');
                     }
                 })
                 ->find();
         }
         if (!$info) {
-            $this->error('频道不存在');
+            return $this->error('频道不存在');
         }
         $focus    = Helper::getBlock($info['template'] . '-focus');
         $carousel = Helper::getBlock($info['template'] . '-carousel');
@@ -511,7 +512,7 @@ class Index extends Frontend
             $contentList  = Content::where('status', 'normal')
                 ->where('channel_id', 'in', $channelIds)
                 ->where(function ($query) {
-                    if (!$this->auth->isLogin()) {
+                    if (!$this->member) {
                         $query->where('allow_visit_groups', 'all');
                     }
                 })
@@ -522,7 +523,7 @@ class Index extends Frontend
                 ->toArray();
             if ($contentList) {
                 foreach ($contentList as &$item) {
-                    $item['create_time'] = Date::human($item['create_time']);
+                    $item['create_time'] = DateUtil::human($item['create_time']);
                 }
                 $content[] = [
                     'info'        => $child,
@@ -531,7 +532,7 @@ class Index extends Frontend
             }
         }
 
-        $this->success('', [
+        return $this->success('', [
             'info'     => $info,
             'focus'    => $focus,
             'carousel' => $carousel,
@@ -543,13 +544,13 @@ class Index extends Frontend
     /**
      * 继续加载新发布文章
      */
-    public function getNewPublish(): void
+    public function getNewPublish(): Response
     {
-        $page = $this->request->get('page', 2);
+        $page = $this->request->input('page', 2);
         // 按更新时间排序的文章
         $newPublishContent = Content::where('status', 'normal')
             ->where(function ($query) {
-                if (!$this->member->isLogin()) {
+                if (!$this->member) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -563,14 +564,14 @@ class Index extends Frontend
             array_pop($newPublishContent);
         }
         foreach ($newPublishContent as &$item) {
-            $item['create_time'] = Date::human($item['create_time']);
+            $item['create_time'] = DateUtil::human($item['create_time']);
         }
-        $this->success('', [
+        return $this->success('', [
             'newPublishContent' => $newPublishContent,
         ]);
     }
 
-    public function applyFriendlyLink(): void
+    public function applyFriendlyLink(): Response
     {
         if ($this->request->isPost()) {
             $data     = $this->request->post();
@@ -588,27 +589,27 @@ class Index extends Frontend
                 'captchaInfo' => 'Captcha error',
             ]);
             if (!$validate->check($data)) {
-                $this->error(__($validate->getError()));
+                return $this->error(__($validate->getError()));
             }
 
             $clickCaptcha = new ClickCaptcha();
             if (!$clickCaptcha->check($data['captchaId'], $data['captchaInfo'])) {
-                $this->error(__('Captcha error'));
+                return $this->error(__('Captcha error'));
             }
 
             $data['user_id'] = $this->member->id;
             $data['status']  = 'pending_trial';
             $data['remark']  = $data['remark'] . ($data['contact'] ? ' 联系人：' . $data['contact'] : '');
             FriendlyLink::create($data);
-            $this->success(__('Submission successful, please wait for review'));
+            return $this->success(__('Submission successful, please wait for review'));
         }
-        $this->error();
+        return $this->error();
     }
 
     /**
      * 搜索页数据（非搜索）
      */
-    public function search(): void
+    public function search(): Response
     {
         $hotKeywords = SearchLog::where('hot', 1)
             ->where('status', 1)
@@ -617,7 +618,7 @@ class Index extends Frontend
         foreach ($hotKeywords as $key => $hotKeyword) {
             $hotKeywords[$key]['rank'] = $key + 1;
         }
-        $this->success('', [
+        return $this->success('', [
             'hotKeywords' => $hotKeywords
         ]);
     }
@@ -625,11 +626,11 @@ class Index extends Frontend
     /**
      * 标签下拉
      */
-    public function tags(): void
+    public function tags(): Response
     {
-        $limit       = $this->request->get("limit/d", 10);
-        $quickSearch = $this->request->get("quick_search/s", '');
-        $initValue   = $this->request->get("initValue/a", '');
+        $limit       = $this->request->input("limit/d", 10);
+        $quickSearch = $this->request->input("quick_search/s", '');
+        $initValue   = $this->request->input("initValue/a", '');
         $where       = [];
 
         // 快速搜索
@@ -647,7 +648,7 @@ class Index extends Frontend
             ->order('id desc')
             ->paginate($limit);
 
-        $this->success('', [
+        return $this->success('', [
             'list'  => $res->items(),
             'total' => $res->total(),
         ]);
@@ -656,10 +657,10 @@ class Index extends Frontend
     /**
      * 频道下拉
      */
-    public function channel(): void
+    public function channel(): Response
     {
-        $quickSearch = $this->request->get("quick_search/s", '');
-        $initValue   = $this->request->get("initValue/a", '');
+        $quickSearch = $this->request->input("quick_search/s", '');
+        $initValue   = $this->request->input("initValue/a", '');
         $where       = [];
 
         // 快速搜索
@@ -679,7 +680,7 @@ class Index extends Frontend
             ->toArray();
         $res = $this->tree->assembleTree($this->tree->getTreeArray($this->tree->assembleChild($res)));
 
-        $this->success('', [
+        return $this->success('', [
             'list' => $res,
         ]);
     }

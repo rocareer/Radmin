@@ -76,7 +76,7 @@ class Content extends Frontend
 
     public function info(): void
     {
-        if ($this->info->allow_visit_groups == 'user' && !$this->member->isLogin()) {
+        if ($this->info->allow_visit_groups == 'user' && !$this->member) {
             $this->error(__('Please login first'), [
                 'type' => Auth::NEED_LOGIN
             ], Auth::LOGIN_RESPONSE_CODE);
@@ -86,7 +86,7 @@ class Content extends Frontend
         $this->info->inc('views')->save();
 
         // 浏览记录
-        if ($this->member->isLogin()) {
+        if ($this->member) {
             $statisticData = [
                 'user_id'    => $this->member->id,
                 'content_id' => $this->info->id,
@@ -127,7 +127,7 @@ class Content extends Frontend
             ->where('channel_id', $this->info->channel_id)
             ->where('id', '<', $this->info->id)
             ->where(function ($query) {
-                if (!$this->member->isLogin()) {
+                if (!$this->member) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -139,7 +139,7 @@ class Content extends Frontend
             ->where('channel_id', $this->info->channel_id)
             ->where('id', '>', $this->info->id)
             ->where(function ($query) {
-                if (!$this->member->isLogin()) {
+                if (!$this->member) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -163,7 +163,7 @@ class Content extends Frontend
         $hotContent = ContentModel::where('status', 'normal')
             ->where('channel_id', 'in', $channelIds)
             ->where(function ($query) {
-                if (!$this->member->isLogin()) {
+                if (!$this->member) {
                     $query->where('allow_visit_groups', 'all');
                 }
             })
@@ -199,7 +199,7 @@ class Content extends Frontend
         }
 
         // 是否已经点赞和收藏
-        if ($this->member->isLogin()) {
+        if ($this->member) {
             $this->info->likeed    = Db::name('cms_statistics')
                 ->where('user_id', $this->member->id)
                 ->where('content_id', $this->info->id)

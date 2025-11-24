@@ -16,6 +16,11 @@ class Channel extends Model
     // 自动写入时间戳字段
     protected $autoWriteTimestamp = true;
 
+    protected $type = [
+        'create_time'=>'integer',
+        'update_time'=>'integer',
+    ];
+
     protected static function onAfterInsert($model)
     {
         if ($model->weigh == 0) {

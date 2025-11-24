@@ -69,7 +69,7 @@ class User extends Frontend
         }
 
         // 检查登录态
-        if ($this->member->isLogin()) {
+        if ($this->member) {
             $this->success(__('You have already logged in. There is no need to log in again~'), [
                 'type' => $this->auth::LOGGED_IN
             ], $this->auth::LOGIN_RESPONSE_CODE);

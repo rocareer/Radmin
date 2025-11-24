@@ -78,7 +78,7 @@ class Ems extends Frontend
 
         // 通过邮箱验证账户
         if ($params['event'] == 'user_email_verify') {
-            if (!$this->member->isLogin()) {
+            if (!$this->member) {
                 return $this->error(__('Please login first'), StatusCode::NEED_LOGIN);
             }
             

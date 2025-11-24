@@ -1,4 +1,4 @@
-const indexUrl = '/api/cms.Index/'
+const indexUrl = '/api/cms/index/'
 
 export function init() {
     return Http.fetch({

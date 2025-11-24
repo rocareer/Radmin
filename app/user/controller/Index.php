@@ -245,7 +245,7 @@ class Index extends Frontend
     {
         try {
             // 检查用户是否已登录
-            if (!$this->member->isLogin()) {
+            if (!$this->member) {
                 return $this->error(__('Please login first'), StatusCode::NEED_LOGIN);
             }
 

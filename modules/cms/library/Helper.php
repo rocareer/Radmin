@@ -227,7 +227,7 @@ class Helper
      */
     public static function getUnIndexContents($userIsLogin, $channel): \think\Paginator
     {
-        $limit = request()->request('limit');
+        $limit = request()->input('limit');
         return Content::where('status', 'normal')
             ->where('flag', 'find in set', 'recommend')
             ->where(function ($query) use ($userIsLogin, $channel) {
