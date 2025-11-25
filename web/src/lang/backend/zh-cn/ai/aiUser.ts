@@ -1,0 +1,16 @@
+export default {
+    id: 'ID',
+    user_type: '绑定用户类型',
+    'user_type user': '会员',
+    'user_type admin': '管理员',
+    user_id: '绑定用户',
+    user__nickname: '昵称',
+    tokens: 'tokens余额',
+    messages: '消息数',
+    status: '状态',
+    'status 0': '禁用',
+    'status 1': '启用',
+    last_use_time: '上次使用时间',
+    create_time: '创建时间',
+    'quick Search Fields': 'ID',
+}

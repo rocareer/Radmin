@@ -48,7 +48,8 @@
         "nelexa/zip": "^4.0",
         "ext-pdo": "*",
         "erusev/parsedown": "^1.7",
-        "scrivo/highlight.php": "^9.18"
+        "scrivo/highlight.php": "^9.18",
+        "voku/simple_html_dom": "^4.8"
     },
     "require-dev": {
         "rocareer/webman-dev": "dev-master",

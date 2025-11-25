@@ -1,14 +1,13 @@
 <?php
 
-
 namespace app\common\model\ai;
 
-use app\common\model\BaseModel;
+use think\Model;
 
 /**
  * Kbs
  */
-class Kbs extends BaseModel
+class Kbs extends Model
 {
     // 表名
     protected $name = 'ai_kbs';

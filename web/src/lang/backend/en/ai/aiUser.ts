@@ -1,0 +1,16 @@
+export default {
+    id: 'id',
+    user_type: 'user_type',
+    'user_type user': 'user_type user',
+    'user_type admin': 'user_type admin',
+    user_id: 'user_id',
+    user__nickname: 'nickname',
+    tokens: 'tokens',
+    messages: 'messages',
+    status: 'status',
+    'status 0': 'status 0',
+    'status 1': 'status 1',
+    last_use_time: 'last_use_time',
+    create_time: 'create_time',
+    'quick Search Fields': 'id',
+}

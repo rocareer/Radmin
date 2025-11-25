@@ -1,0 +1,11 @@
+{
+    "dependencies": {
+        "@microsoft/fetch-event-source": "^2.0.1"
+    },
+    "nuxtDependencies": {
+        "@microsoft/fetch-event-source": "^2.0.1"
+    },
+    "require": {
+        "voku/simple_html_dom": "^4.8"
+    }
+}

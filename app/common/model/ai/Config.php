@@ -1,14 +1,13 @@
 <?php
 
-
 namespace app\common\model\ai;
 
-use app\common\model\BaseModel;
+use think\Model;
 
 /**
  * AI配置
  */
-class Config extends BaseModel
+class Config extends Model
 {
     // 表名
     protected $name = 'ai_config';
@@ -30,22 +29,11 @@ class Config extends BaseModel
             'ai_money_exchange_tokens',
         ],
     ];
-	
-	/**
-	 * 事件 todo for buildadmin
-	 * By albert  2025/04/21 23:44:15
-	 * 某些情况下给前端送的不是数值类型 强制转换
-	 * @param $model
-	 *
-	 
-	 */
-	public static function onAfterRead($model)
-	{
-		if (in_array($model->getData('name'), self::$values['int'])) {
-			// 确保转换为数值类型
-			$model->setAttr('value', (float)$model->value);
-			// 同时设置原始数据避免后续处理覆盖
-			$model->setData('value', (float)$model->value);
-		}
-	}
+
+    public static function onAfterRead($model)
+    {
+        if (in_array($model->getData('name'), self::$values['int'])) {
+            $model->value = (float)$model->value;
+        }
+    }
 }

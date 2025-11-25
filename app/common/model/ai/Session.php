@@ -1,15 +1,14 @@
 <?php
 
-
 namespace app\common\model\ai;
 
-use app\common\model\BaseModel;
-use think\model\relation\BelongsTo;
+use think\facade\Db;
+use think\Model;
 
 /**
  * Session
  */
-class Session extends BaseModel
+class Session extends Model
 {
     // 表名
     protected $name = 'ai_session';
@@ -23,8 +22,8 @@ class Session extends BaseModel
         return $value ? $value : '无标题';
     }
 
-    public function aiUser(): BelongsTo
+    public function aiUser(): \think\model\relation\BelongsTo
     {
-        return $this->belongsTo(AiUser::class, 'user_id', 'id');
+        return $this->belongsTo(\app\common\model\ai\AiUser::class, 'user_id', 'id');
     }
 }

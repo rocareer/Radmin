@@ -1,0 +1,67 @@
+{
+    "name": "知识库",
+    "description": "企业知识库管理系统",
+    "version": "1.0.0",
+    "author": "系统开发团队",
+    "website": "",
+    "dependencies": [],
+    "tables": [
+        "kb_type",
+        "kb_category", 
+        "kb_content",
+        "kb_tag",
+        "kb_content_tag",
+        "kb_attachment"
+    ],
+    "menu": [
+        {
+            "name": "知识库管理",
+            "icon": "fa fa-book",
+            "children": [
+                {
+                    "name": "知识库类型",
+                    "url": "kb/type/index",
+                    "icon": "fa fa-tags"
+                },
+                {
+                    "name": "知识库分类",
+                    "url": "kb/category/index", 
+                    "icon": "fa fa-folder"
+                },
+                {
+                    "name": "知识库内容",
+                    "url": "kb/content/index",
+                    "icon": "fa fa-file-text"
+                },
+                {
+                    "name": "知识库标签",
+                    "url": "kb/tag/index",
+                    "icon": "fa fa-tag"
+                }
+            ]
+        }
+    ],
+    "permissions": [
+        {
+            "name": "知识库管理",
+            "children": [
+                {
+                    "name": "知识库类型管理",
+                    "rule": "kb/type"
+                },
+                {
+                    "name": "知识库分类管理", 
+                    "rule": "kb/category"
+                },
+                {
+                    "name": "知识库内容管理",
+                    "rule": "kb/content"
+                },
+                {
+                    "name": "知识库标签管理",
+                    "rule": "kb/tag"
+                }
+            ]
+        }
+    ]
+}

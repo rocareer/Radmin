@@ -1,14 +1,13 @@
 <?php
 
-
 namespace app\common\model\ai;
 
-use app\common\model\BaseModel;
+use think\Model;
 
 /**
  * SessionMessage
  */
-class SessionMessage extends BaseModel
+class SessionMessage extends Model
 {
     // 表名
     protected $name = 'ai_session_message';
@@ -22,7 +21,7 @@ class SessionMessage extends BaseModel
         'kbsTable',
     ];
 
-    public static function onAfterInsert($model)
+    public static function onAfterInsert($model): void
     {
         Session::where('id', $model->session_id)
             ->update([
@@ -40,7 +39,7 @@ class SessionMessage extends BaseModel
     {
         if (!isset($row['kbs'])) return [];
         return [
-	        'title' => \app\common\model\ai\KbsContent::whereIn('id', $row['kbs'])->column('title', 'id'),
+            'title' => \app\common\model\ai\KbsContent::whereIn('id', $row['kbs'])->column('title', 'id'),
         ];
     }
 

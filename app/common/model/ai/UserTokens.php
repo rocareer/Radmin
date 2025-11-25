@@ -1,16 +1,15 @@
 <?php
 
-
 namespace app\common\model\ai;
 
-use app\common\model\BaseModel;
-use app\common\model\ai\Exception;
+use ba\Exception;
+use think\Model;
 use Throwable;
 
 /**
  * UserTokens
  */
-class UserTokens extends BaseModel
+class UserTokens extends Model
 {
     // 表名
     protected $name = 'ai_user_tokens';

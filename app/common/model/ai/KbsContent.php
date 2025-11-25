@@ -1,27 +1,23 @@
 <?php
 
-
 namespace app\common\model\ai;
 
+use think\Model;
 use app\common\library\ai\Helper;
-use app\common\model\BaseModel;
 
 /**
  * KbsContent
  */
-class KbsContent extends BaseModel
+class KbsContent extends Model
 {
     // 表名
     protected $name = 'ai_kbs_content';
 
-	protected $pk='id';
     // 自动写入时间戳字段
     protected $autoWriteTimestamp = true;
 
     protected $type = [
         'extend' => 'array',
-        'update_time'=>'integer',
-        'create_time'=>'integer'
     ];
 
     // 追加属性
@@ -58,7 +54,7 @@ class KbsContent extends BaseModel
     public function getAiKbsAttr($value, $row): array
     {
         return [
-	        'name' => \app\common\model\ai\Kbs::whereIn('id', $row['ai_kbs_ids'])->column('name'),
+            'name' => \app\common\model\ai\Kbs::whereIn('id', $row['ai_kbs_ids'])->column('name'),
         ];
     }
 

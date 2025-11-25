@@ -1,17 +1,17 @@
 <?php
 
-
 namespace app\common\model\ai;
 
+use Throwable;
+use think\Model;
+use ba\Exception;
+use think\facade\Db;
 use app\common\library\ai\Helper;
-use app\common\model\BaseModel;
-use exception;
-use support\orm\Db;
 
 /**
  * AiUser
  */
-class AiUser extends BaseModel
+class AiUser extends Model
 {
     // 表名
     protected $name = 'ai_user';
@@ -22,9 +22,7 @@ class AiUser extends BaseModel
 
     // 字段类型转换
     protected $type = [
-        'last_use_time' => 'int',
-        'create_time'   => 'int',
-        'update_time'   => 'int'
+        'last_use_time' => 'timestamp:Y-m-d H:i:s',
     ];
 
     protected $append = [

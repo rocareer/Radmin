@@ -34,7 +34,8 @@
         "vue-i18n": "11.0.1",
         "qrcode.vue": "^3.4.0",
         "md-editor-v3": "5.1.1",
-        "screenfull": "^6.0.2"
+        "screenfull": "^6.0.2",
+        "@microsoft/fetch-event-source": "^2.0.1"
     },
     "devDependencies": {
         "@eslint/js": "9.17.0",
