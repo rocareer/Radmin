@@ -18,9 +18,13 @@ class Type extends Backend
      */
     protected object $model;
 
-    protected array|string $preExcludeFields = ['id'];
+    protected string|array $defaultSortField = 'sort,desc';
 
-    protected string|array $quickSearchField = ['name'];
+    protected array|string $preExcludeFields = ['id', 'create_time', 'update_time'];
+
+    protected string $weighField = 'sort';
+
+    protected string|array $quickSearchField = ['id'];
 
     public function initialize():void
     {

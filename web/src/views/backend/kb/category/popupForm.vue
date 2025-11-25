@@ -37,6 +37,20 @@
                         prop="name"
                         :placeholder="t('Please input field', { field: t('kb.category.name') })"
                     />
+                    <FormItem
+                        :label="t('kb.category.status')"
+                        type="radio"
+                        v-model="baTable.form.items!.status"
+                        prop="status"
+                        :data="{ content: { '1': t('kb.category.status 1'), '0': t('kb.category.status 0') } }"
+                    />
+                    <FormItem
+                        :label="t('kb.category.sort')"
+                        type="number"
+                        v-model="baTable.form.items!.sort"
+                        prop="sort"
+                        :placeholder="t('Please input field', { field: t('kb.category.sort') })"
+                    />
                 </el-form>
             </div>
         </el-scrollbar>

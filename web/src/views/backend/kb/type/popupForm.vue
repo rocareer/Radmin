@@ -39,17 +39,28 @@
                     />
                     <FormItem
                         :label="t('kb.type.status')"
-                        type="radio"
+                        type="switch"
                         v-model="baTable.form.items!.status"
                         prop="status"
-                        :data="{ content: { '0': t('kb.type.status 0'), '1': t('kb.type.status 1') } }"
+                        :input-attr="{ content: { '0': t('kb.type.status 0'), '1': t('kb.type.status 1') } }"
                     />
                     <FormItem
                         :label="t('kb.type.sort')"
                         type="number"
                         v-model="baTable.form.items!.sort"
                         prop="sort"
+                        :input-attr="{ step: 1 }"
                         :placeholder="t('Please input field', { field: t('kb.type.sort') })"
+                    />
+                    <FormItem
+                        :label="t('kb.type.remark')"
+                        type="textarea"
+                        v-model="baTable.form.items!.remark"
+                        prop="remark"
+                        :input-attr="{ rows: 3 }"
+                        @keyup.enter.stop=""
+                        @keyup.ctrl.enter="baTable.onSubmit(formRef)"
+                        :placeholder="t('Please input field', { field: t('kb.type.remark') })"
                     />
                 </el-form>
             </div>
@@ -81,8 +92,8 @@ const baTable = inject('baTable') as baTableClass
 const { t } = useI18n()
 
 const rules: Partial<Record<string, FormItemRule[]>> = reactive({
-    name: [buildValidatorData({ name: 'required', message: t('Validation.required') })],
-    sort: [buildValidatorData({ name: 'number', message: t('Validation.number') })],
+    create_time: [buildValidatorData({ name: 'date', title: t('kb.type.create_time') })],
+    update_time: [buildValidatorData({ name: 'date', title: t('kb.type.update_time') })],
 })
 </script>
 

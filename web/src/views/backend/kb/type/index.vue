@@ -35,7 +35,7 @@ defineOptions({
 
 const { t } = useI18n()
 const tableRef = useTemplateRef('tableRef')
-const optButtons: OptButton[] = defaultOptButtons(['edit', 'delete'])
+const optButtons: OptButton[] = defaultOptButtons(['weigh-sort', 'edit', 'delete'])
 
 /**
  * baTable 内包含了表格的所有数据且数据具备响应性，然后通过 provide 注入给了后代组件
@@ -48,15 +48,43 @@ const baTable = new baTableClass(
             { type: 'selection', align: 'center', operator: false },
             { label: t('kb.type.id'), prop: 'id', align: 'center', width: 70, operator: 'RANGE', sortable: 'custom' },
             { label: t('kb.type.name'), prop: 'name', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
-            { label: t('kb.type.status'), prop: 'status', align: 'center', width: 80, operator: 'eq', sortable: false, render: 'tag', replaceValue: { '0': t('kb.type.status 0'), '1': t('kb.type.status 1') } },
-            { label: t('kb.type.sort'), prop: 'sort', align: 'center', width: 80, operator: 'RANGE', sortable: 'custom' },
-            { label: t('kb.type.create_time'), prop: 'create_time', align: 'center', width: 160, operator: 'RANGE', sortable: 'custom', render: 'datetime' },
+            {
+                label: t('kb.type.status'),
+                prop: 'status',
+                align: 'center',
+                render: 'switch',
+                operator: 'eq',
+                sortable: false,
+                replaceValue: { '0': t('kb.type.status 0'), '1': t('kb.type.status 1') },
+            },
+            { label: t('kb.type.sort'), prop: 'sort', align: 'center', operator: 'RANGE', sortable: 'custom' },
+            {
+                label: t('kb.type.create_time'),
+                prop: 'create_time',
+                align: 'center',
+                render: 'datetime',
+                operator: 'RANGE',
+                sortable: 'custom',
+                width: 160,
+                timeFormat: 'yyyy-mm-dd hh:MM:ss',
+            },
+            {
+                label: t('kb.type.update_time'),
+                prop: 'update_time',
+                align: 'center',
+                render: 'datetime',
+                operator: 'RANGE',
+                sortable: 'custom',
+                width: 160,
+                timeFormat: 'yyyy-mm-dd hh:MM:ss',
+            },
             { label: t('Operate'), align: 'center', width: 140, render: 'buttons', buttons: optButtons, operator: false },
         ],
-        dblClickNotEditColumn: [undefined],
+        dblClickNotEditColumn: [undefined, 'status'],
+        defaultOrder: { prop: 'sort', order: 'desc' },
     },
     {
-        defaultItems: {},
+        defaultItems: { status: '1' },
     }
 )
 

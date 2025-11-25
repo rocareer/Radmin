@@ -13,7 +13,7 @@ class Category extends BaseModel
     protected $name = 'kb_category';
 
     // 自动写入时间戳字段
-    protected $autoWriteTimestamp = false;
+    protected $autoWriteTimestamp = true;
 
     /**
      * 搜索条件
@@ -22,6 +22,16 @@ class Category extends BaseModel
     {
         if (!empty($value)) {
             $query->where('name', 'like', "%{$value}%");
+        }
+    }
+
+    /**
+     * 状态搜索
+     */
+    public function searchStatusAttr($query, $value, $data)
+    {
+        if ($value !== '' && $value !== null) {
+            $query->where('status', '=', $value);
         }
     }
 }

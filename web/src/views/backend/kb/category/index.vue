@@ -12,11 +12,7 @@
         <!-- 表格 -->
         <!-- 表格列有多种自定义渲染方式，比如自定义组件、具名插槽等，参见文档 -->
         <!-- 要使用 el-table 组件原有的属性，直接加在 Table 标签上即可 -->
-        <Table ref="tableRef">
-            <template #kb_count="{ row }">
-                <el-tag type="info" size="small">{{ row.kb_count || 0 }}</el-tag>
-            </template>
-        </Table>
+        <Table ref="tableRef"></Table>
 
         <!-- 表单 -->
         <PopupForm />
@@ -51,14 +47,35 @@ const baTable = new baTableClass(
         column: [
             { type: 'selection', align: 'center', operator: false },
             { label: t('kb.category.id'), prop: 'id', align: 'center', width: 70, operator: 'RANGE', sortable: 'custom' },
-            { label: t('kb.category.name'), prop: 'name', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false},
-            { label: t('kb.category.kb_count'), prop: 'kb_count', align: 'center', width: 200, operator: false, render: 'customSlot', slots: { name: 'kb_count' } },
+            { label: t('kb.category.name'), prop: 'name', align: 'center', operatorPlaceholder: t('Fuzzy query'), operator: 'LIKE', sortable: false },
+            {
+                label: t('kb.category.status'),
+                prop: 'status',
+                align: 'center',
+                width: 80,
+                operator: 'eq',
+                sortable: false,
+                render: 'switch',
+                replaceValue: { '0': t('kb.category.status 0'), '1': t('kb.category.status 1') },
+            },
+            { label: t('kb.category.sort'), prop: 'sort', align: 'center', width: 80, operator: 'RANGE', sortable: 'custom' },
+            { label: t('kb.category.kb_count'), prop: 'kb_count', align: 'center', width: 100, operator: false },
+            {
+                label: t('kb.category.create_time'),
+                prop: 'create_time',
+                align: 'center',
+                width: 160,
+                operator: 'RANGE',
+                sortable: 'custom',
+                render: 'datetime',
+            },
             { label: t('Operate'), align: 'center', width: 140, render: 'buttons', buttons: optButtons, operator: false },
         ],
-        dblClickNotEditColumn: [undefined],
+        dblClickNotEditColumn: ['all'],
+        defaultOrder: { prop: 'sort', order: 'desc' },
     },
     {
-        defaultItems: {},
+        defaultItems: { status: '1', sort: 0 },
     }
 )
 
