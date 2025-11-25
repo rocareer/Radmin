@@ -145,7 +145,7 @@ class Index extends Frontend
             array_pop($newContent);
         }
         foreach ($newContent as &$item) {
-            $item['create_time'] = DateUtil::human($item['create_time']);
+            // $item['create_time'] = DateUtil::human($item['create_time']);
         }
 
         // 按更新时间排序的文章
@@ -344,8 +344,8 @@ class Index extends Frontend
             if ($info) {
                 if ($info['allow_visit_groups'] == 'user' && !$this->member) {
                     return $this->error(__('Please login first'), [
-                        'type' => Auth::NEED_LOGIN
-                    ], Auth::LOGIN_RESPONSE_CODE);
+                        'type' => 'need login'
+                    ], 303);
                 }
                 if ($info['type'] == 'cover') {
                     // 封面频道需要不同的数据
@@ -457,7 +457,7 @@ class Index extends Frontend
             })
             ->order($order)
             ->paginate($limit)->each(function ($item) {
-                $item->create_time = DateUtil::human($item->create_time);
+                // $item->create_time = DateUtil::human($item->create_time);
             });
 
         // 多个标题，加上双引号

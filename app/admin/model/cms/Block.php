@@ -19,6 +19,7 @@ class Block extends Model
     protected $type = [
         'start_time' => 'timestamp:Y-m-d H:i:s',
         'end_time'   => 'timestamp:Y-m-d H:i:s',
+        'update_time'=>'int'
     ];
 
     protected static function onAfterInsert($model)

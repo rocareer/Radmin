@@ -1,4 +1,3 @@
-// app/router.options.ts 文件，没有请自行建立
 import type { RouterOptions } from '@nuxt/schema'
 import { cloneDeep } from 'lodash-es'
 import { RouteRecordRaw } from 'vue-router'
@@ -33,11 +32,20 @@ export default <RouterOptions>{
 
         // 对原首页的 path 和 name 进行修改
         const oldIndex = getArrayKey(routesTemp, 'path', '/')
-        routesTemp[oldIndex].path = '/home'
-        routesTemp[oldIndex].name = '/home'
+        if (oldIndex !== false) {
+            routesTemp[oldIndex].path = '/home'
+            routesTemp[oldIndex].name = '/home'
+        }
 
         // 修改所有静态路由数据中的 /cms
         routesTemp = editPath(routesTemp, '/cms')
+
+        // 为根路径添加重定向到 CMS 首页
+        const cmsIndexRoute = getArrayKey(routesTemp, 'path', '/')
+        if (cmsIndexRoute !== false && routesTemp[cmsIndexRoute].children) {
+            // 添加重定向，确保访问 / 时显示 CMS 首页内容
+            routesTemp[cmsIndexRoute].redirect = '/'
+        }
 
         // 社区模块仅需调整第二个参数
         // routesTemp = editPath(routesTemp, '/ask')

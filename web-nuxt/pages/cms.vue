@@ -5,7 +5,7 @@
 </template>
 
 <script setup lang="ts">
-import { init } from '~/api/cms/index'
+import { init } from '~/api/cms'
 const cmsConfig = useCmsConfig()
 const { data } = await init()
 if (data.value?.code == 1) {
