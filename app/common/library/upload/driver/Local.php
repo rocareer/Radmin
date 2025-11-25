@@ -88,7 +88,13 @@ class Local extends Driver
 		$saveName = $this->clearRootPath($saveName);
 		
 		if ($domain === true) {
-			$domain = '//' . request()->host();
+			// 优先使用配置的 CDN URL
+			$cdnUrl = config('buildadmin.cdn_url');
+			if ($cdnUrl) {
+				$domain = $cdnUrl;
+			} else {
+				$domain = '//' . request()->host();
+			}
 		} elseif ($domain === false) {
 			$domain = '';
 		}
